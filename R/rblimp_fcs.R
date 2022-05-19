@@ -1,0 +1,50 @@
+# Wrapper for fcs
+#' @export
+rblimp_fcs <- function(
+        variables,
+        data,
+        burn = 1000,
+        iter = 1000,
+        seed,
+        thin,
+        nimps,
+        clusterid,
+        ordinal,
+        nominal,
+        chains,
+        options,
+        transform,
+        tmpfolder,
+        fixed,
+        syntax = FALSE,
+        output = TRUE,
+        nopowershell = FALSE) {
+
+    return(rblimp(
+        model = paste0(';FCS: ', paste(variables, collapse = ' '),';'),
+        data,
+        burn,
+        iter,
+        seed,
+        thin,
+        nimps,
+        latent = NULL,
+        parameters = NULL,
+        clusterid,
+        ordinal,
+        nominal,
+        center  = NULL,
+        chains,
+        simple = NULL,
+        waldtest = NULL,
+        options,
+        transform,
+        tmpfolder,
+        fixed,
+        syntax,
+        output,
+        nopowershell
+    ))
+}
+
+
