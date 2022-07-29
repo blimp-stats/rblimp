@@ -2,6 +2,7 @@
 
 # Find blimp on macOS
 detect_blimp_macos <- function(exec) {
+
     ## Try to find executable
     output <- suppressWarnings(system(paste('which',exec), intern = T, ignore.stderr = T)[1])
     if (length(output) != 0) {
@@ -38,9 +39,6 @@ detect_blimp_linux <- function(exec) {
 
 # Find blimp on windows
 detect_blimp_windows <- function(exec) {
-
-    ##
-    if (is.null(blimp.env$exec))
 
     ## Try to find executable
     output <- suppressWarnings(system(paste('where',exec), intern = T, ignore.stderr = T)[1])
@@ -97,6 +95,12 @@ set_blimp <- function(exec, ...) {
 detect_blimp <- function() {
     # Return any set executable
     if (!is.null(rblimp.env$exec)) return(rblimp.env$exec)
+
+    ## Check ENV variables
+    env_r_blimp <- Sys.getenv('R_BLIMP', unset = NA)
+    if (!is.na(env_r_blimp)) {
+        if (file.exists(env_r_blimp))  return(env_r_blimp)
+    }
 
     # Otherwise try to find
     user_os <- tolower(R.Version()$os)
