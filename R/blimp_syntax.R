@@ -48,22 +48,23 @@ blimp_syntax <- function(
         burn,
         seed,
         iter,
-        variables = '',
-        thin = '',
-        nimps = '',
-        latent = '',
-        clusterid = '',
-        ordinal = '',
-        nominal = '',
-        centering = '',
-        parameters = '',
-        chains = '',
-        simple = '',
-        waldtest = '',
-        options = '',
-        save = '',
-        transform = '',
-        fixed = '') {
+        variables,
+        thin,
+        nimps,
+        latent,
+        clusterid,
+        ordinal,
+        nominal,
+        centering,
+        parameters,
+        chains,
+        simple,
+        waldtest,
+        options,
+        output,
+        save,
+        transform,
+        fixed) {
 
     if (!missing(datapath))   inputfile <- add_cmd('data: ','', datapath)
     if (!missing(burn))       inputfile <- add_cmd('burn: ',inputfile, burn)
@@ -84,9 +85,9 @@ blimp_syntax <- function(
     if (!missing(simple))     inputfile <- add_cmd('simple: ',inputfile, simple,';')
     if (!missing(waldtest))   inputfile <- add_cmd('waldtest: ',inputfile, waldtest, ';')
     if (!missing(options))    inputfile <- add_cmd('options: ',inputfile, options)
+    if (!missing(output))     inputfile <- add_cmd('output: ', inputfile, output)
     if (!missing(transform))  inputfile <- add_cmd('transform: ',inputfile, transform,';')
     if (!missing(save))       inputfile <- add_cmd('save: ',inputfile, save, ';')
-
     ## Return file
     return(inputfile)
 

@@ -29,8 +29,9 @@ rblimp <- function(
         transform,
         tmpfolder,
         fixed,
+        output,
         syntax = FALSE,
-        output = TRUE,
+        print_output = TRUE,
         nopowershell = FALSE) {
 
     # Deal with some error handling
@@ -41,15 +42,15 @@ rblimp <- function(
         stop('The model must be a character string.')
     }
 
-    if (!is.logical(output)) {
-        if (output != 'all' & output != 'none' & output != 'iteration') {
-            stop(paste("Unrecognized 'output' choice:", output))
+    if (!is.logical(print_output)) {
+        if (print_output != 'all' & print_output != 'none' & print_output != 'iteration') {
+            stop(paste("Unrecognized 'output' choice:", print_output))
         }
     } else {
-        if (output) {
-            output <- 'iteration'
+        if (print_output) {
+            print_output <- 'iteration'
         } else {
-            output = 'none'
+            print_output = 'none'
         }
     }
 
@@ -162,20 +163,71 @@ rblimp <- function(
         impFile <- blimp_syntax( file.path(tmpfolder,'data.csv'), model,
                                  burn, seed, iter, variables = names(data), thin, nimps, latent, clusterid,
                                  ordinal, nominal, center, parameters, chains, simple,
-                                 waldtest, options, saveCmd, transform, fixed)
+                                 waldtest, options, output, saveCmd, transform, fixed)
         return(impFile)
     }
     impFile <- blimp_syntax( file.path(tmpfolder,'data.csv'), model,
                              burn, seed, iter, variables = NULL, thin, nimps, latent, clusterid,
                              ordinal, nominal, center, parameters, chains, simple,
-                             waldtest, options, saveCmd, transform, fixed)
+                             waldtest, options, output, saveCmd, transform, fixed)
     fileConn <- file(file.path(tmpfolder,'input.imp'))
     writeLines(impFile, fileConn)
     close(fileConn)
 
+    # Parse output to create header
+    if (!missing(output)) {
+        tmp <- tolower(output)                      # Convert to lower case
+        tmp <- do.call('c', strsplit(tmp, ';|\\s')) # Split by space  or semicolon
+
+        if ('default' %in% tmp) {
+            output_header <- c('Median','StdDev','2.5%','97.5%','PSR', 'N_Eff')
+        }
+        else if ('default_median' %in% tmp) {
+            output_header <- c('Median','MAD SD','2.5%','97.5%','PSR', 'N_Eff')
+        }
+        else if ('default_mean' %in% tmp) {
+            output_header <- c('Mean','StdDev','2.5%','97.5%','PSR', 'N_Eff')
+        } else {
+            output_header <- character()
+            for (s in tmp) {
+                if (s == '') { next } # skip empty
+                else if (s == 'mean')    { col_name <- 'Mean'  }
+                else if ( s == 'median') { col_name <- 'Median'}
+                else if ( s == 'madsd' | s == 'mad_sd' | s == 'mad') {
+                    col_name <- 'MAD SD'
+                }
+                else if (s == 'stddev' | s == 'sd') {
+                    col_name <- 'StdDev'
+                }
+                else if ( s == 'q95' | s == 'quant95') {
+                    col_name <- c('2.5%', '97.5%')
+                }
+                else if ( s == 'q50' | s == 'quant50') {
+                    col_name <- c('25%', '75%')
+                }
+                else if ( s == 'quantiles' | s == 'quantile' | s == 'quant') {
+                    col_name <- c('2.5%', '25%', '50%', '75%', '97.5%')
+                }
+                else if ( s == 'psr') {
+                    col_name <- 'PSR'
+                }
+                else if ( s == 'n_eff' | s == 'ess' | s == 'neff') {
+                    col_name <- 'N_Eff'
+                }
+                else if ( s == 'mcmcse' | s == 'mcmc_se') {
+                    col_name <- 'MCMC_SE'
+                } else {
+                    stop(paste('Could not pasre OUTPUT command:', output))
+                }
+                output_header <- c(output_header, col_name)
+            }
+        }
+    } else {
+        output_header <- c('Median','StdDev','2.5%','97.5%','PSR', 'N_Eff')
+    }
 
     # Run File
-    result <- rblimp_source(file.path(tmpfolder,'input.imp'), plots = TRUE, output,  nopowershell)
+    result <- rblimp_source(file.path(tmpfolder,'input.imp'), plots = TRUE, print_output,  nopowershell)
     exitcode <- attr(result, 'exitcode')
 
     # Check exit code
@@ -266,7 +318,7 @@ rblimp <- function(
     # Read data in
     output <- list()
     output$estimates  <- as.matrix(read.csv(file.path(tmpfolder,'estimates.csv'),header=F))
-    colnames(output$estimates) <- c( 'Median','StdDev','2.5%','97.5%','PSR', 'N_Eff')
+    colnames(output$estimates) <- output_header
     rownames(output$estimates) <- trimws(lab_row_names)
     output$iterations <- read.csv(file.path(tmpfolder,'iter.csv'),header=F)
     names(output$iterations) <- lab_names
