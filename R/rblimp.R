@@ -69,7 +69,8 @@ rblimp <- function(
     saveCmd[[1]] <- paste0('estimates = ', file.path(tmpfolder,'estimates.csv'))
     saveCmd[[2]] <- paste0('iterations = ', file.path(tmpfolder,'iter.csv'))
     saveCmd[[3]] <- paste0('psr = ', file.path(tmpfolder,'psr.csv'))
-    if(!missing(nimps)) saveCmd[[4]] <- paste0('stacked = ', file.path(tmpfolder,'imps.csv'))
+    saveCmd[[4]] <- paste0('avgimp = ', file.path(tmpfolder,'avgimp.csv'))
+    if(!missing(nimps)) saveCmd[[5]] <- paste0('stacked = ', file.path(tmpfolder,'imps.csv'))
 
     # Parse latent list
     if(!missing(latent) && is.list(latent)) {
@@ -299,6 +300,12 @@ rblimp <- function(
         output$residuals <- list()
     }
 
+    # Get average imputation
+    if(file.exists(file.path(tmpfolder,'avgimp.csv'))) {
+        output$average_imp <- read.csv(file.path(tmpfolder,'avgimp.csv'), header=T)
+    } else {
+        output$average_imp <- list()
+    }
 
     # Delete temp files
     if(tmpdircreated) unlink(tmpfolder)
@@ -306,8 +313,8 @@ rblimp <- function(
     # Return output
     return(
         new("blimp_obj",call=match.call(), estimates=output$estimates,burn=output$burn, iterations=output$iterations,
-            psr=output$psr, imputations=output$imputations,
-            latent=output$latent,residuals=output$residuals,predicted=output$predicted,
+            psr=output$psr, imputations=output$imputations, average_imp = output$average_imp,
+            latent=output$latent, residuals=output$residuals,predicted=output$predicted,
             output = result)
     )
 }

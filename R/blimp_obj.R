@@ -1,7 +1,7 @@
 ## Blimp output object
 # Copyright Brian Keller 2022, all rights reserved
 
-# Set s3 class generated fromrblimp_source
+# Set S3 class generated from blimp_source
 setOldClass('blimp_out')
 
 #' @exportS3Method
@@ -20,7 +20,7 @@ print.blimp_out <- function(x, ...) {
 
 #' @export
 setClass("blimp_obj", slots=list(call='language',estimates="matrix",burn="list", iterations="data.frame",
-                                 psr="data.frame", imputations="list",
+                                 psr="data.frame", imputations="list", average_imp="data.frame",
                                  latent="list",residuals="list",predicted="list",
                                  output= "blimp_out"))
 
