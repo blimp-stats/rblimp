@@ -47,12 +47,12 @@ psrf_lhalf <- function(x, split_chain = TRUE) {
 }
 
 #' @export
-plot.blimp_tp <- function(x, y, colors=NULL, ...) {
+plot.blimp_tp <- function(x, y, colors, ...) {
     # Check colors
-    if (is.null(colors)) {
+    if (missing(colors)) {
         colors <- seq_along(x@data)
     } else {
-        if (length(colors) != length(x@data)) {
+        if (length(colors) != NCOL(x@data)) {
             stop(paste0("colors must be length of number of chains (",length(x@data),")"))
         }
     }
@@ -72,7 +72,7 @@ plot.blimp_tp <- function(x, y, colors=NULL, ...) {
 
 # Plot traceplot obj
 #' @export
-setMethod("plot", "blimp_tp", function(x, y,colors=NULL, ...) {
+setMethod("plot", "blimp_tp", function(x, y, colors, ...) {
     plot.blimp_tp(x,y, colors, ...)
 })
 
@@ -83,7 +83,8 @@ setMethod("show", "blimp_tp", function(object) {
 })
 
 # Generate traceplot objects
-traceplot <- function(object, param) {
+#' @export
+traceplots <- function(object, param) {
     if (missing(param)) {
         out <- lapply(seq_len(nrow(object@estimates)), function(iter) {
             return(new('blimp_tp',
