@@ -16,3 +16,8 @@ remotes::install_github('blimp-stats/rblimp')
 ```
 
 In addition, you must set up installing Blimp from <https://www.appliedmissingdata.com/blimp>
+
+
+# Currently in Development
+
+This package is currently still being actively developed.
