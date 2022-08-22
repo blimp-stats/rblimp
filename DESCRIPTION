@@ -1,12 +1,16 @@
 Package: rblimp
 Type: Package
-Title: What the Package Does (Title Case)
+Title: A package for integrating Blimp Software into R
 Version: 0.1.0
-Author: Brian T. Keller
+Authors@R: 
+    person(given = "Brian",
+           family = "Keller",
+           role = c("aut", "cre"),
+           email = "bk@utexas.edu")
 Maintainer: Brian T. Keller <blimp@utexas.edu>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Description: Uses R language to run Blimp software for Bayesian latent variable modeling, missing data, and multiple imputation.
+    Requires downloading Blimp from <https://www.appliedmissingdata.com/blimp>.
+License: LGPL-3
 Encoding: UTF-8
 LazyData: true
 Suggests: mitml
