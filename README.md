@@ -20,4 +20,5 @@ In addition, you must set up installing Blimp from <https://www.appliedmissingda
 
 # Currently in Development
 
-This package is currently still being actively developed.
+- This package is an alpha development release required for a course.
+- This is still under heavy active development.
