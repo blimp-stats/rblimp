@@ -26,7 +26,7 @@ This is a wrapper to provide blimp funcitons in R. This will generate the input,
 \item{thin}{  Number of thin}
 \item{nimps}{ Number of imputations}
 \item{latent}{ Any latent variables to be generated}
-\item{parameters} Any post-computed parameters to be saved}
+\item{parameters}{Any post-computed parameters to be saved}
 \item{clusterid}{ Cluster identifier variable}
 \item{ordinal}{ Ordinal variables}
 \item{nominal}{ Nominal variables}
