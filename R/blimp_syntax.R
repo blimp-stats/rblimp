@@ -78,7 +78,7 @@ blimp_syntax <- function(
     if (!missing(ordinal))    inputfile <- add_cmd('ordinal: ',inputfile, ordinal)
     if (!missing(nominal))    inputfile <- add_cmd('nominal: ',inputfile, nominal)
     if (!missing(model))      inputfile <- add_cmd('model: ',inputfile, model, ';')
-    if (!missing(parameters)) inputfile <- add_cmd('parameters: ',inputfile, parameters)
+    if (!missing(parameters)) inputfile <- add_cmd('parameters: ',inputfile, parameters, ';')
     if (!missing(centering))  inputfile <- add_cmd('center: ',inputfile, centering)
     if (!missing(chains))     inputfile <- add_cmd('chains: ',inputfile, chains)
     if (!missing(fixed))      inputfile <- add_cmd('fixed: ',inputfile, fixed)
