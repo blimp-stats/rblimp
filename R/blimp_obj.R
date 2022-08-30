@@ -45,9 +45,8 @@ function( object , ... ) {
 #' @export
 setMethod("show", "blimp_obj",
 function( object ) {
-    show(object@estimates)
+    print(object@estimates, max = length(object@estimates))
 })
-
 
 # Need generics
 setGeneric("psr", function(object) {
