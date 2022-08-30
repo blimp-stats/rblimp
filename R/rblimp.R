@@ -38,6 +38,10 @@ rblimp <- function(
     if (!is.data.frame(data) ) {
         stop('The data must be a data.frame.')
     }
+    # Convert to character vector if list
+    if (is.list(model)) {
+        model <- as.character(model)
+    }
     if (!is.character(model)) {
         stop('The model must be a character string.')
     }
