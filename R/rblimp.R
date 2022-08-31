@@ -68,13 +68,13 @@ rblimp <- function(model,
     if (!syntax) write.csv(data, file.path(tmpfolder, "data.csv"), row.names = F, quote = F)
 
     # Create saveCommand
-    saveCmd <- list()
+    saveCmd <- vector('list', 4L)
     saveCmd[[1]] <- paste0("estimates = ", file.path(tmpfolder, "estimates.csv"))
     saveCmd[[2]] <- paste0("iterations = ", file.path(tmpfolder, "iter.csv"))
     saveCmd[[3]] <- paste0("psr = ", file.path(tmpfolder, "psr.csv"))
     saveCmd[[4]] <- paste0("avgimp = ", file.path(tmpfolder, "avgimp.csv"))
-    if (!missing(nimps)) saveCmd[[5]] <- paste0("stacked = ", file.path(tmpfolder, "imps.csv"))
-    if (rblimp.env$beta) saveCmd[[6]] <- paste0("varimp = ", file.path(tmpfolder, "varimp.csv"))
+    if (!missing(nimps)) saveCmd[[length(saveCmd) + 1]] <- paste0("stacked = ", file.path(tmpfolder, "imps.csv"))
+    if (rblimp.env$beta) saveCmd[[length(saveCmd) + 1]] <- paste0("varimp = ", file.path(tmpfolder, "varimp.csv"))
 
     # Parse latent list
     if (!missing(latent) && is.list(latent)) {
