@@ -2,14 +2,23 @@
 # Copyright Brian Keller 2022, all rights reserved
 
 # Adds a command
-add_cmd <- function(cmd, x, y, collapse = " ") {
+add_cmd <- function(cmd, y, collapse = " ", use.names = FALSE) {
     if (is.null(y)) {
-        return(x)
+        return("")
     }
     if (y[1] == "") {
-        return(x)
+        return("")
     }
-    return(paste0(x, cmd, paste(y, collapse = collapse), ";\n"))
+    if (use.names) {
+        y_names <- sapply(names(y), function(x) {
+            if (x == "") {
+                return(x)
+            }
+            return(paste0(x, ":"))
+        })
+        return(paste0(cmd, paste(y_names, y, collapse = collapse)))
+    }
+    return(paste0(cmd, paste(y, collapse = collapse)))
 }
 
 # Parse formula to blimp syntax
@@ -72,28 +81,29 @@ blimp_syntax <- function(datapath,
                          save,
                          transform,
                          fixed) {
-    if (!missing(datapath)) inputfile <- add_cmd("data: ", "", datapath)
-    if (!missing(burn)) inputfile <- add_cmd("burn: ", inputfile, burn)
-    if (!missing(thin)) inputfile <- add_cmd("thin: ", inputfile, thin)
-    if (!missing(seed)) inputfile <- add_cmd("seed: ", inputfile, seed)
-    if (!missing(iter)) inputfile <- add_cmd("iter: ", inputfile, iter)
-    if (!missing(nimps)) inputfile <- add_cmd("nimps: ", inputfile, nimps)
-    if (!missing(latent)) inputfile <- add_cmd("latent: ", inputfile, latent)
-    inputfile <- add_cmd("missing: ", inputfile, "NA")
-    if (!missing(clusterid)) inputfile <- add_cmd("clusterid: ", inputfile, clusterid)
-    if (!missing(ordinal)) inputfile <- add_cmd("ordinal: ", inputfile, ordinal)
-    if (!missing(nominal)) inputfile <- add_cmd("nominal: ", inputfile, nominal)
-    if (!missing(model)) inputfile <- add_cmd("model: ", inputfile, model, ";")
-    if (!missing(parameters)) inputfile <- add_cmd("parameters: ", inputfile, parameters, ";")
-    if (!missing(centering)) inputfile <- add_cmd("center: ", inputfile, centering)
-    if (!missing(chains)) inputfile <- add_cmd("chains: ", inputfile, chains)
-    if (!missing(fixed)) inputfile <- add_cmd("fixed: ", inputfile, fixed)
-    if (!missing(simple)) inputfile <- add_cmd("simple: ", inputfile, simple, ";")
-    if (!missing(waldtest)) inputfile <- add_cmd("waldtest: ", inputfile, waldtest, ";")
-    if (!missing(options)) inputfile <- add_cmd("options: ", inputfile, options)
-    if (!missing(output)) inputfile <- add_cmd("output: ", inputfile, output)
-    if (!missing(transform)) inputfile <- add_cmd("transform: ", inputfile, transform, ";")
-    if (!missing(save)) inputfile <- add_cmd("save: ", inputfile, save, ";")
+    inputfile <- list()
+    if (!missing(datapath)) inputfile[[length(inputfile) + 1]] <- add_cmd("DATA: ", datapath)
+    if (!missing(burn)) inputfile[[length(inputfile) + 1]] <- add_cmd("BURN: ", burn)
+    if (!missing(thin)) inputfile[[length(inputfile) + 1]] <- add_cmd("THIN: ", thin)
+    if (!missing(seed)) inputfile[[length(inputfile) + 1]] <- add_cmd("SEED: ", seed)
+    if (!missing(iter)) inputfile[[length(inputfile) + 1]] <- add_cmd("ITER: ", iter)
+    if (!missing(nimps)) inputfile[[length(inputfile) + 1]] <- add_cmd("NIMPS: ", nimps)
+    if (!missing(latent)) inputfile[[length(inputfile) + 1]] <- add_cmd("LATENT: ", latent)
+    inputfile[[length(inputfile) + 1]] <- add_cmd("MISSING: ", "NA")
+    if (!missing(clusterid)) inputfile[[length(inputfile) + 1]] <- add_cmd("CLUSTERID: ", clusterid)
+    if (!missing(ordinal)) inputfile[[length(inputfile) + 1]] <- add_cmd("ORDINAL: ", ordinal)
+    if (!missing(nominal)) inputfile[[length(inputfile) + 1]] <- add_cmd("NOMINAL: ", nominal)
+    if (!missing(model)) inputfile[[length(inputfile) + 1]] <- add_cmd("MODEL: ", model, ";\n    ", use.names = rblimp.env$beta)
+    if (!missing(parameters)) inputfile[[length(inputfile) + 1]] <- add_cmd("PARAMETERS: ", parameters, ";\n    ")
+    if (!missing(centering)) inputfile[[length(inputfile) + 1]] <- add_cmd("CENTER: ", centering)
+    if (!missing(chains)) inputfile[[length(inputfile) + 1]] <- add_cmd("CHAINS: ", chains)
+    if (!missing(fixed)) inputfile[[length(inputfile) + 1]] <- add_cmd("FIXED: ", fixed)
+    if (!missing(simple)) inputfile[[length(inputfile) + 1]] <- add_cmd("SIMPLE: ", simple, ";\n    ")
+    if (!missing(waldtest)) inputfile[[length(inputfile) + 1]] <- add_cmd("WALDTEST: ", waldtest, ";\n    ")
+    if (!missing(options)) inputfile[[length(inputfile) + 1]] <- add_cmd("OPTIONS: ", options)
+    if (!missing(output)) inputfile[[length(inputfile) + 1]] <- add_cmd("OUTPUT: ", output)
+    if (!missing(transform)) inputfile[[length(inputfile) + 1]] <- add_cmd("TRANSFORM: ", transform, ";\n    ")
+    if (!missing(save)) inputfile[[length(inputfile) + 1]] <- add_cmd("SAVE: ", save, ";\n    ")
     ## Return file
-    return(inputfile)
+    return(paste0(inputfile, collapse = ";\n"))
 }
