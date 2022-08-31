@@ -74,6 +74,7 @@ rblimp <- function(model,
     saveCmd[[3]] <- paste0("psr = ", file.path(tmpfolder, "psr.csv"))
     saveCmd[[4]] <- paste0("avgimp = ", file.path(tmpfolder, "avgimp.csv"))
     if (!missing(nimps)) saveCmd[[5]] <- paste0("stacked = ", file.path(tmpfolder, "imps.csv"))
+    if (rblimp.env$beta) saveCmd[[6]] <- paste0("varimp = ", file.path(tmpfolder, "varimp.csv"))
 
     # Parse latent list
     if (!missing(latent) && is.list(latent)) {
@@ -356,7 +357,13 @@ rblimp <- function(model,
     if (file.exists(file.path(tmpfolder, "avgimp.csv"))) {
         output$average_imp <- read.csv(file.path(tmpfolder, "avgimp.csv"), header = T)
     } else {
-        output$average_imp <- list()
+        output$average_imp <- data.frame()
+    }
+    # Get variance of imputation
+    if (file.exists(file.path(tmpfolder, "varimp.csv"))) {
+        output$variance_imp <- read.csv(file.path(tmpfolder, "varimp.csv"), header = T)
+    } else {
+        output$variance_imp <- data.frame()
     }
 
     # Delete temp files
@@ -367,8 +374,8 @@ rblimp <- function(model,
         new("blimp_obj",
             call = match.call(), estimates = output$estimates, burn = output$burn, iterations = output$iterations,
             psr = output$psr, imputations = output$imputations, average_imp = output$average_imp,
-            latent = output$latent, residuals = output$residuals, predicted = output$predicted,
-            output = result
+            variance_imp = output$variance_imp, latent = output$latent, residuals = output$residuals,
+            predicted = output$predicted, output = result
         )
     )
 }
