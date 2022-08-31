@@ -1,27 +1,25 @@
 # Wrapper for fcs
 #' @export
-rblimp_fcs <- function(
-        variables,
-        data,
-        burn = 1000,
-        iter = 1000,
-        seed,
-        thin,
-        nimps,
-        clusterid,
-        ordinal,
-        nominal,
-        chains,
-        options,
-        transform,
-        tmpfolder,
-        fixed,
-        syntax = FALSE,
-        output = TRUE,
-        nopowershell = FALSE) {
-
+rblimp_fcs <- function(variables,
+                       data,
+                       burn = 1000,
+                       iter = 1000,
+                       seed,
+                       thin,
+                       nimps,
+                       clusterid,
+                       ordinal,
+                       nominal,
+                       chains,
+                       options,
+                       transform,
+                       tmpfolder,
+                       fixed,
+                       syntax = FALSE,
+                       output = TRUE,
+                       nopowershell = FALSE) {
     return(rblimp(
-        model = paste0(';FCS: ', paste(variables, collapse = ' '),';'),
+        model = paste0(";FCS: ", paste(variables, collapse = " "), ";"),
         data,
         burn,
         iter,
@@ -46,5 +44,3 @@ rblimp_fcs <- function(
         nopowershell
     ))
 }
-
-
