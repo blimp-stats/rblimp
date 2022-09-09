@@ -124,7 +124,7 @@ detect_blimp <- function() {
     } else if (grepl("linux", user_os)) {
         return(detect_blimp_linux(exec))
     } else if (
-        grepl("windows", user_os) || grepl("ming32", user_os)
+        grepl("windows", user_os) || grepl("minwg32", user_os)
     ) {
         return(detect_blimp_windows(paste0(exec, ".exe")))
     }
