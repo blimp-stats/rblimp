@@ -8,6 +8,15 @@ rblimp_source <- function(file,
     # Establish blimp exec
     blimp_path <- detect_blimp()
 
+    # Preprocess path for non-unix (assumes windows)
+    if (.Platform$OS.type != "unix") {
+        blimp_path <- if (output == "all") {
+            paste0("'", blimp_path, "'")
+        } else {
+            paste0('"', blimp_path, '"')
+        }
+    }
+
     # Set up exit code
     exitcode <- NA
 
@@ -39,7 +48,7 @@ rblimp_source <- function(file,
             result <- shell(cmd, intern = output == "none")
         } else {
             if (output == "all") {
-                exitcode <- system(paste0('powershell -command \"', cmd, " | tee '", file.path(folder, "output.blimp-out"), '\'\"'))
+                exitcode <- system(paste0('powershell -command \" & ', cmd, " | tee '", file.path(folder, "output.blimp-out"), '\'\"'))
                 result <- readLines(file.path(folder, "output.blimp-out"), skipNul = TRUE)[-1] # Remove NULL
                 result <- result[c(1, seq(0, length(result), 2))]
             } else {
