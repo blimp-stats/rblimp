@@ -123,7 +123,9 @@ detect_blimp <- function() {
         return(detect_blimp_macos(exec))
     } else if (grepl("linux", user_os)) {
         return(detect_blimp_linux(exec))
-    } else if (grepl("windows", user_os)) {
+    } else if (
+        grepl("windows", user_os) || grepl("ming32", user_os)
+    ) {
         return(detect_blimp_windows(paste0(exec, ".exe")))
     }
     stop("Unable to detect Operating System.")
