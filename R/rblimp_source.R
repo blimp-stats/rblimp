@@ -18,7 +18,7 @@ rblimp_source <- function(file,
     }
 
     # Set up exit code
-    exitcode <- NA
+    exitcode <- 0
 
     # Get dir from file
     folder <- dirname(file)
