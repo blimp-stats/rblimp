@@ -48,7 +48,7 @@ detect_blimp_linux <- function(exec) {
 detect_blimp_windows <- function(exec) {
 
     ## Try to find executable
-    output <- suppressWarnings(system(paste("where", exec), intern = T, ignore.stderr = T)[1])
+    output <- suppressWarnings(system(paste("where", exec), intern = T, ignore.stderr = T))
     if (length(output) != 0) {
         if (file.exists(output)) {
             return(output)
