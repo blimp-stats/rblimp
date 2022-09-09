@@ -58,12 +58,12 @@ detect_blimp_windows <- function(exec) {
     ## Otherwise search default locations
 
     #  Program Files in C directory
-    output <- paste0("C:\\Program Files\\Blimp", exec)
+    output <- paste0("C:\\Program Files\\Blimp\\", exec)
     if (file.exists(output)) {
         return(output)
     }
 
-    # Error out
+    # Error outs
     stop("Unable to find blimp executable.\n  Make sure blimp is installed.")
 }
 
