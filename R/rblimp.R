@@ -341,11 +341,11 @@ rblimp <- function(model,
 
     if (file.exists(file.path(tmpfolder, "imps.csv"))) {
         tmp <- read.csv(file.path(tmpfolder, "imps.csv"), header = T)
-        output$imputations <- split(tmp[, seq_len(ncol(data)) + 1], tmp[, 1])
-        output$predicted <- split(tmp[, endsWith(names(tmp), ".predicted")], tmp[, 1])
+        output$imputations <- split(tmp[, seq_len(ncol(data)) + 1, drop = F], tmp[, 1])
+        output$predicted <- split(tmp[, endsWith(names(tmp), ".predicted") | endsWith(names(tmp), ".probability"), drop = F], tmp[, 1])
         output$residuals <- split(tmp[, endsWith(names(tmp), ".residual") |
-            (endsWith(names(tmp), ".") & names(tmp) != "imp.")], tmp[, 1])
-        output$latent <- split(tmp[, endsWith(names(tmp), ".latent")], tmp[, 1])
+            (endsWith(names(tmp), ".") & names(tmp) != "imp."), drop = F], tmp[, 1])
+        output$latent <- split(tmp[, endsWith(names(tmp), ".latent"), drop = F], tmp[, 1])
     } else {
         output$predicted <- list()
         output$imputations <- list()
