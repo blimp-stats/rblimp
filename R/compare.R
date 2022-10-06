@@ -86,10 +86,10 @@ setMethod(
     "compare", signature(model = "blimp_obj", model0 = "blimp_obj"),
     function(model0, model, use = "mean", greaterThan = TRUE, suffixes =
                  c(
-                     "R2: Fixed Effects ", "R2: Level-2 Random Intercepts ",
-                     "R2: Level-2 Random Slopes ", "R2: Level-3 Random Slopes ",
-                     "R2: Level-3 Random Intercepts ", "R2: Residual Variation ",
-                     "R2: Level-1 Residual Variation "
+                     "R2: Coefficients", "R2: Level-2 Random Intercepts",
+                     "R2: Level-2 Random Slopes", "R2: Level-3 Random Slopes",
+                     "R2: Level-3 Random Intercepts", "R2: Residual Variation",
+                     "R2: Level-1 Residual Variation"
                  )) {
 
         # Loop over multiple uses if needed
