@@ -15,8 +15,9 @@ rblimp_fcs <- function(variables,
                        transform,
                        tmpfolder,
                        fixed,
+                       output,
                        syntax = FALSE,
-                       output = TRUE,
+                       print_output = TRUE,
                        nopowershell = FALSE) {
     return(rblimp(
         model = paste0(";FCS: ", paste(variables, collapse = " "), ";"),
@@ -39,8 +40,9 @@ rblimp_fcs <- function(variables,
         transform,
         tmpfolder,
         fixed,
-        syntax,
         output,
+        syntax,
+        print_output,
         nopowershell
     ))
 }
