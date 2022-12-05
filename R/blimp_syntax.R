@@ -68,6 +68,7 @@ blimp_syntax <- function(datapath,
                          thin,
                          nimps,
                          latent,
+                         randomeffect,
                          clusterid,
                          ordinal,
                          nominal,
@@ -89,6 +90,7 @@ blimp_syntax <- function(datapath,
     if (!missing(iter)) inputfile[[length(inputfile) + 1]] <- add_cmd("ITER: ", iter)
     if (!missing(nimps)) inputfile[[length(inputfile) + 1]] <- add_cmd("NIMPS: ", nimps)
     if (!missing(latent)) inputfile[[length(inputfile) + 1]] <- add_cmd("LATENT: ", latent)
+    if (!missing(randomeffect)) inputfile[[length(inputfile) + 1]] <- add_cmd("RANDOMEFFECT: ", randomeffect)
     inputfile[[length(inputfile) + 1]] <- add_cmd("MISSING: ", "NA")
     if (!missing(clusterid)) inputfile[[length(inputfile) + 1]] <- add_cmd("CLUSTERID: ", clusterid)
     if (!missing(ordinal)) inputfile[[length(inputfile) + 1]] <- add_cmd("ORDINAL: ", ordinal)

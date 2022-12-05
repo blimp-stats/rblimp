@@ -7,9 +7,9 @@ This is a wrapper to provide blimp funcitons in R. This will generate the input,
 }
 \usage{
     rblimp(model, data, burn = 1000, iter = 1000,
-        seed, thin,  nimps, latent,
-        clusterid, parameters, ordinal,
-        nominal, center, parameters,
+        seed, thin,  nimps, latent, randomeffect,
+        parameters, clusterid, ordinal,
+        nominal, center,
         chains, simple, waldtest,
         options, transform,
         tmpfolder, fixed,
@@ -26,6 +26,7 @@ This is a wrapper to provide blimp funcitons in R. This will generate the input,
 \item{thin}{  Number of thin}
 \item{nimps}{ Number of imputations}
 \item{latent}{ Any latent variables to be generated}
+\item{randomeffect}{Create random effect in data set}
 \item{parameters}{Any post-computed parameters to be saved}
 \item{clusterid}{ Cluster identifier variable}
 \item{ordinal}{ Ordinal variables}

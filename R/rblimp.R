@@ -16,6 +16,7 @@ rblimp <- function(model,
                    thin,
                    nimps,
                    latent,
+                   randomeffect,
                    parameters,
                    clusterid,
                    ordinal,
@@ -165,8 +166,8 @@ rblimp <- function(model,
     if (syntax) {
         impFile <- blimp_syntax(file.path(tmpfolder, "data.csv"), model,
             burn, seed, iter,
-            variables = names(data), thin, nimps, latent, clusterid,
-            ordinal, nominal, center, parameters, chains, simple,
+            variables = names(data), thin, nimps, latent, randomeffect,
+            clusterid, ordinal, nominal, center, parameters, chains, simple,
             waldtest, options, output, saveCmd, transform, fixed
         )
         return(impFile)
