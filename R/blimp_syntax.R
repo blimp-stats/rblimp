@@ -3,6 +3,7 @@
 
 # Adds a command
 add_cmd <- function(cmd, y, collapse = " ", use.names = FALSE) {
+    y <- format(y, scientific = FALSE)
     if (is.null(y)) {
         return("")
     }
