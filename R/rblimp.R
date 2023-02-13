@@ -158,6 +158,11 @@ rblimp <- function(model,
         nominal <- parse_formula(nominal)
     }
 
+    ## parse fixed
+    if (!missing(fixed) && is.formula(fixed)) {
+        fixed <- parse_formula(fixed)
+    }
+
     ## append to options
     if (missing(options)) options <- NULL
     options <- c(options, "savepred savelatent saveresid")
