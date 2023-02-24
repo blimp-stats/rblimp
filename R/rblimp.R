@@ -102,7 +102,7 @@ rblimp <- function(model,
     }
 
     # Parse center list
-    if (!missing(center) && is.list(center)) {
+    if (!missing(center) && (is.list(center) || is.vector(center))) {
         names(center) <- parse_names(center)
         center <- lapply(center, parse_formula)
         tmp1 <- NULL
@@ -111,7 +111,7 @@ rblimp <- function(model,
         tmp4 <- NULL
         if (!is.null(center$cwc)) {
             tmp1 <- "cwc = "
-            paste0(tmp1, tmp1 <- paste(center$cwc, collapse = " "))
+            tmp1 <- paste0(tmp1, tmp1 <- paste(center$cwc, collapse = " "))
         }
         if (!is.null(center$cgm)) {
             tmp2 <- "cgm = "
@@ -131,6 +131,8 @@ rblimp <- function(model,
             for (i in center_list) {
                 center <- paste0(center, i, "; ")
             }
+        } else {
+            center <- unlist(center)
         }
     }
     # Single formula
