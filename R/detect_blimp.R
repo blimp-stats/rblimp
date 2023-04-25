@@ -26,7 +26,10 @@ detect_blimp_macos <- function(exec) {
     }
 
     # Error out
-    stop("Unable to find blimp executable.\n  Make sure blimp is installed.")
+    throw_error(c(
+        "Unable to find blimp executable.",
+        "i" = "Make sure blimp is installed."
+    ))
 }
 
 # Find blimp on generic linux
@@ -41,7 +44,11 @@ detect_blimp_linux <- function(exec) {
     }
 
     # Error out
-    stop("Unable to find blimp executable.\n  Make sure blimp is installed and in PATH.")
+    throw_error(c(
+        "Unable to find blimp executable.",
+        "i" = "Make sure blimp is installed and in PATH."
+    ))
+
 }
 
 # Find blimp on windows
@@ -64,7 +71,10 @@ detect_blimp_windows <- function(exec) {
     }
 
     # Error outs
-    stop("Unable to find blimp executable.\n  Make sure blimp is installed.")
+    throw_error(c(
+        "Unable to find blimp executable.",
+        "i" = "Make sure blimp is installed."
+    ))
 }
 
 # rblimp env to store exec position location
@@ -74,7 +84,7 @@ rblimp.env$beta <- FALSE # Default no beta
 set_blimp_beta <- function(beta, ...) {
     if (!missing(beta)) {
         rblimp.env$beta <- beta
-        warning("Setting beta does not persist on exit.")
+        cli::cli_alert_warning("Setting beta does not persist on exit.")
         return(invisible(TRUE))
     }
     return(invisible(FALSE))
@@ -90,12 +100,13 @@ set_blimp <- function(exec, ...) {
         return(invisible(TRUE))
     }
     if (file.exists(exec)) {
-        warning("Setting executable does not persist on exit.")
+        cli::cli_alert_warning("Setting executable does not persist on exit.")
         rblimp.env$exec <- exec
         return(invisible(TRUE))
     }
 
-    stop("Unable to find supplied executable location.")
+    throw_error("Unable to find supplied executable location.")
+
 }
 
 
@@ -128,5 +139,5 @@ detect_blimp <- function() {
     ) {
         return(detect_blimp_windows(paste0(exec, ".exe")))
     }
-    stop("Unable to detect Operating System.")
+    throw_error("Unable to detect Operating System.")
 }

@@ -27,28 +27,18 @@ rblimp <- function(model,
                    waldtest,
                    options,
                    transform,
-                   tmpfolder,
                    fixed,
                    output,
-                   syntax = FALSE,
+                   tmpfolder,
                    print_output = TRUE,
                    nopowershell = FALSE) {
 
-    # Deal with some error handling
-    if (!is.data.frame(data)) {
-        stop("The data must be a data.frame.")
-    }
-    # Convert to character vector if list
-    if (is.list(model)) {
-        model <- as.character(model)
-    }
-    if (!is.character(model)) {
-        stop("The model must be a character string.")
-    }
+    # TODO Check burn, iter (remove defaults)
 
+    # Check output
     if (!is.logical(print_output)) {
         if (print_output != "all" & print_output != "none" & print_output != "iteration") {
-            stop(paste("Unrecognized 'output' choice:", print_output))
+            throw_error("Unrecognized {.arg output} choice: {print_output}")
         }
     } else {
         if (print_output) {
@@ -59,135 +49,67 @@ rblimp <- function(model,
     }
 
     # Get temp folder if needed
-    tmpdircreated <- FALSE
-    if (missing(tmpfolder) & !syntax) {
-        tmpdircreated <- TRUE
-        tmpfolder <- tempdir()
-    } else if (missing(tmpfolder)) tmpfolder <- "    "
+    if (missing(tmpfolder)) {
+        tmpfolder <- tempfile()
+        if (!dir.create(tmpfolder)) throw_error(
+            "Was unable to create temporary directory."
+        )
+    }
 
     # Write data to temp folder
-    if (!syntax) write.csv(data, file.path(tmpfolder, "data.csv"), row.names = F, quote = F)
-
-    # Create saveCommand
-    saveCmd <- vector('list', 4L)
-    saveCmd[[1]] <- paste0("estimates = ", file.path(tmpfolder, "estimates.csv"))
-    saveCmd[[2]] <- paste0("iterations = ", file.path(tmpfolder, "iter.csv"))
-    saveCmd[[3]] <- paste0("psr = ", file.path(tmpfolder, "psr.csv"))
-    saveCmd[[4]] <- paste0("avgimp = ", file.path(tmpfolder, "avgimp.csv"))
-    if (!missing(nimps)) saveCmd[[length(saveCmd) + 1]] <- paste0("stacked = ", file.path(tmpfolder, "imps.csv"))
-    if (rblimp.env$beta) saveCmd[[length(saveCmd) + 1]] <- paste0("varimp = ", file.path(tmpfolder, "varimp.csv"))
-
-    # Parse latent list
-    if (!missing(latent) && is.list(latent)) {
-        names(latent) <- parse_names(latent)
-        latent_list <- lapply(latent, parse_formula)
-        latent <- NULL
-        for (i in seq_along(latent_list)) {
-            tmp <- paste(latent_list[[i]], collapse = " ")
-            tmp_name <- names(latent_list[i])
-            if (!is.null(tmp_name)) {
-                if (tmp_name != "") tmp <- paste0(tmp_name, " = ", tmp)
-            }
-            latent <- paste0(latent, tmp, "; ")
-        }
-    }
-    # Single formula
-    else if (!missing(latent) && is.formula(latent)) {
-        name <- parse_names(list(latent))
-        form <- parse_formula(latent)
-        if (!is.null(name)) {
-            if (name != "") form <- paste0(name, " = ", form)
-        }
-        latent <- form
-    }
-
-    # Parse center list
-    if (!missing(center) && (is.list(center) || is.vector(center))) {
-        names(center) <- parse_names(center)
-        center <- lapply(center, parse_formula)
-        tmp1 <- NULL
-        tmp2 <- NULL
-        tmp3 <- NULL
-        tmp4 <- NULL
-        if (!is.null(center$cwc)) {
-            tmp1 <- "cwc = "
-            tmp1 <- paste0(tmp1, tmp1 <- paste(center$cwc, collapse = " "))
-        }
-        if (!is.null(center$cgm)) {
-            tmp2 <- "cgm = "
-            tmp2 <- paste0(tmp2, paste(center$cgm, collapse = " "))
-        }
-        if (!is.null(center$grandmean)) {
-            tmp3 <- "grandmean = "
-            tmp3 <- paste0(tmp3, paste(center$grandmean, collapse = " "))
-        }
-        if (!is.null(center$groupmean)) {
-            tmp4 <- "groupmean = "
-            tmp4 <- paste0(tmp4, paste(center$groupmean, collapse = " "))
-        }
-        center_list <- c(tmp1, tmp2, tmp3, tmp4)
-        if (!is.null(center_list)) {
-            center <- NULL
-            for (i in center_list) {
-                center <- paste0(center, i, "; ")
-            }
-        } else {
-            center <- unlist(center)
-        }
-    }
-    # Single formula
-    else if (!missing(center) && is.formula(center)) {
-        name <- parse_names(list(center))
-        form <- parse_formula(center)
-        if (!is.null(name)) {
-            if (name != "") form <- paste0(name, " = ", form)
-        }
-        center <- form
-    }
-
-    ## parse clusterid
-    if (!missing(clusterid) && is.formula(clusterid)) {
-        clusterid <- parse_formula(clusterid)
-    }
-
-    ## parse ordinal
-    if (!missing(ordinal) && is.formula(ordinal)) {
-        ordinal <- parse_formula(ordinal)
-    }
-
-    ## parse nominal
-    if (!missing(nominal) && is.formula(nominal)) {
-        nominal <- parse_formula(nominal)
-    }
-
-    ## parse fixed
-    if (!missing(fixed) && is.formula(fixed)) {
-        fixed <- parse_formula(fixed)
-    }
-
-    ## append to options
-    if (missing(options)) options <- NULL
-    options <- c(options, "savepred savelatent saveresid")
+    write.csv(data, file.path(tmpfolder, "data.csv"), row.names = F, quote = F)
 
     # Write input file
-    if (syntax) {
-        impFile <- blimp_syntax(file.path(tmpfolder, "data.csv"), model,
-            burn, seed, iter,
-            variables = names(data), thin, nimps, latent, randomeffect,
-            clusterid, ordinal, nominal, center, parameters, chains, simple,
-            waldtest, options, output, saveCmd, transform, fixed
-        )
-        return(impFile)
-    }
-    impFile <- blimp_syntax(file.path(tmpfolder, "data.csv"), model,
-        burn, seed, iter,
-        variables = NULL, thin, nimps, latent, randomeffect, clusterid,
-        ordinal, nominal, center, parameters, chains, simple,
-        waldtest, options, output, saveCmd, transform, fixed
+    imp_file <- rblimp_syntax(
+        model,
+        data,
+        burn,
+        iter,
+        seed,
+        thin,
+        nimps,
+        latent,
+        randomeffect,
+        parameters,
+        clusterid,
+        ordinal,
+        nominal,
+        transform,
+        fixed,
+        center,
+        chains,
+        simple,
+        waldtest,
+        options,
+        output
     )
+
+    # Change file path
+    imp_file$data <- file.path(tmpfolder, "data.csv")
+    # Remove variables
+    imp_file$variables <- NULL
+
+    # Write imp file
     fileConn <- file(file.path(tmpfolder, "input.imp"))
-    writeLines(impFile, fileConn)
+    writeLines(as.character(imp_file), fileConn)
     close(fileConn)
+
+    # Run File
+    result <- rblimp_source(
+        file.path(tmpfolder, "input.imp"),
+        plots = TRUE,
+        print_output,
+        nopowershell
+    )
+    exitcode <- attr(result, "exitcode")
+
+    # Check exit code
+    if (length(exitcode) == 1) {
+        if (exitcode == "1") {
+            if (missing(tmpfolder)) unlink(tmpfolder)
+            throw_error("Blimp had an error. Check output.")
+        }
+    }
 
     # Parse output to create header
     if (!missing(output)) {
@@ -234,18 +156,6 @@ rblimp <- function(model,
         }
     } else {
         output_header <- c("Median", "StdDev", "2.5%", "97.5%", "PSR", "N_Eff")
-    }
-
-    # Run File
-    result <- rblimp_source(file.path(tmpfolder, "input.imp"), plots = TRUE, print_output, nopowershell)
-    exitcode <- attr(result, "exitcode")
-
-    # Check exit code
-    if (length(exitcode) == 1) {
-        if (exitcode == "1") {
-            if (tmpdircreated) unlink(tmpfolder)
-            stop("Blimp had an error. Check output.")
-        }
     }
 
     # Read parameter labels
@@ -352,7 +262,7 @@ rblimp <- function(model,
         output$imputations <- split(tmp[, seq_len(ncol(data)) + 1, drop = F], tmp[, 1])
         output$predicted <- split(tmp[, endsWith(names(tmp), ".predicted") | endsWith(names(tmp), ".probability"), drop = F], tmp[, 1])
         output$residuals <- split(tmp[, endsWith(names(tmp), ".residual") |
-            (endsWith(names(tmp), ".") & names(tmp) != "imp."), drop = F], tmp[, 1])
+                                          (endsWith(names(tmp), ".") & names(tmp) != "imp."), drop = F], tmp[, 1])
         output$latent <- split(tmp[, endsWith(names(tmp), ".latent"), drop = F], tmp[, 1])
     } else {
         output$predicted <- list()
@@ -375,7 +285,7 @@ rblimp <- function(model,
     }
 
     # Delete temp files
-    if (tmpdircreated) unlink(tmpfolder)
+    if (missing(tmpfolder)) unlink(tmpfolder)
 
     # Return output
     return(

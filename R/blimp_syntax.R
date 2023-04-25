@@ -1,8 +1,160 @@
 ## Functions for parsing and generating blimp syntax
-# Copyright Brian Keller 2022, all rights reserved
+# Copyright Brian Keller 2023, all rights reserved
 
-# Adds a command
-add_cmd <- function(cmd, y, collapse = " ", use.names = FALSE) {
+
+#' Generates a syntax 'imp' file for blimp based on rblimp
+#' @export
+rblimp_syntax <- function(
+        model,
+        data,
+        burn,
+        iter,
+        seed,
+        thin,
+        nimps,
+        latent,
+        randomeffect,
+        parameters,
+        clusterid,
+        ordinal,
+        nominal,
+        transform,
+        fixed,
+        center,
+        chains,
+        simple,
+        waldtest,
+        options,
+        output) {
+
+    # Check if data.frame
+    if (!is.data.frame(data)) throw_error(
+        "The {.arg data} must be a data.frame"
+    )
+
+    # Convert to character vector if list
+    if (is.list(model)) {
+        model <- as.character(model)
+    }
+    if (!is.character(model)) throw_error(
+        "The {.arg model} must be a character string."
+    )
+
+    # Create saveCommand
+    # TODO create way to turn this off
+    saveCmd <- vector('list', 5L)
+    saveCmd[[1]] <- "estimates = estimates.csv"
+    saveCmd[[2]] <- "iterations = iter.csv"
+    saveCmd[[3]] <- "psr = psr.csv"
+    saveCmd[[4]] <- "avgimp = avgimp.csv"
+    saveCmd[[5]] <- "varimp = varimp.csv"
+    if (!missing(nimps)) saveCmd[[length(saveCmd) + 1]] <- "stacked = imps.csv"
+
+    # Parse latent list
+    if (!missing(latent) && is.list(latent)) {
+        names(latent) <- parse_names(latent)
+        latent_list <- lapply(latent, parse_formula)
+        latent <- NULL
+        for (i in seq_along(latent_list)) {
+            tmp <- paste(latent_list[[i]], collapse = " ")
+            tmp_name <- names(latent_list[i])
+            if (!is.null(tmp_name)) {
+                if (tmp_name != "") tmp <- paste0(tmp_name, " = ", tmp)
+            }
+            latent <- paste0(latent, tmp, "; ")
+        }
+    }
+    # Single formula
+    else if (!missing(latent) && is.formula(latent)) {
+        name <- parse_names(list(latent))
+        form <- parse_formula(latent)
+        if (!is.null(name)) {
+            if (name != "") form <- paste0(name, " = ", form)
+        }
+        latent <- form
+    }
+
+    # Parse center list
+    if (!missing(center) && (is.list(center) || is.vector(center))) {
+        names(center) <- parse_names(center)
+        center <- lapply(center, parse_formula)
+        center_list <- c(
+            # cwc
+            if (!is.null(center$cwc)) {
+                paste0("cwc = ", paste(center$cwc, collapse = " "))
+            } else NULL,
+            # cgm
+            if (!is.null(center$cgm)) {
+                paste0("cgm = ", paste(center$cgm, collapse = " "))
+            } else NULL,
+            # grandmean
+            if (!is.null(center$grandmean)) {
+                paste0("grandmean = ", paste(center$grandmean, collapse = " "))
+            } else NULL,
+            # groupmean
+            if (!is.null(center$groupmean)) {
+                paste0("groupmean = ", paste(center$groupmean, collapse = " "))
+            } else NULL
+        )
+        if (!is.null(center_list)) {
+            center <- NULL
+            for (i in center_list) {
+                center <- paste0(center, i, "; ")
+            }
+        } else {
+            center <- unlist(center)
+        }
+    }
+    # Single formula
+    else if (!missing(center) && is.formula(center)) {
+        name <- parse_names(list(center))
+        form <- parse_formula(center)
+        if (!is.null(name)) {
+            if (name != "") form <- paste0(name, " = ", form)
+        }
+        center <- form
+    }
+
+    ## parse clusterid
+    if (!missing(clusterid) && is.formula(clusterid)) {
+        clusterid <- parse_formula(clusterid)
+    }
+
+    ## parse ordinal
+    if (!missing(ordinal) && is.formula(ordinal)) {
+        ordinal <- parse_formula(ordinal)
+    }
+
+    ## parse nominal
+    if (!missing(nominal) && is.formula(nominal)) {
+        nominal <- parse_formula(nominal)
+    }
+
+    ## parse fixed
+    if (!missing(fixed) && is.formula(fixed)) {
+        fixed <- parse_formula(fixed)
+    }
+
+    ## append to options
+    if (missing(options)) options <- NULL
+
+    # TODO create way to turn this off
+    options <- c(options, "savepred savelatent saveresid")
+
+
+    # Return syntax file
+    make_syntax(
+        "data.csv", model,
+        burn, seed, iter, names(data),
+        thin, nimps, latent, randomeffect, clusterid,
+        ordinal, nominal, center, parameters, chains, simple,
+        waldtest, options, output, saveCmd, transform, fixed
+    )
+}
+
+#' parse a command to syntax
+#' @noRd
+parse_cmd <- function(y, collapse = " ", use.names = FALSE) {
     y <- format(y, scientific = FALSE)
     if (is.null(y)) {
         return("")
@@ -17,12 +169,13 @@ add_cmd <- function(cmd, y, collapse = " ", use.names = FALSE) {
             }
             return(paste0(x, ":"))
         })
-        return(paste0(cmd, paste(y_names, y, collapse = collapse)))
+        return(paste(y_names, y, collapse = collapse))
     }
-    return(paste0(cmd, paste(y, collapse = collapse)))
+    return(paste(y, collapse = collapse))
 }
 
-# Parse formula to blimp syntax
+#' Parse formula to blimp syntax
+#' @noRd
 parse_formula <- function(x) {
     # Check for formula
     if (!is.call(x) && x[[1]] != quote(`~`)) {
@@ -30,10 +183,12 @@ parse_formula <- function(x) {
     }
     return(paste(attr(terms(x), "term.labels"), collapse = " "))
 }
-## Check for formula
+#' Check for formula
+#' @noRd
 is.formula <- function(x) is.call(x) && x[[1]] == quote(`~`)
 
-## Get name from formula
+#' Get name from formula
+#' @noRd
 form_name <- function(x) {
     if (!is.formula(x)) {
         return("")
@@ -44,7 +199,8 @@ form_name <- function(x) {
     return(as.character(x[[2]]))
 }
 
-## Parse names
+#' Parse names
+#' @noRd
 parse_names <- function(x) {
     o <- vector("character", length(x))
     for (i in seq_along(x)) {
@@ -59,54 +215,76 @@ parse_names <- function(x) {
     return(o)
 }
 
-## Blimp Syntax generation
-blimp_syntax <- function(datapath,
-                         model,
-                         burn,
-                         seed,
-                         iter,
-                         variables,
-                         thin,
-                         nimps,
-                         latent,
-                         randomeffect,
-                         clusterid,
-                         ordinal,
-                         nominal,
-                         centering,
-                         parameters,
-                         chains,
-                         simple,
-                         waldtest,
-                         options,
-                         output,
-                         save,
-                         transform,
-                         fixed) {
+#' Internal Blimp Syntax generation
+#' @noRd
+make_syntax <- function(datapath,
+                        model,
+                        burn,
+                        seed,
+                        iter,
+                        variables,
+                        thin,
+                        nimps,
+                        latent,
+                        randomeffect,
+                        clusterid,
+                        ordinal,
+                        nominal,
+                        centering,
+                        parameters,
+                        chains,
+                        simple,
+                        waldtest,
+                        options,
+                        output,
+                        save,
+                        transform,
+                        fixed) {
     inputfile <- list()
-    if (!missing(datapath)) inputfile[[length(inputfile) + 1]] <- add_cmd("DATA: ", datapath)
-    if (!missing(burn)) inputfile[[length(inputfile) + 1]] <- add_cmd("BURN: ", burn)
-    if (!missing(thin)) inputfile[[length(inputfile) + 1]] <- add_cmd("THIN: ", thin)
-    if (!missing(seed)) inputfile[[length(inputfile) + 1]] <- add_cmd("SEED: ", seed)
-    if (!missing(iter)) inputfile[[length(inputfile) + 1]] <- add_cmd("ITER: ", iter)
-    if (!missing(nimps)) inputfile[[length(inputfile) + 1]] <- add_cmd("NIMPS: ", nimps)
-    if (!missing(latent)) inputfile[[length(inputfile) + 1]] <- add_cmd("LATENT: ", latent)
-    if (!missing(randomeffect)) inputfile[[length(inputfile) + 1]] <- add_cmd("RANDOMEFFECT: ", randomeffect)
-    inputfile[[length(inputfile) + 1]] <- add_cmd("MISSING: ", "NA")
-    if (!missing(clusterid)) inputfile[[length(inputfile) + 1]] <- add_cmd("CLUSTERID: ", clusterid)
-    if (!missing(ordinal)) inputfile[[length(inputfile) + 1]] <- add_cmd("ORDINAL: ", ordinal)
-    if (!missing(nominal)) inputfile[[length(inputfile) + 1]] <- add_cmd("NOMINAL: ", nominal)
-    if (!missing(model)) inputfile[[length(inputfile) + 1]] <- add_cmd("MODEL: ", model, ";\n    ", use.names = rblimp.env$beta)
-    if (!missing(parameters)) inputfile[[length(inputfile) + 1]] <- add_cmd("PARAMETERS: ", parameters, ";\n    ")
-    if (!missing(centering)) inputfile[[length(inputfile) + 1]] <- add_cmd("CENTER: ", centering)
-    if (!missing(chains)) inputfile[[length(inputfile) + 1]] <- add_cmd("CHAINS: ", chains)
-    if (!missing(fixed)) inputfile[[length(inputfile) + 1]] <- add_cmd("FIXED: ", fixed)
-    if (!missing(simple)) inputfile[[length(inputfile) + 1]] <- add_cmd("SIMPLE: ", simple, ";\n    ")
-    if (!missing(waldtest)) inputfile[[length(inputfile) + 1]] <- add_cmd("WALDTEST: ", waldtest, ";\n    ")
-    if (!missing(options)) inputfile[[length(inputfile) + 1]] <- add_cmd("OPTIONS: ", options)
-    if (!missing(output)) inputfile[[length(inputfile) + 1]] <- add_cmd("OUTPUT: ", output)
-    if (!missing(transform)) inputfile[[length(inputfile) + 1]] <- add_cmd("TRANSFORM: ", transform, ";\n    ")
-    if (!missing(save)) inputfile[[length(inputfile) + 1]] <- add_cmd("SAVE: ", save, ";\n    ")
+    if (!missing(datapath)) inputfile$data   <- parse_cmd(datapath)
+    if (!missing(variables)) {
+        if (!is.null(variables)) inputfile$variables <- parse_cmd(variables)
+    }
+    if (!missing(transform)) inputfile$transform <- parse_cmd(transform, collapse = ";\n    ")
+    if (!missing(burn))     inputfile$burn   <- parse_cmd(burn)
+    if (!missing(thin))     inputfile$thin   <- parse_cmd(thin)
+    if (!missing(seed))     inputfile$seed   <- parse_cmd(seed)
+    if (!missing(iter))     inputfile$iter   <- parse_cmd(iter)
+    if (!missing(nimps))    inputfile$nimps  <- parse_cmd(nimps)
+    if (!missing(latent))   inputfile$latent <- parse_cmd(latent)
+    if (!missing(randomeffect)) inputfile$randomeffect <- parse_cmd(randomeffect)
+    inputfile$missing <- parse_cmd("NA")
+    if (!missing(clusterid)) inputfile$clusterid <- parse_cmd(clusterid)
+    if (!missing(ordinal))   inputfile$ordinal   <- parse_cmd(ordinal)
+    if (!missing(nominal))   inputfile$nominal   <- parse_cmd(nominal)
+    if (!missing(centering)) inputfile$center    <- parse_cmd(centering)
+    if (!missing(fixed))     inputfile$fixed     <- parse_cmd(fixed)
+    if (!missing(model))     inputfile$model     <- parse_cmd(model, collapse = ";\n    ", use.names = TRUE)
+    if (!missing(parameters)) inputfile$parameters <- parse_cmd(parameters, collapse = ";\n    ")
+    if (!missing(chains)) inputfile$chains <- parse_cmd(chains)
+    if (!missing(simple)) inputfile$simple <- parse_cmd(simple, collapse = ";\n    ")
+    if (!missing(waldtest)) inputfile$waldtest <- parse_cmd(waldtest, collapse = ";\n    ")
+    if (!missing(options)) inputfile$options <- parse_cmd(options)
+    if (!missing(output)) inputfile$output <- parse_cmd(output)
+    if (!missing(save)) inputfile$save <- parse_cmd(save, collapse = ";\n    ")
     ## Return file
-    return(paste0(inputfile, collapse = ";\n"))
+    structure(
+        inputfile,
+        class = 'blimp_syntax'
+    )
 }
+
+#' Convert `blimp_syntax` to character vector
+#' @export
+as.character.blimp_syntax <- function(x, ...) {
+    paste0(toupper(names(x)), ': ', as.character.default(x), ';', collapse = "\n")
+}
+
+#' Print `blimp_syntax`
+#' @export
+print.blimp_syntax <- function(x, ...) {
+    cat(as.character(x))
+    invisible(x)
+}
+
+
