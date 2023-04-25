@@ -10,7 +10,7 @@ Authors@R:
 Maintainer: Brian T. Keller <blimp@utexas.edu>
 Description: Uses R language to run Blimp software for Bayesian latent variable modeling, missing data, and multiple imputation.
     Requires downloading Blimp from <https://www.appliedmissingdata.com/blimp>.
-License: LGPL-3
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Suggests: mitml
