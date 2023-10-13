@@ -4,9 +4,10 @@
 # Set S3 class generated from blimp_source
 setOldClass("blimp_out")
 
-#' @exportS3Method
+#' @export
 print.blimp_out <- function(x, ...) {
     cat(x, sep = "\n")
+    invisible(x)
 }
 
 #' @export
@@ -58,111 +59,158 @@ setMethod(
     }
 )
 
-# Need generics
-setGeneric("psr", function(object) {
-    stop(paste("Does not work with", class(object)))
-})
-setGeneric("algorithm", function(object) {
-    stop(paste("Does not work with", class(object)))
-})
-setGeneric("datainfo", function(object) {
-    stop(paste("Does not work with", class(object)))
-})
-setGeneric("modelinfo", function(object) {
-    stop(paste("Does not work with", class(object)))
-})
-setGeneric("waldtest", function(object) {
-    stop(paste("Does not work with", class(object)))
-})
-setGeneric("estimates", function(object) {
-    stop(paste("Does not work with", class(object)))
-})
-setGeneric("output", function(object) {
-    stop(paste("Does not work with", class(object)))
-})
+#' Internal validate `blimp_obj`
+#' @noRd
+is_blimp_obj <- function(x) {
+    inherits(x, 'blimp_obj')
+}
 
+#' Internal validate `blimp_out`
+#' @noRd
+is_blimp_out <- function(x) {
+    inherits(x, 'blimp_out')
+}
+
+#' Extract output (`blimp_out`) from `blimp_obj`
+#' @export
+output <- function(object) {
+    if (!is_blimp_obj(object)) throw_error(
+        "Object is not a {.cls blimp_obj}."
+    )
+    object@output
+}
+
+#' Extract POTENTIAL SCALE REDUCTION output from `blimp_obj` or `blimp_out`
+#' @export
+psr <- function(object) {
+    if (is_blimp_obj(object)) output <- output(object)
+    else if (is_blimp_out(object)) output <- object
+    else throw_error(
+        "Object is not a {.cls blimp_obj} or {.cls blimp_out}."
+    )
+    if (length(output) == 1) throw_error(c(
+        "Output was not saved",
+        "i" = "Set {.arg print = FALSE}.")
+    )
+    strt <- which(output %in% "BURN-IN POTENTIAL SCALE REDUCTION (PSR) OUTPUT:")
+    stop <- which(output %in% "DATA INFORMATION:")
+    if (length(start) == 0) throw_error("Could not find PSR. Make sure it was requested.")
+    if (length(stop) == 0) {
+        stop <- which(output %in% "ANALYSIS MODEL ESTIMATES:")
+    }
+    if (length(stop) == 0) {
+        stop <- which(output %in% "COVARIATE MODEL ESTIMATES:")
+    }
+    if (length(stop) == 0) throw_error("Could not find end of PSR.")
+    if (strt >= stop) throw_error("Could not parse PSR.")
+    return(output[strt:stop - 1])
+}
+
+
+#' Extract ALGORITHMIC OPTIONS output from `blimp_obj` or `blimp_out`
+#' @export
+algorithm <- function(object) {
+    if (is_blimp_obj(object)) output <- output(object)
+    else if (is_blimp_out(object)) output <- object
+    else throw_error(
+        "Object is not a {.cls blimp_obj} or {.cls blimp_out}."
+    )
+    if (length(output) == 1) throw_error(c(
+        "Output was not saved",
+        "i" = "Set {.arg print = FALSE}.")
+    )
+    strt <- which(output %in% "ALGORITHMIC OPTIONS SPECIFIED:")
+    stop <- which(output %in% "BURN-IN POTENTIAL SCALE REDUCTION (PSR) OUTPUT:")
+    if (length(start) == 0) throw_error("Could not find Algorithm options.")
+    if (length(stop) == 0) throw_error("Could not find end of Algorithm options.")
+    if (strt >= stop) throw_error("Could not parse Algorithm options.")
+    return(output[strt:stop - 1])
+}
+
+#' Extract DATA INFORMATION output from `blimp_obj` or `blimp_out`
+#' @export
+datainfo <- function(object) {
+    if (is_blimp_obj(object)) output <- output(object)
+    else if (is_blimp_out(object)) output <- object
+    else throw_error(
+        "Object is not a {.cls blimp_obj} or {.cls blimp_out}."
+    )
+    if (length(output) == 1) throw_error(c(
+        "Output was not saved",
+        "i" = "Set {.arg print = FALSE}.")
+    )
+    strt <- which(output %in% "DATA INFORMATION:")
+    stop <- which(output %in% "MODEL INFORMATION:")
+    if (length(start) == 0) throw_error("Could not find Data Information.")
+    if (length(stop) == 0) throw_error("Could not find end of Data Information.")
+    if (strt >= stop) throw_error("Could not parse Data Information.")
+    return(output[strt:stop - 1])
+}
+
+#' Extract MODEL INFORMATION from `blimp_obj` or `blimp_out`
+#' @export
+modelinfo <- function(object) {
+    if (is_blimp_obj(object)) output <- output(object)
+    else if (is_blimp_out(object)) output <- object
+    else throw_error(
+        "Object is not a {.cls blimp_obj} or {.cls blimp_out}."
+    )
+    if (length(output) == 1) throw_error(c(
+        "Output was not saved",
+        "i" = "Set {.arg print = FALSE}.")
+    )
+    strt <- which(output %in% "MODEL INFORMATION:")
+    stop <- which(output %in% "WARNING MESSAGES:")
+    if (length(start) == 0) throw_error("Could not find Model Information.")
+    if (length(stop) == 0) throw_error("Could not find end of Model Information.")
+    if (strt >= stop) throw_error("Could not parse Model Information.")
+    return(output[strt:stop - 1])
+}
 
 #' @export
-setMethod(
-    "psr", "blimp_obj",
-    function(object) {
-        if (length(object@output) == 1) stop("Output was not saved. Set print=FALSE.")
-        if (length(object@output) == 1) stop("Output was not saved. Set print=FALSE.")
-        strt <- which(object@output %in% "BURN-IN POTENTIAL SCALE REDUCTION (PSR) OUTPUT:")
-        stop <- which(object@output %in% "DATA INFORMATION:")
-        if (length(start) == 0) stop("Could not find PSR. Make sure it was requested.")
-        if (length(stop) == 0) {
-            stop <- which(object@output %in% "ANALYSIS MODEL ESTIMATES:")
-        }
-        if (length(stop) == 0) {
-            stop <- which(object@output %in% "COVARIATE MODEL ESTIMATES:")
-        }
-        if (length(stop) == 0) stop("Could not find end of PSR.")
-        if (strt >= stop) stop("Could not parse PSR.")
-        return(object@output[strt:stop - 1])
-    }
-)
+modelfit <- function(object) {
+    if (is_blimp_obj(object)) output <- output(object)
+    else if (is_blimp_out(object)) output <- object
+    else throw_error(
+        "Object is not a {.cls blimp_obj} or {.cls blimp_out}."
+    )
+    if (length(output) == 1) throw_error(c(
+        "Output was not saved",
+        "i" = "Set {.arg print = FALSE}.")
+    )
+    strt <- which(output %in% "MODEL FIT:")
+    stop <- which(output %in% "OUTCOME MODEL ESTIMATES:")
+    if (length(start) == 0) throw_error("Could not find MODEL FIT")
+    if (length(stop) == 0) stop <- length(output)
+    if (strt >= stop) throw_error("Could not parse MODEL FIT")
+    return(output[strt:stop - 1])
+}
 
+#' Obtain MODEL ESTIMATES from `blimp_obj` or `blimp_out`
 #' @export
-setMethod(
-    "algorithm", "blimp_obj",
-    function(object) {
-        if (length(object@output) == 1) stop("Output was not saved. Set print=FALSE.")
-        if (length(object@output) == 1) stop("Output was not saved. Set print=FALSE.")
-        strt <- which(object@output %in% "ALGORITHMIC OPTIONS SPECIFIED:")
-        stop <- which(object@output %in% "BURN-IN POTENTIAL SCALE REDUCTION (PSR) OUTPUT:")
-        if (length(start) == 0) stop("Could not find Algorithm options.")
-        if (length(stop) == 0) stop("Could not find end of Algorithm options.")
-        if (strt >= stop) stop("Could not parse Algorithm options.")
-        return(object@output[strt:stop - 1])
+estimates <- function(object) {
+    if (is_blimp_obj(object)) output <- output(object)
+    else if (is_blimp_out(object)) output <- object
+    else throw_error(
+        "Object is not a {.cls blimp_obj} or {.cls blimp_out}."
+    )
+    if (length(output) == 1) throw_error(c(
+        "Output was not saved",
+        "i" = "Set {.arg print = FALSE}.")
+    )
+    start <- which(output %in% "OUTCOME MODEL ESTIMATES:")
+    if (length(start) == 0) start <- which(output %in% "PREDICTOR MODEL ESTIMATES:")
+    if (length(start) == 0) throw_error("Could not find Analysis model.")
+    stop <- which(output %in% "VARIABLE ORDER IN IMPUTED DATA:")
+    if (length(stop) == 0) {
+        stop <- which(output %in% "VARIABLE ORDER IN IMPUTED DATA:")
     }
-)
+    if (length(stop) == 0) stop <- length(output)
+    if (strt >= stop) throw_error("Could not parse Analysis Model output.")
+    return(output[strt:stop - 1])
+}
 
-#' @export
-setMethod(
-    "datainfo", "blimp_obj",
-    function(object) {
-        if (length(object@output) == 1) stop("Output was not saved. Set print=FALSE.")
-        if (length(object@output) == 1) stop("Output was not saved. Set print=FALSE.")
-        strt <- which(object@output %in% "DATA INFORMATION:")
-        stop <- which(object@output %in% "MODEL INFORMATION:")
-        if (length(start) == 0) stop("Could not find Data Information.")
-        if (length(stop) == 0) stop("Could not find end of Data Information.")
-        if (strt >= stop) stop("Could not parse Data Information.")
-        return(object@output[strt:stop - 1])
-    }
-)
-
-#' @export
-setMethod(
-    "modelinfo", "blimp_obj",
-    function(object) {
-        if (length(object@output) == 1) stop("Output was not saved. Set print=FALSE.")
-        if (length(object@output) == 1) stop("Output was not saved. Set print=FALSE.")
-        strt <- which(object@output %in% "MODEL INFORMATION:")
-        stop <- which(object@output %in% "WARNING MESSAGES:")
-        if (length(start) == 0) stop("Could not find Model Information.")
-        if (length(stop) == 0) stop("Could not find end of Model Information.")
-        if (strt >= stop) stop("Could not parse Model Information.")
-        return(object@output[strt:stop - 1])
-    }
-)
-
-#' @export
-setMethod(
-    "waldtest", "blimp_obj",
-    function(object) {
-        if (length(object@output) == 1) stop("Output was not saved. Set print=FALSE.")
-        if (length(object@output) == 1) stop("Output was not saved. Set print=FALSE.")
-        strt <- which(object@output %in% "MODEL FIT:")
-        stop <- which(object@output %in% "VARIABLE ORDER IN IMPUTED DATA:")
-        if (length(start) == 0) stop("Could not find Model Fit.")
-        if (length(stop) == 0) stop <- length(object@output)
-        if (strt >= stop) stop("Could not parse Model Fit.")
-        return(object@output[strt:stop - 1])
-    }
-)
-
+#' Residuals scores from `blimp_obj`
 #' @export
 setMethod(
     "residuals", "blimp_obj",
@@ -171,6 +219,7 @@ setMethod(
     }
 )
 
+#' Predicted scores from `blimp_obj`
 #' @export
 setMethod(
     "predict", "blimp_obj",
@@ -180,14 +229,15 @@ setMethod(
 )
 
 
-# Create Traceplot
+#' Internal function to Create Traceplots
+#' @noRd
 create_traceplot <- function(x, colors = NULL, ...) {
     # Check colors
     if (is.null(colors)) {
         colors <- seq_along(x$data)
     } else {
         if (length(colors) != length(x$data)) {
-            stop(paste0("colors must be length of number of chains (", length(x$data), ")"))
+            throw_error("colors must be length of number of chains ({length(x$data)})")
         }
     }
     for (i in seq_along(x$data)) {
@@ -199,13 +249,14 @@ create_traceplot <- function(x, colors = NULL, ...) {
     }
 }
 
+#' Create Traceplots for `blimp_obj`
 #' @export
 setMethod(
     "plot", "blimp_obj",
     function(x, y, colors = NULL, ...) {
         mydata <- do.call("rbind", x@burn)
         if (missing(y)) {
-            out <- traceplot(x)
+            out <- traceplots(x)
             for (i in seq_along(out)) {
                 plot(out[[i]], colors = colors, ...)
                 invisible(
@@ -216,63 +267,28 @@ setMethod(
             }
             return(invisible(out))
         } else if (length(y) > 0 & is.numeric(y)) {
-            return(plot(traceplot(x, y), colors = colors, ...))
+            return(plot(traceplots(x, y), colors = colors, ...))
         }
-        stop("ERROR")
+        throw_error("Unable to create plots.")
     }
 )
 
 
+
+#' Coerces a `blimp_obj` to a `mitml.list`
 #' @export
-setMethod(
-    "estimates", "blimp_obj",
-    function(object) {
-        if (length(object@output) == 1) stop("Output was not saved. Set print=FALSE.")
-        if (length(object@output) == 1) stop("Output was not saved. Set print=FALSE.")
-        strt <- which(object@output %in% "OUTCOME MODEL ESTIMATES:")
-        if (length(start) == 0) {
-            strt <- which(object@output %in% "PREDICTOR MODEL ESTIMATES:")
-        }
-        if (length(start) == 0) stop("Could not find Analysis model.")
-        stop <- which(object@output %in% "MODEL FIT:")
-        if (length(stop) == 0) {
-            stop <- which(object@output %in% "VARIABLE ORDER IN IMPUTED DATA:")
-        }
-        if (length(stop) == 0) stop <- length(object@output)
-        if (strt >= stop) stop("Could not parse Analysis Model output.")
-        return(object@output[strt:stop - 1])
-    }
-)
-
-#' @export
-setMethod(
-    "output", "blimp_obj",
-    function(object) {
-        return(object@output)
-    }
-)
+as.mitml <-  function(x) {
+    if (!is_blimp_obj(object)) throw_error(
+        "Object is not a {.cls blimp_obj}."
+    )
+    o <- x@imputations
+    if (length(o) == 0) throw_error("No imputations were requested.")
+    class(o) <- c("mitml.list", class(x@imputations))
+    return(o)
+}
 
 
-#' @export
-setGeneric("as.mitml", function(x) {
-    if (!requireNamespace("mitml", quietly = TRUE)) {
-        stop("Package \"mitml\" must be installed to use this function.")
-    }
-    return(mitml::as.mitml.list(x))
-})
-
-#' @export
-setMethod(
-    "as.mitml", "blimp_obj",
-    function(x) {
-        o <- x@imputations
-        if (length(o) == 0) stop("No imputations were requested.")
-        class(o) <- c("mitml.list", class(x@imputations))
-        return(o)
-    }
-)
-
-
+#' Fit Model across imputations with `mitml` package
 #' @export
 setMethod(
     "with", "blimp_obj",

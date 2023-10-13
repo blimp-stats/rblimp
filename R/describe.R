@@ -30,8 +30,12 @@ se <- function(model) {
 }
 
 
-# wickham's histospark
-# https://github.com/hadley/describe/blob/master/R/histospark.R
+#' Wickham's Histospark
+#' @details
+#' <https://github.com/hadley/precis/blob/master/R/histospark.R>
+#' Copyright Hadley Wickham 2016
+#' Released under GPL-3
+#' @noRd
 sparks <- c("\u2581", "\u2582", "\u2583", "\u2585", "\u2587")
 histospark <- function(x, width = 10) {
     if (all(is.na(x))) {

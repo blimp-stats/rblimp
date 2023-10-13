@@ -32,7 +32,6 @@ rblimp <- function(model,
                    tmpfolder,
                    print_output = TRUE,
                    nopowershell = FALSE) {
-
     # TODO Check burn, iter (remove defaults)
 
     # Check output
@@ -149,7 +148,7 @@ rblimp <- function(model,
                 } else if (s == "mcmcse" | s == "mcmc_se") {
                     col_name <- "MCMC_SE"
                 } else {
-                    stop(paste("Could not pasre OUTPUT command:", output))
+                    throw_error("Could not pasre OUTPUT command: {output}")
                 }
                 output_header <- c(output_header, col_name)
             }
@@ -262,7 +261,7 @@ rblimp <- function(model,
         output$imputations <- split(tmp[, seq_len(ncol(data)) + 1, drop = F], tmp[, 1])
         output$predicted <- split(tmp[, endsWith(names(tmp), ".predicted") | endsWith(names(tmp), ".probability"), drop = F], tmp[, 1])
         output$residuals <- split(tmp[, endsWith(names(tmp), ".residual") |
-                                          (endsWith(names(tmp), ".") & names(tmp) != "imp."), drop = F], tmp[, 1])
+            (endsWith(names(tmp), ".") & names(tmp) != "imp."), drop = F], tmp[, 1])
         output$latent <- split(tmp[, endsWith(names(tmp), ".latent"), drop = F], tmp[, 1])
     } else {
         output$predicted <- list()

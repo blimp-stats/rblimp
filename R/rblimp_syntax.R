@@ -32,10 +32,11 @@ rblimp_syntax <- function(
         "The {.arg data} must be a data.frame"
     )
 
-    # Convert to character vector if list
+    # Flatten to a list
     if (is.list(model)) {
-        model <- as.character(model)
+        model <- rapply(model, paste0, collapse ='; ')
     }
+    # Make sure it is a character vector
     if (!is.character(model)) throw_error(
         "The {.arg model} must be a character string."
     )

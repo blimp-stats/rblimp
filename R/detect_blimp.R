@@ -1,8 +1,7 @@
 
-
-# Find blimp on macOS
+#' Internal function to find blimp on macOS
+#' @noRd
 detect_blimp_macos <- function(exec) {
-
     ## Try to find executable
     output <- suppressWarnings(system(paste("which", exec), intern = T, ignore.stderr = T)[1])
     if (length(output) != 0) {
@@ -32,9 +31,9 @@ detect_blimp_macos <- function(exec) {
     ))
 }
 
-# Find blimp on generic linux
+#' Internal function to find blimp on generic linux
+#' @noRd
 detect_blimp_linux <- function(exec) {
-
     ## Try to find executable
     output <- suppressWarnings(system(paste("which", exec), intern = T, ignore.stderr = T)[1])
     if (length(output) != 0) {
@@ -48,12 +47,11 @@ detect_blimp_linux <- function(exec) {
         "Unable to find blimp executable.",
         "i" = "Make sure blimp is installed and in PATH."
     ))
-
 }
 
-# Find blimp on windows
+#' Internal function to find blimp on windows
+#' @noRd
 detect_blimp_windows <- function(exec) {
-
     ## Try to find executable
     output <- suppressWarnings(system(paste("where", exec), intern = T, ignore.stderr = T))
     if (length(output) != 0) {
@@ -81,37 +79,34 @@ detect_blimp_windows <- function(exec) {
 rblimp.env <- new.env(parent = emptyenv())
 rblimp.env$beta <- FALSE # Default no beta
 
-set_blimp_beta <- function(beta, ...) {
-    if (!missing(beta)) {
-        rblimp.env$beta <- beta
-        cli::cli_alert_warning("Setting beta does not persist on exit.")
-        return(invisible(TRUE))
-    }
-    return(invisible(FALSE))
+#' Internal function to set beta version of blimp
+set_blimp_beta <- function() {
+    rblimp.env$beta <- TRUE
+    cli::cli_alert_warning("Setting beta does not persist on exit.")
 }
 
-# Set Blimp Executable
+#' Set Blimp Executable
 #' @export
-set_blimp <- function(exec, ...) {
+set_blimp <- function(exec, beta = FALSE) {
     if (missing(exec) || is.null(exec)) {
-        if (!set_blimp_beta(...)) {
-            rblimp.env$exec <- NULL
-        }
+        if (beta) set_blimp_beta()
+        else  rblimp.env$exec <- NULL
         return(invisible(TRUE))
     }
-    if (file.exists(exec)) {
-        cli::cli_alert_warning("Setting executable does not persist on exit.")
-        rblimp.env$exec <- exec
-        return(invisible(TRUE))
-    }
+    # Check if file exists and error it it doesn't
+    if (!file.exists(exec)) throw_error(
+        "Unable to find supplied executable location."
+    )
 
-    throw_error("Unable to find supplied executable location.")
-
+    # Set exec and return true
+    cli::cli_alert_warning("Setting executable does not persist on exit.")
+    rblimp.env$exec <- exec
+    invisible(TRUE)
 }
 
 
 
-# Detect blimp generic
+#' Detect blimp location for conditional on operating system
 #' @export
 detect_blimp <- function() {
     # Return any set executable

@@ -86,7 +86,7 @@ setMethod("show", "blimp_tp", function(object) {
     plot.blimp_tp(object)
 })
 
-# Generate traceplot objects
+# Generate traceplot for burn-in
 #' @export
 traceplots <- function(object, param) {
     if (missing(param)) {

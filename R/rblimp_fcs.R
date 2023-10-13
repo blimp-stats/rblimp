@@ -16,9 +16,9 @@ rblimp_fcs <- function(variables,
                        tmpfolder,
                        fixed,
                        output,
-                       syntax = FALSE,
                        print_output = TRUE,
                        nopowershell = FALSE) {
+    # TODO Remove default `burn` and `iter`
 
     return(rblimp(
         model = paste0(";FCS: ", paste(variables, collapse = " "), ";"),
@@ -37,9 +37,7 @@ rblimp_fcs <- function(variables,
         tmpfolder = tmpfolder,
         fixed = fixed,
         output = output,
-        syntax = syntax,
         print_output = print_output,
         nopowershell = nopowershell
     ))
-
 }

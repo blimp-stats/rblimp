@@ -1,21 +1,32 @@
 Package: rblimp
 Type: Package
 Title: Integration of Blimp Software into R
-Version: 0.1.22
+Version: 0.1.23
 Authors@R: 
     person(given = "Brian",
            family = "Keller",
            role = c("aut", "cre", "cph"),
            email = "bk@utexas.edu")
 Maintainer: Brian T. Keller <blimp@utexas.edu>
-Description: An R inerface to run Blimp software for Bayesian latent variable modeling, missing data, and multiple imputation.
-    Requires downloading Blimp from <https://www.appliedmissingdata.com/blimp>.
+Description:
+    An R inerface to run Blimp software for Bayesian latent variable modeling,
+    missing data, and multiple imputation.
+    Specifically, this package provides for generating Blimp syntax, running Blimp models,
+    and reading output into R.
+    This package requires downloading Blimp from <https://www.appliedmissingdata.com/blimp>
+    in order to run the models.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
+Depends:
+    R (>= 4.0.0)
 Imports:
     cli,
     methods
 Suggests:
     mitml
+Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
+URL: https://github.com/blimp-stats/rblimp
+BugReports: https://github.com/blimp-stats/rblimp/issues
+

@@ -1,5 +1,4 @@
 ## Compares Models
-# Not a true qq plot, but easier to understand
 # Copyright Brian Keller 2022, all rights reserved
 #' @export
 setGeneric("compare", function(model0, model, use = "mean", greaterThan = TRUE, suffixes =
@@ -31,7 +30,6 @@ setMethod(
 
 # Get Value
 get_value <- function(x, use) {
-
     # Parse character
     if (is.character(use)) {
         if (use == "mean") {
@@ -57,7 +55,6 @@ get_value <- function(x, use) {
 
 # Wrapper to compare
 model_compare_wrapper <- function(suffix, model, model0, use, greaterThan) {
-
     # Get names
     mname0 <- names(model0@iterations)
     mnames <- names(model@iterations)[endsWith(rownames(model@estimates), suffix)]
@@ -91,7 +88,6 @@ setMethod(
                      "R2: Level-3 Random Intercepts", "R2: Residual Variation",
                      "R2: Level-1 Residual Variation"
                  )) {
-
         # Loop over multiple uses if needed
         old_use_function_name <- deparse(substitute(use))
         use <- c(use)

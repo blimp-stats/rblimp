@@ -1,9 +1,10 @@
-# Source imp file
+#' Source imp file
 #' @export
-rblimp_source <- function(file,
-                          plots = FALSE,
-                          output = TRUE,
-                          nopowershell = FALSE) {
+rblimp_source <- function(
+        file,
+        plots = FALSE,
+        output = TRUE,
+        nopowershell = FALSE) {
 
     # Establish blimp exec
     blimp_path <- detect_blimp()
@@ -39,7 +40,7 @@ rblimp_source <- function(file,
             exitcode <- system(paste0(cmd, "| tee ", file.path(folder, "output.blimp-out")))
         } else {
             exitcode <- system(paste(cmd, "--output", file.path(folder, "output.blimp-out")),
-                ignore.stdout = output == "none"
+                               ignore.stdout = output == "none"
             )
         }
         result <- readLines(file.path(folder, "output.blimp-out"))
@@ -53,7 +54,7 @@ rblimp_source <- function(file,
                 result <- result[c(1, seq(0, length(result), 2))]
             } else {
                 exitcode <- shell(paste(cmd, "--output", file.path(folder, "output.blimp-out")),
-                    ignore.stdout = output == "none"
+                                  ignore.stdout = output == "none"
                 )
                 result <- readLines(file.path(folder, "output.blimp-out"))
             }
