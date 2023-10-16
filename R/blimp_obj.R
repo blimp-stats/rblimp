@@ -277,13 +277,13 @@ setMethod(
 
 #' Coerces a `blimp_obj` to a `mitml.list`
 #' @export
-as.mitml <-  function(x) {
+as.mitml <- function(object) {
     if (!is_blimp_obj(object)) throw_error(
         "Object is not a {.cls blimp_obj}."
     )
-    o <- x@imputations
+    o <- object@imputations
     if (length(o) == 0) throw_error("No imputations were requested.")
-    class(o) <- c("mitml.list", class(x@imputations))
+    class(o) <- c("mitml.list", class(object@imputations))
     return(o)
 }
 
