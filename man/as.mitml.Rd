@@ -4,7 +4,7 @@
 \alias{as.mitml}
 \title{Coerces a \code{blimp_obj} to a \code{mitml.list}}
 \usage{
-as.mitml(x)
+as.mitml(object)
 }
 \description{
 Coerces a \code{blimp_obj} to a \code{mitml.list}
