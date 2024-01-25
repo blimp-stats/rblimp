@@ -147,8 +147,12 @@ rblimp <- function(model,
                     col_name <- "N_Eff"
                 } else if (s == "mcmcse" | s == "mcmc_se") {
                     col_name <- "MCMC_SE"
+                } else if (s == "wald" | s == "waldtest") {
+                    col_name <- "Wald"
+                } else if (s == "pvalue" | s == "p-value") {
+                    col_name <- "p-value"
                 } else {
-                    throw_error("Could not pasre OUTPUT command: {output}")
+                    throw_error("Could not parse OUTPUT command: {output}")
                 }
                 output_header <- c(output_header, col_name)
             }
