@@ -32,10 +32,16 @@ rblimp_syntax <- function(
         "The {.arg data} must be a data.frame"
     )
 
-    # Flatten to a list
+    # Flatten model
     if (is.list(model)) {
         model <- rapply(model, paste0, collapse ='; ')
     }
+
+    # Flatten waldtest
+    if (!missing(waldtest) && is.list(waldtest)) {
+        waldtest <- rapply(tmp, paste0, collapse =';\n          ')
+    }
+
     # Make sure it is a character vector
     if (!is.character(model)) throw_error(
         "The {.arg model} must be a character string."
@@ -156,7 +162,7 @@ rblimp_syntax <- function(
 #' parse a command to syntax
 #' @noRd
 parse_cmd <- function(y, collapse = " ", use.names = FALSE) {
-    y <- format(y, scientific = FALSE)
+    y <- format(y, scientific = FALSE, justify = "none")
     if (is.null(y)) {
         return("")
     }
@@ -264,7 +270,10 @@ make_syntax <- function(datapath,
     if (!missing(parameters)) inputfile$parameters <- parse_cmd(parameters, collapse = ";\n    ")
     if (!missing(chains)) inputfile$chains <- parse_cmd(chains)
     if (!missing(simple)) inputfile$simple <- parse_cmd(simple, collapse = ";\n    ")
-    if (!missing(waldtest)) inputfile$waldtest <- parse_cmd(waldtest, collapse = ";\n    ")
+    if (!missing(waldtest)) {
+        if (length(waldtest) > 1) names(waldtest) <- c('', rep('WALDTEST', length(waldtest) - 1))
+        inputfile$waldtest <- parse_cmd(waldtest, collapse = ";\n", use.names = T)
+    }
     if (!missing(options)) inputfile$options <- parse_cmd(options)
     if (!missing(output)) inputfile$output <- parse_cmd(output)
     if (!missing(save)) inputfile$save <- parse_cmd(save, collapse = ";\n    ")
