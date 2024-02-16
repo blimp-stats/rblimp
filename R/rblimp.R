@@ -110,57 +110,6 @@ rblimp <- function(model,
         }
     }
 
-    # Parse output to create header
-    if (!missing(output)) {
-        tmp <- tolower(output) # Convert to lower case
-        tmp <- do.call("c", strsplit(tmp, ";|\\s")) # Split by space  or semicolon
-
-        if ("default" %in% tmp) {
-            output_header <- c("Median", "StdDev", "2.5%", "97.5%", "PSR", "N_Eff")
-        } else if ("default_median" %in% tmp) {
-            output_header <- c("Median", "MAD SD", "2.5%", "97.5%", "PSR", "N_Eff")
-        } else if ("default_mean" %in% tmp) {
-            output_header <- c("Mean", "StdDev", "2.5%", "97.5%", "PSR", "N_Eff")
-        } else {
-            output_header <- character()
-            for (s in tmp) {
-                if (s == "") {
-                    next
-                } # skip empty
-                else if (s == "mean") {
-                    col_name <- "Mean"
-                } else if (s == "median") {
-                    col_name <- "Median"
-                } else if (s == "madsd" | s == "mad_sd" | s == "mad") {
-                    col_name <- "MAD SD"
-                } else if (s == "stddev" | s == "sd") {
-                    col_name <- "StdDev"
-                } else if (s == "q95" | s == "quant95") {
-                    col_name <- c("2.5%", "97.5%")
-                } else if (s == "q50" | s == "quant50") {
-                    col_name <- c("25%", "75%")
-                } else if (s == "quantiles" | s == "quantile" | s == "quant") {
-                    col_name <- c("2.5%", "25%", "50%", "75%", "97.5%")
-                } else if (s == "psr") {
-                    col_name <- "PSR"
-                } else if (s == "n_eff" | s == "ess" | s == "neff") {
-                    col_name <- "N_Eff"
-                } else if (s == "mcmcse" | s == "mcmc_se") {
-                    col_name <- "MCMC_SE"
-                } else if (s == "wald" | s == "waldtest") {
-                    col_name <- "Wald"
-                } else if (s == "pvalue" | s == "p-value") {
-                    col_name <- "p-value"
-                } else {
-                    throw_error("Could not parse OUTPUT command: {output}")
-                }
-                output_header <- c(output_header, col_name)
-            }
-        }
-    } else {
-        output_header <- c("Median", "StdDev", "2.5%", "97.5%", "PSR", "N_Eff")
-    }
-
     # Read parameter labels
     # parse labels file and create figure titles
     lab2 <- lab <- read.table(file.path(tmpfolder, "plots", "labels.dat"))[-1, ]
@@ -240,8 +189,7 @@ rblimp <- function(model,
 
     # Read data in
     output <- list()
-    output$estimates <- as.matrix(read.csv(file.path(tmpfolder, "estimates.csv"), header = F))
-    colnames(output$estimates) <- output_header
+    output$estimates <- as.matrix(read.csv(file.path(tmpfolder, "estimates.csv"), header = T))
     rownames(output$estimates) <- trimws(lab_row_names)
     output$iterations <- read.csv(file.path(tmpfolder, "iter.csv"), header = F)
     names(output$iterations) <- lab_names
