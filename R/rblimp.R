@@ -58,6 +58,17 @@ rblimp <- function(model,
     # Write data to temp folder
     write.csv(data, file.path(tmpfolder, "data.csv"), row.names = F, quote = F)
 
+    # Create saveCommand
+    # TODO create way to turn this off
+    saveCmd <- vector('list', 5L)
+    saveCmd[[1]] <- "estimates = estimates.csv"
+    saveCmd[[2]] <- "iterations = iter.csv"
+    saveCmd[[3]] <- "psr = psr.csv"
+    saveCmd[[4]] <- "avgimp = avgimp.csv"
+    saveCmd[[5]] <- "varimp = varimp.csv"
+    if (!missing(nimps)) saveCmd[[length(saveCmd) + 1]] <- "stacked = imps.csv"
+    if (!missing(waldtest)) saveCmd[[length(saveCmd) + 1]] <- "waldtest = waldtest.csv"
+
     # Write input file
     imp_file <- rblimp_syntax(
         model,
@@ -80,6 +91,7 @@ rblimp <- function(model,
         simple,
         waldtest,
         options,
+        saveCmd,
         output
     )
 
@@ -222,6 +234,13 @@ rblimp <- function(model,
         output$residuals <- list()
     }
 
+    # Waldtest
+    if (file.exists(file.path(tmpfolder, "waldtest.csv"))) {
+        output$waldtest <- read.csv(file.path(tmpfolder, "waldtest.csv"), header = T)
+    } else {
+        output$waldtest <- list()
+    }
+
     # Get average imputation
     if (file.exists(file.path(tmpfolder, "avgimp.csv"))) {
         output$average_imp <- read.csv(file.path(tmpfolder, "avgimp.csv"), header = T)
@@ -244,7 +263,8 @@ rblimp <- function(model,
             call = match.call(), estimates = output$estimates, burn = output$burn, iterations = output$iterations,
             psr = output$psr, imputations = output$imputations, average_imp = output$average_imp,
             variance_imp = output$variance_imp, latent = output$latent, residuals = output$residuals,
-            predicted = output$predicted, output = result
+            predicted = output$predicted,  waldtest = output$waldtest,
+            syntax = imp_file, output = result
         )
     )
 }

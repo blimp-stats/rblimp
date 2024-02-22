@@ -25,6 +25,7 @@ rblimp_syntax <- function(
         simple,
         waldtest,
         options,
+        save,
         output) {
 
     # Check if data.frame
@@ -46,16 +47,6 @@ rblimp_syntax <- function(
     if (!is.character(model)) throw_error(
         "The {.arg model} must be a character string."
     )
-
-    # Create saveCommand
-    # TODO create way to turn this off
-    saveCmd <- vector('list', 5L)
-    saveCmd[[1]] <- "estimates = estimates.csv"
-    saveCmd[[2]] <- "iterations = iter.csv"
-    saveCmd[[3]] <- "psr = psr.csv"
-    saveCmd[[4]] <- "avgimp = avgimp.csv"
-    saveCmd[[5]] <- "varimp = varimp.csv"
-    if (!missing(nimps)) saveCmd[[length(saveCmd) + 1]] <- "stacked = imps.csv"
 
     # Parse latent list
     if (!missing(latent) && is.list(latent)) {
@@ -155,7 +146,7 @@ rblimp_syntax <- function(
         burn, seed, iter, names(data),
         thin, nimps, latent, randomeffect, clusterid,
         ordinal, nominal, center, parameters, chains, simple,
-        waldtest, options, output, saveCmd, transform, fixed
+        waldtest, options, output, save, transform, fixed
     )
 }
 

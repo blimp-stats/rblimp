@@ -3,6 +3,7 @@
 
 # Set S3 class generated from blimp_source
 setOldClass("blimp_out")
+setOldClass("blimp_syntax")
 
 #' @export
 print.blimp_out <- function(x, ...) {
@@ -24,7 +25,8 @@ setClass("blimp_obj", slots = list(
     call = "language", estimates = "matrix", burn = "list", iterations = "data.frame",
     psr = "data.frame", imputations = "list", average_imp = "data.frame",
     variance_imp = "data.frame", latent = "list", residuals = "list",
-    predicted = "list", output = "blimp_out"
+    predicted = "list", waldtest = "data.frame", syntax = "blimp_syntax",
+    output = "blimp_out"
 ))
 
 #' @export
