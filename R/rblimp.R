@@ -238,7 +238,12 @@ rblimp <- function(model,
     if (file.exists(file.path(tmpfolder, "waldtest.csv"))) {
         output$waldtest <- read.csv(file.path(tmpfolder, "waldtest.csv"), header = T)
     } else {
-        output$waldtest <- list()
+        output$waldtest <- data.frame(
+            test_number = numeric(),
+            df = numeric(),
+            statistic = numeric(),
+            probability = numeric()
+        )
     }
 
     # Get average imputation
