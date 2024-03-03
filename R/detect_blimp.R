@@ -97,6 +97,9 @@ set_blimp <- function(exec, beta = FALSE) {
     if (!file.exists(exec)) throw_error(
         "Unable to find supplied executable location."
     )
+    else if (dir.exists(exec)) throw_error(
+        "The supplied location is a directory, not an executable."
+    )
 
     # Set exec and return true
     cli::cli_alert_warning("Setting executable does not persist on exit.")
@@ -117,14 +120,14 @@ detect_blimp <- function() {
     ## Check ENV variables
     env_r_blimp <- Sys.getenv("R_BLIMP", unset = NA)
     if (!is.na(env_r_blimp)) {
-        if (file.exists(env_r_blimp)) {
+        if (file.exists(env_r_blimp) & !dir.exists(env_r_blimp)) {
             return(env_r_blimp)
         }
     }
 
     # Otherwise try to find
     user_os <- tolower(R.Version()$os)
-    exec <- ifelse(rblimp.env$beta, "blimp-beta", "blimp")
+    exec <- if(rblimp.env$beta) "blimp-beta" else "blimp"
     if (grepl("darwin", user_os)) {
         return(detect_blimp_macos(exec))
     } else if (grepl("linux", user_os)) {
