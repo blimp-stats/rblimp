@@ -203,6 +203,9 @@ rblimp <- function(model,
     output <- list()
     output$estimates <- as.matrix(read.csv(file.path(tmpfolder, "estimates.csv"), header = T))
     rownames(output$estimates) <- trimws(lab_row_names)
+    colnames(output$estimates) <- gsub('^X', '', colnames(output$estimates))
+    colnames(output$estimates) <- gsub('\\.$', '%', colnames(output$estimates))
+
     output$iterations <- read.csv(file.path(tmpfolder, "iter.csv"), header = F)
     names(output$iterations) <- lab_names
     output$psr <- read.csv(file.path(tmpfolder, "psr.csv"), header = F)
