@@ -1,7 +1,7 @@
 Package: rblimp
 Type: Package
 Title: Integration of Blimp Software into R
-Version: 0.1.31
+Version: 0.1.32
 Authors@R: 
     person(given = "Brian",
            family = "Keller",
@@ -9,7 +9,7 @@ Authors@R:
            email = "btkeller@missouri.edu")
 Maintainer: Brian T. Keller <btkeller@missouri.edu>
 Description:
-    An R inerface to run Blimp software for Bayesian latent variable modeling,
+    An R interface to run Blimp software for Bayesian latent variable modeling,
     missing data, and multiple imputation.
     Specifically, this package provides for generating Blimp syntax, running Blimp models,
     and reading output into R.
