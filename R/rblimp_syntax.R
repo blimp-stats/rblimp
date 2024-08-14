@@ -43,7 +43,7 @@ rblimp_syntax <- function(
 
     # Flatten waldtest
     if (!missing(waldtest) && is.list(waldtest)) {
-        waldtest <- rapply(tmp, paste0, collapse =';\n          ')
+        waldtest <- rapply(waldtest, paste0, collapse =';\n          ')
     }
 
     # Make sure it is a character vector

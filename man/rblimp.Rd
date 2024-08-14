@@ -180,7 +180,7 @@ mdl <- rblimp(
         'f1 <- 1'
     ),
     mydata,
-    seed=3927,
+    seed = 3927,
     nimps = 2,
     latent = ~ f1,
     center = cgm ~ x,
