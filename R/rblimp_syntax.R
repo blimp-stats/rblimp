@@ -1,8 +1,9 @@
 ## Functions for parsing and generating blimp syntax
-# Copyright Brian Keller 2023, all rights reserved
+# Copyright Brian Keller 2024, all rights reserved
 
 
 #' Generates a syntax 'imp' file for blimp based on rblimp
+#' @rdname rblimp
 #' @export
 rblimp_syntax <- function(
         model,
@@ -16,8 +17,10 @@ rblimp_syntax <- function(
         randomeffect,
         parameters,
         clusterid,
+        weight,
         ordinal,
         nominal,
+        count,
         transform,
         fixed,
         center,
@@ -118,6 +121,11 @@ rblimp_syntax <- function(
         clusterid <- parse_formula(clusterid)
     }
 
+    ## parse weight
+    if (!missing(weight) && is.formula(weight)) {
+        weight <- parse_formula(weight)
+    }
+
     ## parse ordinal
     if (!missing(ordinal) && is.formula(ordinal)) {
         ordinal <- parse_formula(ordinal)
@@ -126,6 +134,11 @@ rblimp_syntax <- function(
     ## parse nominal
     if (!missing(nominal) && is.formula(nominal)) {
         nominal <- parse_formula(nominal)
+    }
+
+    ## parse count
+    if (!missing(count) && is.formula(count)) {
+        count <- parse_formula(count)
     }
 
     ## parse fixed
@@ -144,9 +157,9 @@ rblimp_syntax <- function(
     make_syntax(
         "data.csv", model,
         burn, seed, iter, names(data),
-        thin, nimps, latent, randomeffect, clusterid,
-        ordinal, nominal, center, parameters, chains, simple,
-        waldtest, options, output, save, transform, fixed
+        thin, nimps, latent, randomeffect, clusterid, weight,
+        ordinal, nominal, count, center, parameters, chains,
+        simple, waldtest, options, output, save, transform, fixed
     )
 }
 
@@ -226,8 +239,10 @@ make_syntax <- function(datapath,
                         latent,
                         randomeffect,
                         clusterid,
+                        weight,
                         ordinal,
                         nominal,
+                        count,
                         centering,
                         parameters,
                         chains,
@@ -253,8 +268,10 @@ make_syntax <- function(datapath,
     if (!missing(randomeffect)) inputfile$randomeffect <- parse_cmd(randomeffect)
     inputfile$missing <- parse_cmd("NA")
     if (!missing(clusterid)) inputfile$clusterid <- parse_cmd(clusterid)
+    if (!missing(weight))    inputfile$weight    <- parse_cmd(weight)
     if (!missing(ordinal))   inputfile$ordinal   <- parse_cmd(ordinal)
     if (!missing(nominal))   inputfile$nominal   <- parse_cmd(nominal)
+    if (!missing(count))     inputfile$count     <- parse_cmd(count)
     if (!missing(centering)) inputfile$center    <- parse_cmd(centering)
     if (!missing(fixed))     inputfile$fixed     <- parse_cmd(fixed)
     if (!missing(model))     inputfile$model     <- parse_cmd(model, collapse = ";\n    ", use.names = TRUE)

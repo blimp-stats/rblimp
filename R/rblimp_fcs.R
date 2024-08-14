@@ -1,9 +1,10 @@
 # Wrapper for fcs
+#' @rdname rblimp
 #' @export
 rblimp_fcs <- function(variables,
                        data,
-                       burn = 1000,
-                       iter = 1000,
+                       burn = 10000,
+                       iter = 10000,
                        seed,
                        thin,
                        nimps,

@@ -1,6 +1,7 @@
 # General Imports
 
-# Check if Blimp is detected
+#' Check if Blimp is detected
+#' @noRd
 .onLoad <- function(libname, pkgname) {
     tryCatch(
         detect_blimp(),

@@ -2,10 +2,24 @@
 % Please edit documentation in R/rblimp_source.R
 \name{rblimp_source}
 \alias{rblimp_source}
-\title{Source imp file}
+\title{Runs an 'imp' file with Blimp}
 \usage{
 rblimp_source(file, plots = FALSE, output = TRUE, nopowershell = FALSE)
 }
+\arguments{
+\item{file}{a character string to the 'imp' file's location}
+
+\item{plots}{a logical. Setting to \code{TRUE} will generate the data required for plotting by Blimp}
+
+\item{output}{The type of output printed to the console.
+\code{'iteration'} or logical \code{TRUE} is only iteration history, \code{'none'} or logical \code{FALSE}
+suppresses all output to console, and \code{'all'} prints all output to console.}
+
+\item{nopowershell}{Windows only. Uses cmd.exe with some limited functions (instead of powershell).}
+}
+\value{
+a \code{\link{blimp_out}} object
+}
 \description{
-Source imp file
+This function runs 'imp' file with Blimp and captures the output only.
 }

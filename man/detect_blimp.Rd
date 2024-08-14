@@ -2,10 +2,22 @@
 % Please edit documentation in R/detect_blimp.R
 \name{detect_blimp}
 \alias{detect_blimp}
-\title{Detect blimp location for conditional on operating system}
+\title{Produce Blimp location Conditional on Operating System}
 \usage{
 detect_blimp()
 }
+\value{
+A character string of blimp's executable location.
+}
 \description{
-Detect blimp location for conditional on operating system
+This function is called when running Blimp and can be used to determine what location
+\code{\link{rblimp}} uses for the Blimp executable.
+}
+\details{
+\code{\link{rblimp}} will first use any location set with the \code{\link{set_blimp}} function. Next, it will
+check if \code{R_BLIMP} is set in the environment variables. Finally, it will fall back to the default
+Blimp install location based on the operating system.
+}
+\seealso{
+\code{\link{set_blimp}} to set blimp location
 }

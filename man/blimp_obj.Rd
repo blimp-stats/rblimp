@@ -31,16 +31,25 @@ describe(blimp_obj, ...)
 \author{Brian Keller}
 \seealso{}
 \examples{
-mydata <- data.frame(x=rnorm(1000),y=rnorm(1000))
+# Generate data
+mydata <- data.frame(x = rnorm(1000), y = rnorm(1000))
 
-mdl <- rblimp('y <- x*2; f1 <- 1',
-       mydata,
-       seed=3927,
-       nimps = 2,
-       latent = 'f1',
-       center = list(cgm = c('x')),
-       fixed = 'x')
-psr(mdl) # Prints psr
+# Nonsensical model
+mdl <- rblimp(
+    c(
+        'y <- x*2',
+        'f1 <- 1'
+    ),
+    mydata,
+    seed = 3927,
+    nimps = 2,
+    latent = ~ f1,
+    center = cgm ~ x,
+    fixed = ~ x
+)
+
+# Prints psr
+psr(mdl)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

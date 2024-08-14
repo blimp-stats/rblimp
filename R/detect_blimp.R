@@ -80,12 +80,31 @@ rblimp.env <- new.env(parent = emptyenv())
 rblimp.env$beta <- FALSE # Default no beta
 
 #' Internal function to set beta version of blimp
+#' @noRd
 set_blimp_beta <- function() {
     rblimp.env$beta <- TRUE
     cli::cli_alert_warning("Setting beta does not persist on exit.")
 }
 
-#' Set Blimp Executable
+#' Set Blimp Executable Location
+#' @description
+#' This function can set the Blimp executable location if it cannot be autodetected.
+#' @param exec a character string for the Blimp executable's location
+#' @param beta a logical value. If true [`rblimp::rblimp`] will use the beta version which must be installed
+#' @details
+#' By default [`rblimp::rblimp`] tries to determine the location of Blimp's computational engine based on
+#' standard operating system installation locations. This function is useful for non standard installations
+#' or when wanting to use a beta version of blimp's computational engine (which must be installed via the updater).
+#' @returns
+#' `TRUE` if the executable is successfully set; otherwise, it produces an error.
+#' @examples
+#' \dontrun{
+#'     # Use blimp executable at `filepath` location
+#'     set_blimp('filepath')
+#'
+#'     # Use default blimp location but beta build
+#'     set_blimp(beta = TRUE)
+#' }
 #' @export
 set_blimp <- function(exec, beta = FALSE) {
     if (missing(exec) || is.null(exec)) {
@@ -109,8 +128,17 @@ set_blimp <- function(exec, beta = FALSE) {
 
 
 
-#' Detect blimp location for conditional on operating system
-#' @export
+#' Produce Blimp location Conditional on Operating System
+#' @description
+#' This function is called when running Blimp and can be used to determine what location
+#' [`rblimp::rblimp`] uses for the Blimp executable.
+#' @details
+#' [`rblimp::rblimp`] will first use any location set with the [`rblimp::set_blimp`] function. Next, it will
+#' check if `R_BLIMP` is set in the environment variables. Finally, it will fall back to the default
+#' Blimp install location based on the operating system.
+#' @seealso [`rblimp::set_blimp`] to set blimp location
+#' @returns
+#' A character string of blimp's executable location.
 detect_blimp <- function() {
     # Return any set executable
     if (!is.null(rblimp.env$exec)) {

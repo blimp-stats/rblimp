@@ -1,4 +1,13 @@
-#' Source imp file
+#' Runs an 'imp' file with Blimp
+#' @description
+#' This function runs 'imp' file with Blimp and captures the output only.
+#' @param file a character string to the 'imp' file's location
+#' @param plots a logical. Setting to `TRUE` will generate the data required for plotting by Blimp
+#' @param output The type of output printed to the console.
+#' `'iteration'` or logical `TRUE` is only iteration history, `'none'` or logical `FALSE`
+#' suppresses all output to console, and `'all'` prints all output to console.
+#' @param nopowershell Windows only. Uses cmd.exe with some limited functions (instead of powershell).
+#' @returns a [`rblimp::blimp_out`] object
 #' @export
 rblimp_source <- function(
         file,

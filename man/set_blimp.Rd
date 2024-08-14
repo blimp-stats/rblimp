@@ -2,10 +2,32 @@
 % Please edit documentation in R/detect_blimp.R
 \name{set_blimp}
 \alias{set_blimp}
-\title{Set Blimp Executable}
+\title{Set Blimp Executable Location}
 \usage{
 set_blimp(exec, beta = FALSE)
 }
+\arguments{
+\item{exec}{a character string for the Blimp executable's location}
+
+\item{beta}{a logical value. If true \code{\link{rblimp}} will use the beta version which must be installed}
+}
+\value{
+\code{TRUE} if the executable is successfully set; otherwise, it produces an error.
+}
 \description{
-Set Blimp Executable
+This function can set the Blimp executable location if it cannot be autodetected.
+}
+\details{
+By default \code{\link{rblimp}} tries to determine the location of Blimp's computational engine based on
+standard operating system installation locations. This function is useful for non standard installations
+or when wanting to use a beta version of blimp's computational engine (which must be installed via the updater).
+}
+\examples{
+\dontrun{
+    # Use blimp executable at `filepath` location
+    set_blimp('filepath')
+
+    # Use default blimp location but beta build
+    set_blimp(beta = TRUE)
+}
 }
