@@ -2,10 +2,10 @@
 % Please edit documentation in R/blimp_obj.R
 \name{as.mitml}
 \alias{as.mitml}
-\title{Coerces a \code{blimp_obj} to a \code{mitml.list}}
+\title{Coerces a \code{\link{blimp_obj}} or \code{blimp_bygroup} to a \code{mitml.list}}
 \usage{
 as.mitml(object)
 }
 \description{
-Coerces a \code{blimp_obj} to a \code{mitml.list}
+Coerces a \code{\link{blimp_obj}} or \code{blimp_bygroup} to a \code{mitml.list}
 }

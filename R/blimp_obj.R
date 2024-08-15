@@ -24,8 +24,7 @@ print.blimp_out <- function(x, ...) {
 setClass("blimp_obj", slots = list(
     call = "language", estimates = "matrix", burn = "list", iterations = "data.frame",
     psr = "data.frame", imputations = "list", average_imp = "data.frame",
-    variance_imp = "data.frame", latent = "list", residuals = "list",
-    predicted = "list", waldtest = "data.frame", syntax = "blimp_syntax",
+    variance_imp = "data.frame", waldtest = "data.frame", syntax = "blimp_syntax",
     output = "blimp_out"
 ))
 
@@ -217,7 +216,19 @@ estimates <- function(object) {
 setMethod(
     "residuals", "blimp_obj",
     function(object, ...) {
-        return(object@residuals)
+        lapply(object@imputations, \(x) {
+            x[, endsWith(names(x), ".residual") |
+                  (endsWith(names(x), ".") & names(x) != "imp."), drop = F]
+        })
+    }
+)
+
+#' Residuals scores from `blimp_obj`
+#' @export
+setMethod(
+    "resid", "blimp_obj",
+    function(object, ...) {
+        residuals(object, ...)
     }
 )
 
@@ -226,10 +237,12 @@ setMethod(
 setMethod(
     "predict", "blimp_obj",
     function(object, ...) {
-        return(object@predicted)
+        lapply(object@imputations, \(x) {
+            x[, endsWith(names(x), ".predicted") |
+                  endsWith(names(x), ".probability"), drop = F]
+        })
     }
 )
-
 
 #' Internal function to Create Traceplots
 #' @noRd
@@ -277,15 +290,28 @@ setMethod(
 
 
 
-#' Coerces a `blimp_obj` to a `mitml.list`
+#' Coerces a [`blimp_obj`] or `blimp_bygroup` to a `mitml.list`
 #' @export
 as.mitml <- function(object) {
-    if (!is_blimp_obj(object)) throw_error(
-        "Object is not a {.cls blimp_obj}."
-    )
-    o <- object@imputations
+    if (object |> inherits("blimp_bygroup")) {
+        # Create un_split function
+        un_split <- function (value, f, drop = FALSE) {
+            x <- matrix(nrow = NROW(f), ncol = NCOL(value[[1L]])) |> data.frame()
+            names(x) <- names(value[[1L]])
+            split(x, f, drop = drop) <- value
+            x
+        }
+        # Run on each imputation
+        o <- lapply(seq_len(attr(object, "nimps")), \(i) {
+            lapply(object, \(x) x@imputations[[i]]) |> un_split(attr(object, "group"))
+        })
+    } else if (!is_blimp_obj(object)) {
+        throw_error("Object is not a {.cls blimp_obj}.")
+    } else {
+        o <- object@imputations
+    }
     if (length(o) == 0) throw_error("No imputations were requested.")
-    class(o) <- c("mitml.list", class(object@imputations))
+    class(o) <- c("mitml.list", "list")
     return(o)
 }
 
@@ -300,5 +326,22 @@ setMethod(
         out <- lapply(data@imputations, eval, expr = expr, enclos = pf)
         class(out) <- c("mitml.result", "list")
         return(out)
+    }
+)
+
+#' Fit Model across imputations with `mitml` package using [`by_group`]
+#' @export
+setMethod(
+    "with", "blimp_bygroup",
+    function(data, expr, ...) {
+        expr <- substitute(expr)
+        pf <- parent.frame()
+        imps <- as.mitml(data)
+        data |>
+            as.mitml() |>
+            lapply(eval, expr = expr, enclos = pf) |>
+            structure(
+                class = c("mitml.result", "list")
+            )
     }
 )

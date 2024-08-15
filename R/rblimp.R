@@ -336,16 +336,9 @@ rblimp <- function(model,
 
     if (file.exists(file.path(tmpfolder, "imps.csv"))) {
         tmp <- read.csv(file.path(tmpfolder, "imps.csv"), header = T)
-        output$imputations <- split(tmp[, seq_len(ncol(data)) + 1, drop = F], tmp[, 1])
-        output$predicted <- split(tmp[, endsWith(names(tmp), ".predicted") | endsWith(names(tmp), ".probability"), drop = F], tmp[, 1])
-        output$residuals <- split(tmp[, endsWith(names(tmp), ".residual") |
-            (endsWith(names(tmp), ".") & names(tmp) != "imp."), drop = F], tmp[, 1])
-        output$latent <- split(tmp[, endsWith(names(tmp), ".latent"), drop = F], tmp[, 1])
+        output$imputations <- split(tmp[, -1, drop = F], tmp[, 1])
     } else {
-        output$predicted <- list()
         output$imputations <- list()
-        output$latent <- list()
-        output$residuals <- list()
     }
 
     # Waldtest
@@ -381,8 +374,7 @@ rblimp <- function(model,
         new("blimp_obj",
             call = match.call(), estimates = output$estimates, burn = output$burn, iterations = output$iterations,
             psr = output$psr, imputations = output$imputations, average_imp = output$average_imp,
-            variance_imp = output$variance_imp, latent = output$latent, residuals = output$residuals,
-            predicted = output$predicted,  waldtest = output$waldtest,
+            variance_imp = output$variance_imp, waldtest = output$waldtest,
             syntax = imp_file, output = result
         )
     )
