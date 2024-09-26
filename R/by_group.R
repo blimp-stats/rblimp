@@ -38,7 +38,7 @@ by_group <- function(expr, group) {
     func_call <- substitute(expr)
     fn <- func_call[[1]]
     func_call <- match.call(eval(fn), func_call)
-    dataset <- eval(func_call$data)
+    dataset <- eval(func_call$data, parent.frame())
     if (NROW(group) == 1)  group <- dataset[,group]
     split(dataset, group) |> lapply(\(x) {
         func_call$data <- x
