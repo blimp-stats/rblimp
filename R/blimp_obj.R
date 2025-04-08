@@ -24,8 +24,8 @@ print.blimp_out <- function(x, ...) {
 setClass("blimp_obj", slots = list(
     call = "language", estimates = "matrix", burn = "list", iterations = "data.frame",
     psr = "data.frame", imputations = "list", average_imp = "data.frame",
-    variance_imp = "data.frame", waldtest = "data.frame", syntax = "blimp_syntax",
-    output = "blimp_out"
+    variance_imp = "data.frame", waldtest = "data.frame", simple = "data.frame",
+    syntax = "blimp_syntax", output = "blimp_out"
 ))
 
 #' @export

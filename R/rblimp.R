@@ -144,6 +144,7 @@ rblimp <- function(model,
     saveCmd[[5]] <- "varimp = varimp.csv"
     if (!missing(nimps)) saveCmd[[length(saveCmd) + 1]] <- "stacked = imps.csv"
     if (!missing(waldtest)) saveCmd[[length(saveCmd) + 1]] <- "waldtest = waldtest.csv"
+    if (!missing(simple)) saveCmd[[length(saveCmd) + 1]] <- "simple = simple.csv"
 
     # Write input file
     imp_file <- rblimp_syntax(
@@ -353,6 +354,16 @@ rblimp <- function(model,
         )
     }
 
+    # Simple
+    if (file.exists(file.path(tmpfolder, "simple.csv"))) {
+        output$simple <- read.csv(file.path(tmpfolder, "simple.csv"), header = T)
+        file.path(tmpfolder, "simple.csv") |> readLines(1)  |>
+            strsplit(',') |> unlist() |>
+            gsub('\"', '', x = _) -> names(output$simple)
+    } else {
+        output$simple <- data.frame()
+    }
+
     # Get average imputation
     if (file.exists(file.path(tmpfolder, "avgimp.csv"))) {
         output$average_imp <- read.csv(file.path(tmpfolder, "avgimp.csv"), header = T)
@@ -375,7 +386,7 @@ rblimp <- function(model,
             call = match.call(), estimates = output$estimates, burn = output$burn, iterations = output$iterations,
             psr = output$psr, imputations = output$imputations, average_imp = output$average_imp,
             variance_imp = output$variance_imp, waldtest = output$waldtest,
-            syntax = imp_file, output = result
+            simple = output$simple, syntax = imp_file, output = result
         )
     )
 }
