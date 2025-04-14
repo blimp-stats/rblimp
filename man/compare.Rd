@@ -27,19 +27,19 @@ This creates a list of blimp_tp object which can be used with plot to create tra
 \references{}
 \author{Brian Keller}
 \seealso{blimp_obj}
-\examples{
-
-mydata <- na.omit(dropout[,c('math7','math8','math10','mothed')])
-mdl0 <- rblimp('math10 <- 1',
-       mydata, seed=3927,
-       fixed = 'math7')
-
-mdl <- rblimp('math10 <- 1 math7',
-       mydata, seed=3927,
-       fixed = 'math7')
-compare(mdl,mdl0)
-
-}
+% \examples{
+%
+% mydata <- na.omit(dropout[,c('math7','math8','math10','mothed')])
+% mdl0 <- rblimp('math10 <- 1',
+%        mydata, seed=3927,
+%        fixed = 'math7')
+%
+% mdl <- rblimp('math10 <- 1 math7',
+%        mydata, seed=3927,
+%        fixed = 'math7')
+% compare(mdl,mdl0)
+%
+% }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
 \keyword{ }

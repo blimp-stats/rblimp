@@ -4,12 +4,12 @@
 \alias{simple_effect}
 \title{Function to generate conditional regression equation plots (i.e., simple effects) with \code{\link{rblimp}} and SIMPLE command}
 \usage{
-simple_effect(formula, object, ci = 0.95, xvals, ...)
+simple_effect(formula, model, ci = 0.95, xvals, ...)
 }
 \arguments{
 \item{formula}{an object of class \code{\link{formula}} to specify simple effect to plot. The formula must have the following form: \code{outcome ~ focal | moderator}}
 
-\item{object}{an \code{\link{blimp_obj}}. The object must have a SIMPLE command output saved.}
+\item{model}{an \code{\link{blimp_obj}}. The model must have a SIMPLE command output saved.}
 
 \item{ci}{a value between 0 and 1 specifying the credible interval size}
 
@@ -23,7 +23,14 @@ a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
 \description{
 Generates a conditional effect plots based based on the posterior summaries from the output of \code{\link{rblimp}}.
 }
+\details{
+To change colors use ggplot2's scale system. Both fill and color are used. See
+\code{\link[ggplot2:scale_manual]{ggplot2::scale_manual}} for more information about setting a manual set of colors.
+}
 \examples{
+# set seed
+set.seed(981273)
+
 # Generate Data
 mydata <- data.frame(
     x = rnorm(100),

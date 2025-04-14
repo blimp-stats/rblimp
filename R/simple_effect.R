@@ -4,12 +4,19 @@
 #' @description
 #' Generates a conditional effect plots based based on the posterior summaries from the output of [`rblimp`].
 #' @param formula an object of class [`formula`] to specify simple effect to plot. The formula must have the following form: `outcome ~ focal | moderator`
-#' @param object an [`blimp_obj`]. The object must have a SIMPLE command output saved.
+#' @param model an [`blimp_obj`]. The model must have a SIMPLE command output saved.
 #' @param ci a value between 0 and 1 specifying the credible interval size
 #' @param xvals a list of values to evaluate for the focal variable. If empty, they will automatically be determined
 #' @param ... arguments passed to the internal [`ggplot2::geom_line`] call used to generate the median lines.
 #' @returns a [`ggplot2::ggplot`] plot
+#' @details
+#' To change colors use ggplot2's scale system. Both fill and color are used. See
+#' [`ggplot2::scale_manual`] for more information about setting a manual set of colors.
+#'
 #' @examples
+#' # set seed
+#' set.seed(981273)
+#'
 #' # Generate Data
 #' mydata <- data.frame(
 #'     x = rnorm(100),
@@ -32,28 +39,29 @@
 #' simple_effect(y ~ x | m, m1)
 #' @import ggplot2
 #' @export
-simple_effect <- function(formula, object, ci = 0.95, xvals, ...) {
+simple_effect <- function(formula, model, ci = 0.95, xvals, ...) {
 
     # Extract Characters
     f <- formula |> as.character()
 
     # Check inputs
-    if (length(f) != 3) throw_error(
+    if (length(f) != 3) throw_error(c(
         "The {.arg formula} was not correctly specified.",
         "Must have the form: `outcome ~ focal | moderator`"
-    )
+    ))
     if (ci >= 1.0 | ci <= 0.0) throw_error(
         "The {.arg ci} must be between 0 and 1"
     )
-    if (class(object) != 'blimp_obj') throw_error(
-        "{.arg object} is not a `blimp_obj`"
+    if (class(model) != 'blimp_obj') throw_error(
+        "{.arg model} is not a `blimp_obj`"
     )
-    if (NROW(object@simple) == 0) throw_error(
-        "No SIMPLE command was specified."
-    )
+    if (NROW(model@simple) == 0) throw_error(c(
+        "No SIMPLE command was specified.",
+        "i" = "Specify {.arg simple} when running {.cli rblimp}."
+    ))
 
     # Extract simple slopes
-    simple <- object@simple
+    simple <- model@simple
 
     # Get names
     simple_names <- names(simple)
@@ -105,21 +113,21 @@ simple_effect <- function(formula, object, ci = 0.95, xvals, ...) {
 
     # Handle xvals
     if (missing(xvals)) {
-        ind <- (object@average_imp |> names() |> tolower()) == tolower(pre)
+        ind <- (model@average_imp |> names() |> tolower()) == tolower(pre)
 
         # handle if cannot find x values or if too many
         if (sum(ind) != 1) throw_error(
             "Cannot find focal preditor in imputed data"
         )
-        focal_val <- object@average_imp[,ind]
+        focal_val <- model@average_imp[,ind]
 
         # Check if it is centered
         is_cent <- tolower(pre) %in% (
-            object@syntax$center |> strsplit(' ') |> unlist() |> tolower()
+            model@syntax$center |> strsplit(' ') |> unlist() |> tolower()
         )
-        m <- if(is_cent) mean(object@average_imp[,ind]) else 0.0
+        m <- if(is_cent) mean(model@average_imp[,ind]) else 0.0
 
-        l <- (object@average_imp[,ind] - m) |> pretty() |> range()
+        l <- (model@average_imp[,ind] - m) |> pretty() |> range()
         xvals <- seq(l[1], l[2], length.out = 100)
     }
 
