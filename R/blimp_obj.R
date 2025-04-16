@@ -329,19 +329,3 @@ setMethod(
     }
 )
 
-#' Fit Model across imputations with `mitml` package using [`by_group`]
-#' @export
-setMethod(
-    "with", "blimp_bygroup",
-    function(data, expr, ...) {
-        expr <- substitute(expr)
-        pf <- parent.frame()
-        imps <- as.mitml(data)
-        data |>
-            as.mitml() |>
-            lapply(eval, expr = expr, enclos = pf) |>
-            structure(
-                class = c("mitml.result", "list")
-            )
-    }
-)
