@@ -202,8 +202,13 @@ rblimp <- function(model,
     }
 
     # Read parameter labels
-    # parse labels file and create figure titles
     lab2 <- lab <- read.table(file.path(tmpfolder, "plots", "labels.dat"))[-1, ]
+
+    # Set parameter type
+    oname <- lab$V1
+    ptype <- lab$V2
+
+    # parse labels file and create figure titles
     lab$V2[lab$V3 == "Intercept" & lab$V2 != "Odds Ratio"] <- "intercept"
     lab$V2[lab$V2 == "Beta" | grepl("Level-", lab$V2, fixed = T) & (lab$V3 != "Residual Var.")] <- "regressed on"
     lab$V2[lab$V2 == "Standardized Beta" | grepl("Level-", lab$V2, fixed = T) & (lab$V3 != "Residual Var.")] <- "regressed on (standardized)"
@@ -254,6 +259,10 @@ rblimp <- function(model,
     for (i in seq_along(lab_names)) {
         lab_names[i] <- paste(lab[i, 1], lab[i, 2], lab[i, 3], sep = ".")
     }
+    # Remove trailing period
+    lab_names[endsWith(lab_names, ".")] <- gsub(
+        ".{1}$", "", lab_names[endsWith(lab_names, ".")]
+    )
 
     # Row Name parsing
     lab2$V2[lab2$V2 == "Beta" & lab2$V3 == "Intercept"] <- "~ Intercept"
@@ -318,8 +327,35 @@ rblimp <- function(model,
     colnames(output$estimates) <- gsub('^X', '', colnames(output$estimates))
     colnames(output$estimates) <- gsub('\\.$', '%', colnames(output$estimates))
 
-    output$iterations <- read.csv(file.path(tmpfolder, "iter.csv"), header = F)
+    output$iterations <- structure(
+        read.csv(file.path(tmpfolder, "iter.csv"), header = F),
+        parameter_type = ptype
+    )
     names(output$iterations) <- lab_names
+    # Set up outcome_name
+    attr(output$iterations, 'outcome_name') <- oname
+    # Set up parameter_type
+    attr(output$iterations, 'parameter_type') <- ptype |> sapply(\(x) {
+        switch(
+            x,
+            Variance = 1,
+            Correlations = 1,
+            Beta = 2,
+            `Standardized Beta` = 3,
+            `Odds Ratio` = 3,
+            R2 = 4,
+            Threshold = 5,
+            6
+        )
+    }) |> factor(seq_len(6), labels = c(
+        'Var/Cov/Cor',
+        'Coefficient',
+        'Standardized',
+        'Rsquare',
+        'Threshold',
+        'Other'
+    ))
+
     output$psr <- read.csv(file.path(tmpfolder, "psr.csv"), header = F)
     names(output$psr) <- lab_names
 
@@ -383,8 +419,9 @@ rblimp <- function(model,
     # Return output
     return(
         new("blimp_obj",
-            call = match.call(), estimates = output$estimates, burn = output$burn, iterations = output$iterations,
-            psr = output$psr, imputations = output$imputations, average_imp = output$average_imp,
+            call = match.call(), estimates = output$estimates, burn = output$burn,
+            iterations = output$iterations, psr = output$psr,
+            imputations = output$imputations, average_imp = output$average_imp,
             variance_imp = output$variance_imp, waldtest = output$waldtest,
             simple = output$simple, syntax = imp_file, output = result
         )
