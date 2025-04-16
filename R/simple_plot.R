@@ -36,10 +36,10 @@
 #' )
 #'
 #' # Generate Plot
-#' simple_effect(y ~ x | m, m1)
+#' simple_plot(y ~ x | m, m1)
 #' @import ggplot2
 #' @export
-simple_effect <- function(formula, model, ci = 0.95, xvals, ...) {
+simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
 
     # Extract Characters
     f <- formula |> as.character()
