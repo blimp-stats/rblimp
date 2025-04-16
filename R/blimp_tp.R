@@ -88,8 +88,8 @@ setMethod("show", "blimp_tp", function(object) {
 
 # Generate traceplot for burn-in
 #' @export
-traceplots <- function(object, param) {
-    if (missing(param)) {
+traceplots <- function(object, parameter) {
+    if (missing(parameter)) {
         out <- lapply(seq_len(nrow(object@estimates)), function(iter) {
             return(new("blimp_tp",
                 name = rownames(object@estimates)[iter],
@@ -97,9 +97,13 @@ traceplots <- function(object, param) {
             ))
         })
     } else {
+        # Check param is greater than 1
+        if (!is.integer(parameter) && (parameter < 1)) throw_error(
+            "{.arg parameter} must be a positive integer"
+        )
         out <- new("blimp_tp",
-            name = rownames(object@estimates)[param],
-            data = sapply(object@burn, function(x) x[, param + 2])
+            name = rownames(object@estimates)[parameter],
+            data = sapply(object@burn, function(x) x[, parameter + 2])
         )
     }
     return(out)
