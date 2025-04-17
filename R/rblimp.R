@@ -134,6 +134,16 @@ rblimp <- function(model,
         )
     }
 
+    # Check data
+    # Get attributes loop over and convert to numeric
+    att_list <- vector('list', NCOL(data))
+    for (i in seq_along(att_list)) {
+        if (!is.numeric(data[, i])) {
+            att_list[[i]] <- attributes(data[,i])
+            data[, i] <- as.numeric(data[, i])
+        }
+    }
+
     # Write data to temp folder
     write.csv(data, file.path(tmpfolder, "data.csv"), row.names = F, quote = F)
 
@@ -376,6 +386,13 @@ rblimp <- function(model,
 
     if (file.exists(file.path(tmpfolder, "imps.csv"))) {
         tmp <- read.csv(file.path(tmpfolder, "imps.csv"), header = T)
+        # Loop over and add attributes back in
+        for (i in seq_along(att_list)) {
+            if (!is.null(att_list[[i]])) {
+                attributes(tmp[, i + 1]) <-  att_list[[i]]
+            }
+        }
+        # Split imputations
         output$imputations <- split(tmp[, -1, drop = F], tmp[, 1])
     } else {
         output$imputations <- list()
@@ -397,7 +414,7 @@ rblimp <- function(model,
     if (file.exists(file.path(tmpfolder, "simple.csv"))) {
         output$simple <- read.csv(file.path(tmpfolder, "simple.csv"), header = T)
         file.path(tmpfolder, "simple.csv") |> readLines(1)  |>
-            strsplit(',') |> unlist() |>
+            strsplit('\\",') |> unlist() |>
             gsub('\"', '', x = _) -> names(output$simple)
     } else {
         output$simple <- data.frame()
