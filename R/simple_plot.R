@@ -96,9 +96,15 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     pre <- dsub$predictor |> unique()
 
     # Check if dsub has rows
-    if (NROW(dsub) == 0) throw_error(
-        "Unable to select out conditional effects. Most likely simple command doesn't exist."
-    )
+    if (NROW(dsub) == 0) {
+        mod_list <- unique(d$moderator)
+        throw_error(c(
+            "Unable to select out conditional effects",
+            i = "If the moderator is nominal, include dummy code suffix.",
+            i = "Otherwise the simple command doesn't exist for the moderator.",
+            i = "List of moderators: { mod_list }"
+        ))
+    }
 
     # Create data set
     apply(dsub, 1, \(x) {
@@ -108,6 +114,18 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
 
     # Create factor based on levels of m
     simple_data$mf <- as.factor(simple_data$m)
+
+    # Check if it is centered
+    pre_is_cent <- if (is.null(model@syntax$center)) FALSE else{
+        tolower(pre) %in% (
+            model@syntax$center |> strsplit(' ') |> unlist() |> tolower()
+        )
+    }
+    mod_is_cent <- if (is.null(model@syntax$center)) FALSE else{
+        tolower(mod) %in% (
+            model@syntax$center |> strsplit(' ') |> unlist() |> tolower()
+        )
+    }
 
     ## Generate predicted scores
 
@@ -120,12 +138,7 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
             "Cannot find focal preditor in imputed data"
         )
         focal_val <- model@average_imp[,ind]
-
-        # Check if it is centered
-        is_cent <- tolower(pre) %in% (
-            model@syntax$center |> strsplit(' ') |> unlist() |> tolower()
-        )
-        m <- if(is_cent) mean(model@average_imp[,ind]) else 0.0
+        m <- if (pre_is_cent) mean(model@average_imp[,ind]) else 0.0
 
         l <- (model@average_imp[,ind] - m) |> pretty() |> range()
         xvals <- seq(l[1], l[2], length.out = 100)
@@ -149,20 +162,31 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     }))
 
     # Create factor with labels
-    rib_data$moderator <-  factor(
+    rib_data$moderator <- factor(
         rib_data$m,
         unique(simple_data$m),
         labels =  paste('@', unique(simple_data$m))
     )
 
+    # Create subtitle based on centering
+    subtitle <- if (pre_is_cent | mod_is_cent) {
+        paste0('Centered variables: ')
+    } else {
+        deparse(formula)
+    }
+    if (pre_is_cent) subtitle <- paste(subtitle, pre)
+    if (mod_is_cent) subtitle <- paste(subtitle, mod)
+
     ## Make Conditional Effects Plot
     (
         ggplot2::ggplot(rib_data, ggplot2::aes(focal, color = moderator, fill = moderator))
-        + ggplot2::geom_ribbon(ggplot2::aes(ymin = l, ymax = h), alpha = 0.25)
+        + ggplot2::geom_ribbon(ggplot2::aes(ymin = l, ymax = h), color = NA, alpha = 0.2)
         + ggplot2::geom_line(ggplot2::aes(y = outcome), ...)
-        + ggplot2::ggtitle(
-            'Plot of Conditional Regressions',
-            deparse(formula)
+        + ggplot2::labs(
+            title = 'Plot of Conditional Regressions',
+            subtitle = subtitle,
+            y = f[2], x = pre,
+            color = mod, fill = mod
         )
     )
 }
