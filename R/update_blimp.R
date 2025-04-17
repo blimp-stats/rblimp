@@ -36,17 +36,49 @@ detect_blimp_updater <- function(user_os) {
 
 
 
-#' Check for Update of Blimp
-#' @description
-#' Check for Blimp updates
+#' Internal function to get Blimp's version
+#' @noRd
+blimp_version <- function() {
+    # Establish blimp exec
+    blimp_path <- detect_blimp()
+
+    # Preprocess path for non-unix (assumes windows)
+    if (.Platform$OS.type != "unix") paste0('"', blimp_path, '"')
+
+    # Run command and capture output
+    v <- suppressWarnings(tryCatch(
+        system(paste(blimp_path, "--changelog"), intern = TRUE)[3],
+        error = \(e) NA
+    ))
+
+    # Return version
+    substr(v, 9, nchar(v)) |> strsplit('\\.') |> unlist()
+}
+
+#' Internal function to check Blimp update version
+#' @noRd
+update_version <- function() {
+    # Get changelog from url
+    u <- url('https://blimp-stats.github.io/Blimp%20Base%20(Required)-changelog.txt')
+
+    # Read lines
+    v <- suppressWarnings(
+        tryCatch(readLines(u, 8, warn = FALSE)[8], error = \(e) NA)
+    )
+
+    # Return version
+    substr(v, 9, nchar(v)) |> strsplit('\\.') |> unlist()
+}
+
+#' Internal command to check if blimp is up to date
+#' @noRd
+has_blimp_update <- function() {
+    (blimp_version() < update_version()) |> any()
+}
+
+#' Runs the Blimp Updater in order to Update Blimp
 #' @details
-#' This function is called on loading the package.
-#' If the session is interactive then it will not check for an update.
-#'
-#' Checking update on load can be disabled by setting options `check_blimp_update` to `FALSE`. See example below.
-#' @examples
-#' # Disable Update checking on load
-#' options(check_blimp_update = FALSE)
+#' If the session is not an interactive session then it will not open the updater.
 #' @export
 update_blimp <- function() {
 
@@ -57,47 +89,29 @@ update_blimp <- function() {
     if (interactive() == FALSE) return()
 
     ## Exit for linux
-    if (grepl("linux", user_os)) return()
+    if (grepl("linux", user_os)) throw_error(
+        x = "Linux does not have an updater.",
+        i = "Manually download an update at {.url https://www.appliedmissingdata.com/blimp}"
+    )
 
     ## Get Filepath
     filep <- detect_blimp_updater(user_os)
 
     ## Check if it exists
     if(!file.exists(filep)) {
-        cli::cli_warn(c(
+        throw_error(c(
             "Unable to automatically detect Blimp Updater",
-            "i" = "Manually check for update at {.url https://www.appliedmissingdata.com/blimp}",
+            "i" = "Manually download an update at {.url https://www.appliedmissingdata.com/blimp}",
             "i" = "Or you can set Blimp Updater location via `R_BLIMP_UPDATER` enviornment variable"
         ))
-        return()
     }
 
     ## Check for updates
     if (grepl("darwin", user_os)) {
-        o <- suppressWarnings(system(
-            paste0(filep, ' --checkupdates'),
-            ignore.stdout = TRUE
-        ))
-        if (o == 1) {
-            cat('  Blimp has an update!\n  Would you like to open up the updater?\n')
-            x <- readline('(Yes/No): ')
-            if (tolower(x) == 'yes' || tolower(x) == 'y') {
-                system(paste0(filep, ' --start-updater'), ignore.stdout = TRUE, ignore.stderr = TRUE, wait = FALSE)
-            }
-        }
+        system(paste0(filep, ' --start-updater'), ignore.stdout = TRUE, ignore.stderr = TRUE, wait = FALSE)
     } else if (
         grepl("windows", user_os) || grepl("mingw32", user_os)
     ) {
-        o <- suppressWarnings(system(
-            paste0('"',filep, '" --checkupdates'),
-            inter = TRUE, ignore.stdout = FALSE, ignore.stderr = TRUE
-        ))
-        if (any(grepl("update name=", o, fixed = TRUE))) {
-            cat('  Blimp has an update!\n  Would you like to open up the updater?\n')
-            x <- readline('(Yes/No): ')
-            if (tolower(x) == 'yes' || tolower(x) == 'y') {
-                system(paste0('"',filep, '" --start-updater'), ignore.stdout = TRUE, ignore.stderr = TRUE, wait = FALSE)
-            }
-        }
+        system(paste0('"',filep, '" --start-updater'), ignore.stdout = TRUE, ignore.stderr = TRUE, wait = FALSE)
     }
 }

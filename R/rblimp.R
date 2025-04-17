@@ -56,7 +56,10 @@
 #' two variables as ordinal the formula would be: `~ x1 + x2`. Finally, this can also be
 #' used to specify centering and latent variables. For example, to center `x1` and `x2`
 #' within cluster we can specify: `cwc ~ x1 + x2`.
-#' @returns [`rblimp::blimp_obj`]
+#'
+#' Running `rblimp` will also check if blimp is up to date.
+#' See details in [`rblimp_source`] for more information.
+#' @returns [`blimp_obj`]
 #' @importFrom graphics abline axis dotchart hist lines points
 #' @importFrom methods new show
 #' @importFrom stats coef median model.matrix ppoints pt qnorm quantile resid sd start vcov

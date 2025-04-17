@@ -23,3 +23,10 @@ a \code{\link{blimp_out}} object
 \description{
 This function runs 'imp' file with Blimp and captures the output only.
 }
+\details{
+Running \code{rblimp_source} will also run a check to see if Blimp is up to date.
+If Blimp is not up to date, it will prompt the user if it would like to update or not.
+This check will only be performed on the first run in a session and then every ten hours.
+This behavior can be disabled by setting the \code{check_blimp_update} option to FALSE using \code{\link{options}}.
+This check is not performed if R is not being run with an interactive session. See \code{\link{interactive}} for more information.
+}

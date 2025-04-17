@@ -80,11 +80,48 @@ rblimp.env <- new.env(parent = emptyenv())
 rblimp.env$beta <- FALSE # Default no beta
 
 #' Internal function to set beta version of blimp
+#' @importFrom cli cli_alert_warning
 #' @noRd
 set_blimp_beta <- function() {
     rblimp.env$beta <- TRUE
     cli::cli_alert_warning("Setting beta does not persist on exit.")
 }
+
+#' Internal command to check if blimp needs update or not
+#' @importFrom cli cli_alert cli_alert_warning
+#' @noRd
+check_blimp_update <- function() {
+
+    ## Check if update checking
+    now <- list(
+        date = Sys.Date(),
+        hour = format(Sys.time(), "%H") |> as.numeric(),
+        minute = format(Sys.time(), "%M") |> as.numeric()
+    )
+
+    # Check if an update has been done in the last ten hours
+    if (!is.null(rblimp.env$now)) {
+        if ((now$date == rblimp.env$now$date) &&
+            (rblimp.env$now$hour + 10 >= now$hour)) {
+            return()
+        }
+    }
+    # Save date to rblimp.env
+    rblimp.env$now <- now
+
+    cli::cli_alert('\nChecking for Blimp Update...')
+
+    # Check if blimp has update
+    if (has_blimp_update()) {
+        cli::cli_alert("Blimp has an update!\n Would you like to open up the updater?\n")
+        x <- readline('(Yes/No): ')
+        if (tolower(x) == 'yes' || tolower(x) == 'y') update_blimp()
+        else {
+            cli::cli_alert_warning("Supressing update messages for 10 hours.")
+        }
+    }
+}
+
 
 #' Set Blimp Executable Location
 #' @description

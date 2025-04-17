@@ -7,13 +7,23 @@
 #' `'iteration'` or logical `TRUE` is only iteration history, `'none'` or logical `FALSE`
 #' suppresses all output to console, and `'all'` prints all output to console.
 #' @param nopowershell Windows only. Uses cmd.exe with some limited functions (instead of powershell).
-#' @returns a [`rblimp::blimp_out`] object
+#' @returns a [`blimp_out`] object
+#' @details
+#' Running `rblimp_source` will also run a check to see if Blimp is up to date.
+#' If Blimp is not up to date, it will prompt the user if it would like to update or not.
+#' This check will only be performed on the first run in a session and then every ten hours.
+#' This behavior can be disabled by setting the `check_blimp_update` option to FALSE using [`options`].
+#' This check is not performed if R is not being run with an interactive session. See [`interactive`] for more information.
+#'
 #' @export
 rblimp_source <- function(
         file,
         plots = FALSE,
         output = TRUE,
         nopowershell = FALSE) {
+
+    # Check blimp update
+    if (getOption("check_blimp_update", default = TRUE)) check_blimp_update()
 
     # Establish blimp exec
     blimp_path <- detect_blimp()

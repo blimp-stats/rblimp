@@ -168,6 +168,9 @@ Similarly, \code{+} can be used to specify multiple variables. For example, to s
 two variables as ordinal the formula would be: \code{~ x1 + x2}. Finally, this can also be
 used to specify centering and latent variables. For example, to center \code{x1} and \code{x2}
 within cluster we can specify: \code{cwc ~ x1 + x2}.
+
+Running \code{rblimp} will also check if blimp is up to date.
+See details in \code{\link{rblimp_source}} for more information.
 }
 \examples{
 # Generate Data

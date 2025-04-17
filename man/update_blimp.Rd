@@ -2,20 +2,13 @@
 % Please edit documentation in R/update_blimp.R
 \name{update_blimp}
 \alias{update_blimp}
-\title{Check for Update of Blimp}
+\title{Runs the Blimp Updater in order to Update Blimp}
 \usage{
 update_blimp()
 }
 \description{
-Check for Blimp updates
+Runs the Blimp Updater in order to Update Blimp
 }
 \details{
-This function is called on loading the package.
-If the session is interactive then it will not check for an update.
-
-Checking update on load can be disabled by setting options \code{check_blimp_update} to \code{FALSE}. See example below.
-}
-\examples{
-# Disable Update checking on load
-options(check_blimp_update = FALSE)
+If the session is not an interactive session then it will not open the updater.
 }
