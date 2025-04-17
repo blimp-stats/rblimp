@@ -43,7 +43,7 @@ blimp_version <- function() {
     blimp_path <- detect_blimp()
 
     # Preprocess path for non-unix (assumes windows)
-    if (.Platform$OS.type != "unix") paste0('"', blimp_path, '"')
+    if (.Platform$OS.type != "unix") blimp_path <- paste0('"', blimp_path, '"')
 
     # Run command and capture output
     v <- suppressWarnings(tryCatch(
@@ -114,4 +114,5 @@ update_blimp <- function() {
     ) {
         system(paste0('"',filep, '" --start-updater'), ignore.stdout = TRUE, ignore.stderr = TRUE, wait = FALSE)
     }
+    return()
 }
