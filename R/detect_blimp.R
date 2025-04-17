@@ -139,6 +139,7 @@ set_blimp <- function(exec, beta = FALSE) {
 #' @seealso [`rblimp::set_blimp`] to set blimp location
 #' @returns
 #' A character string of blimp's executable location.
+#' @export
 detect_blimp <- function() {
     # Return any set executable
     if (!is.null(rblimp.env$exec)) {

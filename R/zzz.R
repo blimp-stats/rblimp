@@ -14,4 +14,6 @@
             ))
         }
     )
+    # Check for blimp update
+    if (getOption("check_blimp_update", default = FALSE)) update_blimp()
 }
