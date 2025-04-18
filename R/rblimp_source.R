@@ -24,7 +24,7 @@ rblimp_source <- function(
 
     # Check blimp update
     if (getOption("check_blimp_update", default = TRUE)) {
-        if(check_blimp_update()) throw_error(c(
+        if (check_blimp_update()) throw_error(c(
             "Updating Blimp",
             i = "Rerun previous model once updated."
         ))

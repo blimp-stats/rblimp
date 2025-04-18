@@ -103,7 +103,7 @@ check_blimp_update <- function() {
     if (!is.null(rblimp.env$now)) {
         if ((now$date == rblimp.env$now$date) &&
             (rblimp.env$now$hour + 10 >= now$hour)) {
-            return()
+            return(FALSE)
         }
     }
     # Save date to rblimp.env
