@@ -7,7 +7,8 @@
 simple_plot(formula, model, ci = 0.95, xvals, ...)
 }
 \arguments{
-\item{formula}{an object of class \code{\link{formula}} to specify simple effect to plot. The formula must have the following form: \code{outcome ~ focal | moderator}}
+\item{formula}{an object of class \code{\link{formula}} to specify simple effect to plot.
+The formula must have the following form: \code{outcome ~ focal | moderator}. See Details below for nominal moderators.}
 
 \item{model}{an \code{\link{blimp_obj}}. The model must have a SIMPLE command output saved.}
 
@@ -26,6 +27,11 @@ Generates a conditional effect plots based based on the posterior summaries from
 \details{
 To change colors use ggplot2's scale system. Both fill and color are used. See
 \code{\link[ggplot2:scale_manual]{ggplot2::scale_manual}} for more information about setting a manual set of colors.
+
+For nominal moderators, the variable must include the nominal code used in the dummy codes (e.g., moderator.1, moderator.2, etc).
+When there are multiple dummy codes, then all codes must be listed using a \code{+}.
+For example, after the \code{~} the following statement can be included:
+\deqn{\code{focal | moderator.1 + moderator.2}}
 }
 \examples{
 # set seed

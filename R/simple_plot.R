@@ -3,7 +3,8 @@
 #' Function to generate conditional regression equation plots (i.e., simple effects) with [`rblimp`] and SIMPLE command
 #' @description
 #' Generates a conditional effect plots based based on the posterior summaries from the output of [`rblimp`].
-#' @param formula an object of class [`formula`] to specify simple effect to plot. The formula must have the following form: `outcome ~ focal | moderator`
+#' @param formula an object of class [`formula`] to specify simple effect to plot.
+#' The formula must have the following form: `outcome ~ focal | moderator`. See Details below for nominal moderators.
 #' @param model an [`blimp_obj`]. The model must have a SIMPLE command output saved.
 #' @param ci a value between 0 and 1 specifying the credible interval size
 #' @param xvals a list of values to evaluate for the focal variable. If empty, they will automatically be determined
@@ -13,6 +14,10 @@
 #' To change colors use ggplot2's scale system. Both fill and color are used. See
 #' [`ggplot2::scale_manual`] for more information about setting a manual set of colors.
 #'
+#'For nominal moderators, the variable must include the nominal code used in the dummy codes (e.g., moderator.1, moderator.2, etc).
+#'When there are multiple dummy codes, then all codes must be listed using a `+`.
+#'For example, after the `~` the following statement can be included:
+#'   \deqn{\code{focal | moderator.1 + moderator.2}}
 #' @examples
 #' # set seed
 #' set.seed(981273)
@@ -42,7 +47,8 @@
 simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
 
     # Extract Characters
-    f <- formula |> as.character()
+    f <- formula |> as.character() |>
+        gsub('`', '', x = _) |> gsub(' \\+ ', ' ', x = _)
 
     # Check inputs
     if (length(f) != 3) throw_error(c(
@@ -80,12 +86,25 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
 
     # Split names into data frame
     n <- names(slope)
+
+    # Split moderator statement
+    mod_state <- regmatches(n, regexpr('(?<= \\| ).+', n, perl = T)) |> strsplit(', ')
+    m <- sapply(
+        mod_state,
+        \(n) regmatches(n, regexpr('.+(?= @ )', n, perl = T)) |> paste(collapse = ' ')
+    )
+    v <- sapply(
+        mod_state,
+        \(n) regmatches(n, regexpr('(?<= @ ).+', n, perl = T)) |> paste(collapse = ', ')
+    )
+
+    # Create data.frame
     d <- data.frame(
         col = seq_along(n),
         outcome   = regmatches(n, regexpr('.+(?= ~ )', n, perl = T)),
         predictor = regmatches(n, regexpr('(?<= ~ ).+(?= \\| )', n, perl = T)),
-        moderator = regmatches(n, regexpr('(?<= \\| ).+(?= @ )', n, perl = T)),
-        value     = regmatches(n, regexpr('(?<= @ ).+', n, perl = T))
+        moderator = m,
+        value     = v
     )
 
     # Subset out effects
