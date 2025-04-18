@@ -53,9 +53,9 @@ make_labeller <- function(pnames, quants) {
     )
 }
 
-#' Function to generate conditional regression equation plots (i.e., simple effects) with [`rblimp`] and SIMPLE command
+#' Function to generate graph posterior density plots for parameters
 #' @description
-#' Generates a conditional effect plots based based on the posterior summaries from the output of [`rblimp`].
+#' Generates [`ggplot2::ggplot`] plots using [`ggplot2::geom_density`] based on the output from [`rblimp`]
 #' @param model an [`blimp_obj`].
 #' @param selector a name of a variable, a name of a parameter, a number of a parameter,
 #' or a combination of any of them. If left empty, a plot of all parameters will be returned. See Examples.
@@ -143,7 +143,7 @@ posterior_plot <- function(
             return(
                 posterior_plot(model, o, ...)
                 + ggplot2::ggtitle(
-                    paste0("Posterior Distribution for ", selector, " Model Parameters"),
+                    paste0("Posterior Distributions for ", selector, " Model Parameters"),
                 )
             )
         } else {

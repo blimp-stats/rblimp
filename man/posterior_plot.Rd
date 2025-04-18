@@ -2,7 +2,7 @@
 % Please edit documentation in R/posterior_plot.R
 \name{posterior_plot}
 \alias{posterior_plot}
-\title{Function to generate conditional regression equation plots (i.e., simple effects) with \code{\link{rblimp}} and SIMPLE command}
+\title{Function to generate graph posterior density plots for parameters}
 \usage{
 posterior_plot(model, selector, ...)
 }
@@ -18,7 +18,7 @@ or a combination of any of them. If left empty, a plot of all parameters will be
 a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
 }
 \description{
-Generates a conditional effect plots based based on the posterior summaries from the output of \code{\link{rblimp}}.
+Generates \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plots using \code{\link[ggplot2:geom_density]{ggplot2::geom_density}} based on the output from \code{\link{rblimp}}
 }
 \details{
 To change colors use ggplot2's scale system. Both fill and color are used. See
