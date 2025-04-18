@@ -244,51 +244,6 @@ setMethod(
     }
 )
 
-#' Internal function to Create Traceplots
-#' @noRd
-create_traceplot <- function(x, colors = NULL, ...) {
-    # Check colors
-    if (is.null(colors)) {
-        colors <- seq_along(x$data)
-    } else {
-        if (length(colors) != length(x$data)) {
-            throw_error("colors must be length of number of chains ({length(x$data)})")
-        }
-    }
-    for (i in seq_along(x$data)) {
-        if (i == 1) {
-            plot(x$data[[i]], type = "l", col = colors[i], xlab = "iteration", ylab = "value", main = x$name, ...)
-        } else {
-            lines(x$data[[i]], type = "l", col = colors[i])
-        }
-    }
-}
-
-#' Create Traceplots for `blimp_obj`
-#' @export
-setMethod(
-    "plot", "blimp_obj",
-    function(x, y, colors = NULL, ...) {
-        mydata <- do.call("rbind", x@burn)
-        if (missing(y)) {
-            out <- traceplots(x)
-            for (i in seq_along(out)) {
-                plot(out[[i]], colors = colors, ...)
-                invisible(
-                    readline(
-                        prompt = paste0("  Hit <Return> to see next plot (", i, "/", length(out), ")")
-                    )
-                )
-            }
-            return(invisible(out))
-        } else if (length(y) > 0 & is.numeric(y)) {
-            return(plot(traceplots(x, y), colors = colors, ...))
-        }
-        throw_error("Unable to create plots.")
-    }
-)
-
-
 
 #' Coerces a [`blimp_obj`] or `blimp_bygroup` to a `mitml.list`
 #' @export
