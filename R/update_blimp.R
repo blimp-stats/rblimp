@@ -65,6 +65,8 @@ update_version <- function() {
     v <- suppressWarnings(
         tryCatch(readLines(u, 8, warn = FALSE)[8], error = \(e) NA)
     )
+    # Close connection
+    close(u)
 
     # Return version
     substr(v, 9, nchar(v)) |> strsplit('\\.') |> unlist()

@@ -115,11 +115,15 @@ check_blimp_update <- function() {
     if (has_blimp_update()) {
         cli::cli_alert("Blimp has an update!\n Would you like to open up the updater?\n")
         x <- readline('(Yes/No): ')
-        if (tolower(x) == 'yes' || tolower(x) == 'y') update_blimp()
+        if (tolower(x) == 'yes' || tolower(x) == 'y') {
+            update_blimp()
+            return(TRUE)
+        }
         else {
             cli::cli_alert_warning("Supressing update messages for 10 hours.")
         }
     }
+    return(FALSE)
 }
 
 

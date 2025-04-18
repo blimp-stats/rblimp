@@ -23,7 +23,12 @@ rblimp_source <- function(
         nopowershell = FALSE) {
 
     # Check blimp update
-    if (getOption("check_blimp_update", default = TRUE)) check_blimp_update()
+    if (getOption("check_blimp_update", default = TRUE)) {
+        if(check_blimp_update()) throw_error(c(
+            "Updating Blimp",
+            i = "Rerun previous model once updated."
+        ))
+    }
 
     # Establish blimp exec
     blimp_path <- detect_blimp()
