@@ -34,7 +34,7 @@ make_plot_data <- function(model, parameter) {
     return(plot_data)
 }
 
-#' Internal function for creating facet labeler function
+#' Internal function for creating facet labeller function
 #' @param pnames a vector of parameter names
 #' @param quants a matrix of quantiles
 #' @importFrom ggplot2 as_labeller
