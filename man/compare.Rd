@@ -11,7 +11,6 @@ This creates a list of blimp_tp object which can be used with plot to create tra
         "R2: Level-2 Random Intercepts", "R2: Level-2 Random Slopes",
         "R2: Level-3 Random Slopes", "R2: Level-3 Random Intercepts",
         "R2: Residual Variation", "R2: Level-1 Residual Variation"))
-    show(blimp_cp) # Prints output
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

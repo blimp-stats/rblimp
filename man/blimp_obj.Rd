@@ -10,13 +10,13 @@
 This is the output object and methods for rblimp
 }
 \usage{
-output(blimp_obj)
-psr(blimp_obj)
-datainfo(blimp_obj)
-modelinfo(blimp_obj)
-modelfit(blimp_obj)
-algorithm(blimp_obj)
-summary(blimp_obj, ...)
+output(object)
+psr(object)
+datainfo(object)
+modelinfo(object)
+modelfit(object)
+algorithm(object)
+summary(object, ...)
 
 
 }
