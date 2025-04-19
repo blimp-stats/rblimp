@@ -12,6 +12,7 @@ residual_plot(
   horz_line = "black",
   col1 = "#0571b0",
   col2 = "#ca0020",
+  linewidth = 1.1,
   ...
 )
 }
@@ -29,6 +30,8 @@ residual_plot(
 \item{col1}{the color of the loess mean line}
 
 \item{col2}{the color of the loess credible bound lines}
+
+\item{linewidth}{the linewidth value for the loess lines and its bounds.}
 
 \item{...}{arguments passed to \code{\link{loess}} call used to loess lines.}
 }

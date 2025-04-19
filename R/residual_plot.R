@@ -10,6 +10,7 @@
 #' @param horz_line the color of the horiztonal zero line
 #' @param col1 the color of the loess mean line
 #' @param col2 the color of the loess credible bound lines
+#' @param linewidth the linewidth value for the loess lines and its bounds.
 #' @param ... arguments passed to [`loess`] call used to loess lines.
 #' @returns a [`ggplot2::ggplot`] plot
 #' @details
@@ -46,6 +47,7 @@ residual_plot <- function(
         model, variable, nsigma = 1,
         point_col = 'black', horz_line = 'black',
         col1 = '#0571b0', col2 = '#ca0020',
+        linewidth = 1.1,
         ...
 ) {
 
@@ -90,6 +92,9 @@ residual_plot <- function(
             "{.arg model} does not contain imputed residual scores for `{variable}`"
         )
     }
+    # predicted name
+    predi_name <- paste0(variable, '.predicted')
+    resid_name <- paste0(variable, '.residual')
 
     # Perform imputations
     o <- mapply(
@@ -103,8 +108,8 @@ residual_plot <- function(
             var <- pred$se.fit^2
             list(x = x, y = y, yfit = yfit, var = var)
         },
-        x = lapply(pscores, \(.) .[, paste0(variable, '.predicted')]),
-        y = lapply(rscores, \(.) .[, paste0(variable, '.residual')]),
+        x = lapply(pscores, \(.) .[, predi_name]),
+        y = lapply(rscores, \(.) .[, resid_name]),
         SIMPLIFY = F
     )
 
@@ -124,8 +129,14 @@ residual_plot <- function(
         ggplot2::ggplot()
         + ggplot2::geom_point(ggplot2::aes(x, y), alpha = .25, color = point_col)
         + ggplot2::geom_hline(yintercept = 0, color = horz_line)
-        + ggplot2::geom_line(ggplot2::aes(x0, yfit), color = col1, linewidth = 1.1)
-        + ggplot2::geom_line(ggplot2::aes(x0, yfit + nsigma * sd), color = col2, linewidth = 1.1)
-        + ggplot2::geom_line(ggplot2::aes(x0, yfit - nsigma * sd), color = col2, linewidth = 1.1)
+        + ggplot2::geom_line(ggplot2::aes(x0, yfit), color = col1, linewidth = linewidth)
+        + ggplot2::geom_line(ggplot2::aes(x0, yfit + nsigma * sd), color = col2, linewidth = linewidth)
+        + ggplot2::geom_line(ggplot2::aes(x0, yfit - nsigma * sd), color = col2, linewidth = linewidth)
+        + xlab(predi_name) + ylab(resid_name)
+        + ggplot2::labs(
+            title = paste('Residuals v. Predicted Values for', variable),
+            subtitle = paste('Averaged over', length(pscores), 'imputations'),
+            x = predi_name, y = resid_name
+        )
     )
 }
