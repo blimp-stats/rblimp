@@ -26,7 +26,7 @@ Generates a conditional effect plots based based on the posterior summaries from
 }
 \details{
 To change colors use ggplot2's scale system. Both fill and color are used. See
-\code{\link[ggplot2:scale_manual]{ggplot2::scale_manual}} for more information about setting a manual set of colors.
+\code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for more information about setting a manual set of colors.
 
 For nominal moderators, the variable must include the nominal code used in the dummy codes (e.g., moderator.1, moderator.2, etc).
 When there are multiple dummy codes, then all codes must be listed using a \code{+}.

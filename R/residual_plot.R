@@ -13,7 +13,7 @@
 #' @param ... arguments passed to [`loess`] call used to loess lines.
 #' @returns a [`ggplot2::ggplot`] plot
 #' @details
-#' All colors are passed into `ggplot2`. See [`?ggplot2::color`] for details.
+#' All colors are passed into `ggplot2`. See [`ggplot2::aes_colour_fill_alpha`] for details on changing colors.
 #'
 #' @examples
 #' # set seed

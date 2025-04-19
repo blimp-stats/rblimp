@@ -39,7 +39,7 @@ a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
 Generates a conditional effect plots based based on the posterior summaries from the output of \code{\link{rblimp}}.
 }
 \details{
-All colors are passed into \code{ggplot2}. See \code{\link[?ggplot2:color]{?ggplot2::color}} for details.
+All colors are passed into \code{ggplot2}. See \code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for details on changing colors.
 }
 \examples{
 # set seed

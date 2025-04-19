@@ -22,7 +22,7 @@ Generates \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plots using \code{\link[
 }
 \details{
 To change colors use ggplot2's scale system. Both fill and color are used. See
-\code{\link[ggplot2:scale_manual]{ggplot2::scale_manual}} for more information about setting a manual set of colors.
+\code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for more information about setting a manual set of colors.
 }
 \examples{
 # set seed
