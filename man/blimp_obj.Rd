@@ -14,10 +14,9 @@ output(blimp_obj)
 psr(blimp_obj)
 datainfo(blimp_obj)
 modelinfo(blimp_obj)
-waldtest(blimp_obj)
+modelfit(blimp_obj)
 algorithm(blimp_obj)
 summary(blimp_obj, ...)
-describe(blimp_obj, ...)
 
 
 }
