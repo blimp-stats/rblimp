@@ -152,8 +152,12 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     if (missing(xvals)) {
         ind <- (model@average_imp |> names() |> tolower()) == tolower(pre)
 
-        # handle if cannot find x values or if too many
-        if (sum(ind) != 1) throw_error(
+        # Check if it is found. If not check latent variables.
+        if (sum(ind) != 1) {
+            ind <- (model@average_imp |> names() |> tolower()) == tolower(paste0(pre, '.latent'))
+        }
+        # If that isn't found crash out
+        if (sum(ind) != 1)  throw_error(
             "Cannot find focal preditor in imputed data"
         )
         focal_val <- model@average_imp[,ind]
