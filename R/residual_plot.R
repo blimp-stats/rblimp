@@ -2,7 +2,7 @@
 
 #' Function to generate conditional regression equation plots (i.e., simple effects) with [`rblimp`] and SIMPLE command
 #' @description
-#' Generates a conditional effect plots based based on the posterior summaries from the output of [`rblimp`].
+#' Generates a conditional effect plots based on the posterior summaries from the output of [`rblimp`].
 #' @param model an [`blimp_obj`]. The object must have a SIMPLE command output saved.
 #' @param variable the name of the outcome for which to create a plot
 #' @param nsigma the number of standard deviations to produce credible bounds

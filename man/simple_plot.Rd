@@ -22,7 +22,7 @@ The formula must have the following form: \code{outcome ~ focal | moderator}. Se
 a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
 }
 \description{
-Generates a conditional effect plots based based on the posterior summaries from the output of \code{\link{rblimp}}.
+Generates a conditional effect plots based on the posterior summaries from the output of \code{\link{rblimp}}.
 }
 \details{
 To change colors use ggplot2's scale system. Both fill and color are used. See

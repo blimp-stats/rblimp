@@ -2,7 +2,7 @@
 
 #' Function to generate conditional regression equation plots (i.e., simple effects) with [`rblimp`] and SIMPLE command
 #' @description
-#' Generates a conditional effect plots based based on the posterior summaries from the output of [`rblimp`].
+#' Generates a conditional effect plots based on the posterior summaries from the output of [`rblimp`].
 #' @param formula an object of class [`formula`] to specify simple effect to plot.
 #' The formula must have the following form: `outcome ~ focal | moderator`. See Details below for nominal moderators.
 #' @param model an [`blimp_obj`]. The model must have a SIMPLE command output saved.
