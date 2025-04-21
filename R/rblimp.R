@@ -220,6 +220,16 @@ rblimp <- function(model,
     # Set parameter type
     oname <- lab$V1
     ptype <- lab$V2
+    # Handle predictor models
+    lab$V3[startsWith(ptype, "Level-")] |>
+        sapply(\(x) {
+            if(grepl('Var\\(|(Residual Var\\.)', x)) return('Variance')
+            else if (grepl('~', x)) return('Beta')
+            else if (grepl('Threshold', x)) return('Threshold')
+            else if (startsWith(x, 'Grand Mean#')) return('Grand Mean')
+            return ('Beta')
+        }) -> ptype[startsWith(ptype, "Level-")]
+    ptype[startsWith(ptype, 'Grand Mean#')] <- 'Grand Mean'
 
     # parse labels file and create figure titles
     lab$V2[lab$V3 == "Intercept" & lab$V2 != "Odds Ratio"] <- "intercept"
@@ -354,6 +364,7 @@ rblimp <- function(model,
             Variance = 1,
             Correlations = 1,
             Beta = 2,
+            `Grand Mean` = 2,
             `Standardized Beta` = 3,
             `Odds Ratio` = 3,
             R2 = 4,
