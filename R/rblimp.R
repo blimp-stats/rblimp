@@ -229,7 +229,7 @@ rblimp <- function(model,
             else if (startsWith(x, 'Grand Mean#')) return('Grand Mean')
             return ('Beta')
         }) -> ptype[startsWith(ptype, "Level-")]
-    ptype[startsWith(ptype, 'Grand Mean#')] <- 'Grand Mean'
+    ptype[startsWith(lab$V3, 'Grand Mean#')] <- 'Grand Mean'
 
     # parse labels file and create figure titles
     lab$V2[lab$V3 == "Intercept" & lab$V2 != "Odds Ratio"] <- "intercept"
