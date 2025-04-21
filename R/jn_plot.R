@@ -19,7 +19,7 @@ set_group <- function(x){ with(rle(x), {
 #' @details
 #' To change colors use ggplot2's scale system. Both fill and color are used. See
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
-#' @examples
+#' @examplesIf has_blimp()
 #' # set seed
 #' set.seed(981273)
 #'
@@ -134,6 +134,51 @@ jn_plot_func <- function(func, xrange, ci = 0.95) {
 #' @param value2 The value to change as a function of moderator
 #' @returns a [`function`]
 #' @seealso [jn_plot_func()]
+#' @examplesIf has_blimp()
+#' # set seed
+#' set.seed(981273)
+#'
+#' # Generate Data
+#' mydata <- data.frame(
+#'     x1 = rnorm(100),
+#'     x2 = rnorm(100),
+#'     m = rnorm(100)
+#' )
+#' mydata$y <- with(
+#'     mydata,
+#'     rnorm(100,
+#'           10 + x1*0.5 + x2*0.5 + m + .2*x1*x2 + .3*x2*m + .1*x1*m + .7*x1*x2*m,
+#'           1
+#'     )
+#' )
+#'
+#' # Run Rblimp
+#' m1 <- rblimp(
+#'     'y ~ x1 x2 m x1*x2 x1*m x2*m x1*x2*m',
+#'     mydata,
+#'     center = ~ m,
+#'     seed = 10972,
+#'     burn = 1000,
+#'     iter = 1000
+#' )
+#'
+#' # Get parameter values
+#' params <- m1 |> as.matrix()
+#'
+#' # Generate Plot
+#' (
+#'     jn_plot_func(
+#'         compute_condeff(params[,6], params[,9]),
+#'         xrange = c(-3, 3)
+#'     )
+#'     + ggplot2::labs(
+#'         title = 'Johnson-Neyman Plot for `x1` * `x2` Moderated by `x2`',
+#'         subtitle = 'Red area represents 0 within 95% interval',
+#'         y = 'y ~ x1 * x2',
+#'         x = 'm'
+#'     )
+#'     + ggplot2::theme_minimal()
+#' )
 #' @export
 compute_condeff <- function(value1, value2) {
     force(value1); force(value2)
@@ -156,7 +201,7 @@ compute_condeff <- function(value1, value2) {
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
 #'
 #' @seealso [jn_plot_func()]
-#' @examples
+#' @examplesIf has_blimp()
 #' # set seed
 #' set.seed(981273)
 #'

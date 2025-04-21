@@ -138,14 +138,13 @@ check_blimp_update <- function() {
 #' or when wanting to use a beta version of blimp's computational engine (which must be installed via the updater).
 #' @returns
 #' `TRUE` if the executable is successfully set; otherwise, it produces an error.
-#' @examples
-#' \dontrun{
-#'     # Use blimp executable at `filepath` location
-#'     set_blimp('filepath')
+#' @examplesIf has_blimp()
+#' # example code
+#' # Use blimp executable at `filepath` location
+#' \dontrun{set_blimp('filepath')}
 #'
-#'     # Use default blimp location but beta build
-#'     set_blimp(beta = TRUE)
-#' }
+#' # Use default blimp location but beta build
+#' set_blimp(beta = TRUE)
 #' @export
 set_blimp <- function(exec, beta = FALSE) {
     if (missing(exec) || is.null(exec)) {
@@ -180,6 +179,9 @@ set_blimp <- function(exec, beta = FALSE) {
 #' @seealso [`rblimp::set_blimp`] to set blimp location
 #' @returns
 #' A character string of blimp's executable location.
+#' @examplesIf has_blimp()
+#' # Obtain blimp location
+#' detect_blimp()
 #' @export
 detect_blimp <- function() {
     # Return any set executable
@@ -208,4 +210,22 @@ detect_blimp <- function() {
         return(detect_blimp_windows(paste0(exec, ".exe")))
     }
     throw_error("Unable to detect Operating System.")
+}
+
+
+
+#' Does the system have blimp installed?
+#' @description
+#' Returns a logical if blimp is detected by [`detect_blimp`]
+#' @details
+#' This function uses [`detect_blimp`] to determine if blimp is installed.
+#' @seealso [`detect_blimp`]
+#' @returns
+#' a `logical`
+#' @examples
+#' # Detect if system has blimp
+#' has_blimp()
+#' @export
+has_blimp <- function() {
+    !is.na(tryCatch(detect_blimp(), error = function(e) NA))
 }

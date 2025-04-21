@@ -16,7 +16,7 @@
 #' @details
 #' All colors are passed into `ggplot2`. See [`ggplot2::aes_colour_fill_alpha`] for details on changing colors.
 #'
-#' @examples
+#' @examplesIf has_blimp()
 #' # set seed
 #' set.seed(981273)
 #'

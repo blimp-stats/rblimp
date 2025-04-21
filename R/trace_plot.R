@@ -135,7 +135,7 @@ make_labeller_traceplot <- function(pnames, psrf_val) {
 #' To change colors use ggplot2's scale system. Both fill and color are used. See
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
 #'
-#' @examples
+#' @examplesIf has_blimp()
 #' # set seed
 #' set.seed(981273)
 #'

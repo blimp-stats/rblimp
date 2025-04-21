@@ -25,6 +25,7 @@ To change colors use ggplot2's scale system. Both fill and color are used. See
 \code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for more information about setting a manual set of colors.
 }
 \examples{
+\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 # set seed
 set.seed(981273)
 
@@ -63,4 +64,5 @@ posterior_plot(m1, 'x residual variance') + ggplot2::theme_minimal()
 
 # Generate plot of Parameters 7 and 9
 posterior_plot(m1, c(7, 9)) + ggplot2::theme_minimal()
+\dontshow{\}) # examplesIf}
 }

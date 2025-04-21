@@ -12,3 +12,9 @@ Runs the Blimp Updater in order to Update Blimp
 \details{
 If the session is not an interactive session then it will not open the updater.
 }
+\examples{
+\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# Open Blimp Updater
+update_blimp()
+\dontshow{\}) # examplesIf}
+}

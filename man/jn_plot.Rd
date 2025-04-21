@@ -25,6 +25,7 @@ To change colors use ggplot2's scale system. Both fill and color are used. See
 \code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for more information about setting a manual set of colors.
 }
 \examples{
+\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 # set seed
 set.seed(981273)
 
@@ -48,6 +49,7 @@ m1 <- rblimp(
 
 # Generate Plot
 jn_plot(y ~ x | m, m1)
+\dontshow{\}) # examplesIf}
 }
 \seealso{
 \code{\link[=jn_plot_func]{jn_plot_func()}}

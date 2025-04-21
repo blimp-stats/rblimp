@@ -18,7 +18,7 @@
 #'When there are multiple dummy codes, then all codes must be listed using a `+`.
 #'For example, after the `~` the following statement can be included:
 #'   \deqn{\code{focal | moderator.1 + moderator.2}}
-#' @examples
+#' @examplesIf has_blimp()
 #' # set seed
 #' set.seed(981273)
 #'

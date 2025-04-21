@@ -34,6 +34,7 @@ For example, after the \code{~} the following statement can be included:
 \deqn{\code{focal | moderator.1 + moderator.2}}
 }
 \examples{
+\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 # set seed
 set.seed(981273)
 
@@ -57,4 +58,5 @@ m1 <- rblimp(
 
 # Generate Plot
 simple_plot(y ~ x | m, m1)
+\dontshow{\}) # examplesIf}
 }

@@ -64,7 +64,7 @@
 #' @importFrom methods new show
 #' @importFrom stats coef median model.matrix ppoints pt qnorm quantile resid sd start vcov
 #' @importFrom utils read.csv read.table write.csv
-#' @examples
+#' @examplesIf has_blimp()
 #' # Generate Data
 #' mydata <- data.frame(x = rnorm(1000), y = rnorm(1000))
 #'

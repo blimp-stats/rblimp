@@ -17,6 +17,54 @@ a \code{\link{function}}
 \description{
 Convenience Function for computing conditional effects for \code{\link{jn_plot_func}}
 }
+\examples{
+\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# set seed
+set.seed(981273)
+
+# Generate Data
+mydata <- data.frame(
+    x1 = rnorm(100),
+    x2 = rnorm(100),
+    m = rnorm(100)
+)
+mydata$y <- with(
+    mydata,
+    rnorm(100,
+          10 + x1*0.5 + x2*0.5 + m + .2*x1*x2 + .3*x2*m + .1*x1*m + .7*x1*x2*m,
+          1
+    )
+)
+
+# Run Rblimp
+m1 <- rblimp(
+    'y ~ x1 x2 m x1*x2 x1*m x2*m x1*x2*m',
+    mydata,
+    center = ~ m,
+    seed = 10972,
+    burn = 1000,
+    iter = 1000
+)
+
+# Get parameter values
+params <- m1 |> as.matrix()
+
+# Generate Plot
+(
+    jn_plot_func(
+        compute_condeff(params[,6], params[,9]),
+        xrange = c(-3, 3)
+    )
+    + ggplot2::labs(
+        title = 'Johnson-Neyman Plot for `x1` * `x2` Moderated by `x2`',
+        subtitle = 'Red area represents 0 within 95\% interval',
+        y = 'y ~ x1 * x2',
+        x = 'm'
+    )
+    + ggplot2::theme_minimal()
+)
+\dontshow{\}) # examplesIf}
+}
 \seealso{
 \code{\link[=jn_plot_func]{jn_plot_func()}}
 }

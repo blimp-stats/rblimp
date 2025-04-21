@@ -13,7 +13,7 @@ setOldClass("blimp_bygroup")
 #' Separates by grouping to run blimp command on each individual sub data set.
 #' @returns a list of all blimp runs by group with class of `blimp_bygroup`
 #' @seealso [`as.mitml`]
-#' @examples
+#' @examplesIf has_blimp()
 #' # Generate Data
 #' mydata <- data.frame(
 #'     x = rnorm(1000),

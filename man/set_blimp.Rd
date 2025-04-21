@@ -23,11 +23,12 @@ standard operating system installation locations. This function is useful for no
 or when wanting to use a beta version of blimp's computational engine (which must be installed via the updater).
 }
 \examples{
-\dontrun{
-    # Use blimp executable at `filepath` location
-    set_blimp('filepath')
+\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# example code
+# Use blimp executable at `filepath` location
+\dontrun{set_blimp('filepath')}
 
-    # Use default blimp location but beta build
-    set_blimp(beta = TRUE)
-}
+# Use default blimp location but beta build
+set_blimp(beta = TRUE)
+\dontshow{\}) # examplesIf}
 }

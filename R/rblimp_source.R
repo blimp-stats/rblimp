@@ -14,7 +14,9 @@
 #' This check will only be performed on the first run in a session and then every ten hours.
 #' This behavior can be disabled by setting the `check_blimp_update` option to FALSE using [`options`].
 #' This check is not performed if R is not being run with an interactive session. See [`interactive`] for more information.
-#'
+#' @examplesIf has_blimp()
+#' # Run blimp script
+#' \dontrun{output <- rblimp_source("filepath/to/syntax")}
 #' @export
 rblimp_source <- function(
         file,

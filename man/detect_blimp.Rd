@@ -18,6 +18,12 @@ This function is called when running Blimp and can be used to determine what loc
 check if \code{R_BLIMP} is set in the environment variables. Finally, it will fall back to the default
 Blimp install location based on the operating system.
 }
+\examples{
+\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# Obtain blimp location
+detect_blimp()
+\dontshow{\}) # examplesIf}
+}
 \seealso{
 \code{\link{set_blimp}} to set blimp location
 }

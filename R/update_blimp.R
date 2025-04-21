@@ -81,6 +81,9 @@ has_blimp_update <- function() {
 #' Runs the Blimp Updater in order to Update Blimp
 #' @details
 #' If the session is not an interactive session then it will not open the updater.
+#' @examplesIf has_blimp()
+#' # Open Blimp Updater
+#' update_blimp()
 #' @export
 update_blimp <- function() {
 
