@@ -81,6 +81,7 @@ has_blimp_update <- function() {
 #' Runs the Blimp Updater in order to Update Blimp
 #' @details
 #' If the session is not an interactive session then it will not open the updater.
+#' @returns Logical if the updater was opened or not
 #' @examplesIf has_blimp()
 #' # Open Blimp Updater
 #' update_blimp()
@@ -91,7 +92,7 @@ update_blimp <- function() {
     user_os <- tolower(R.Version()$os)
 
     ## Exit if it is non interactive
-    if (interactive() == FALSE) return()
+    if (interactive() == FALSE) return(invisible(FALSE))
 
     ## Exit for linux
     if (grepl("linux", user_os)) throw_error(
@@ -119,5 +120,5 @@ update_blimp <- function() {
     ) {
         system(paste0('"',filep, '" --start-updater'), ignore.stdout = TRUE, ignore.stderr = TRUE, wait = FALSE)
     }
-    return()
+    return(invisible(TRUE))
 }

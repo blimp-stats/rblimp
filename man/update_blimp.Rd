@@ -6,6 +6,9 @@
 \usage{
 update_blimp()
 }
+\value{
+Logical if the updater was opened or not
+}
 \description{
 Runs the Blimp Updater in order to Update Blimp
 }
