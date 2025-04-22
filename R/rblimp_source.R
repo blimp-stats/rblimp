@@ -86,11 +86,14 @@ rblimp_source <- function(
             }
         }
     }
+    # Remove variable order
+    sel <- which(result == "VARIABLE ORDER IN IMPUTED DATA:")
+    if (length(sel) == 0) sel <- length(result)
 
     # Return output
     return(
         structure(
-            result,
+            result[seq_len(sel - 2)],
             class = "blimp_out",
             exitcode = exitcode
         )
