@@ -134,7 +134,11 @@ rblimp <- function(model,
         )
     }
 
-    # Check data
+    # Check if data.frame
+    if (!is.data.frame(data)) throw_error(
+        "The {.arg data} must be a data.frame"
+    )
+
     # Get attributes loop over and convert to numeric
     att_list <- vector('list', NCOL(data))
     for (i in seq_along(att_list)) {
