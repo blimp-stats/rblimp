@@ -220,10 +220,10 @@ rblimp <- function(model,
 
     # Read parameter labels
     lab2 <- lab <- read.table(file.path(tmpfolder, "plots", "labels.dat"))[-1, ]
-
-    # Set parameter type
+    # Set outcome, parameter, and block type
     oname <- lab$V1
     ptype <- lab$V2
+    block <- lab$V5
     # Handle predictor models
     lab$V3[startsWith(ptype, "Level-")] |>
         sapply(\(x) {
@@ -361,6 +361,8 @@ rblimp <- function(model,
     names(output$iterations) <- lab_names
     # Set up outcome_name
     attr(output$iterations, 'outcome_name') <- oname
+    # Set up outcome_name
+    attr(output$iterations, 'block_name') <- block
     # Set up parameter_type
     attr(output$iterations, 'parameter_type') <- ptype |> sapply(\(x) {
         switch(
