@@ -88,7 +88,7 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     n <- names(slope)
 
     # Split moderator statement
-    mod_state <- regmatches(n, regexpr('(?<= \\| ).+', n, perl = T)) |> strsplit(', ')
+    mod_state <- regmatches(n, regexpr('(?<= (\\||\\|,) ).+', n, perl = T)) |> strsplit(', ')
     m <- sapply(
         mod_state,
         \(n) regmatches(n, regexpr('.+(?= @ )', n, perl = T)) |> paste(collapse = ' ')
@@ -102,7 +102,7 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     d <- data.frame(
         col = seq_along(n),
         outcome   = regmatches(n, regexpr('.+(?= ~ )', n, perl = T)),
-        predictor = regmatches(n, regexpr('(?<= ~ ).+(?= \\| )', n, perl = T)),
+        predictor = regmatches(n, regexpr('(?<= ~ ).+(?= (\\||\\|,) )', n, perl = T)),
         moderator = m,
         value     = v
     )
