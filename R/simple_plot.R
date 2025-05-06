@@ -165,6 +165,8 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
 
         l <- (model@average_imp[,ind] - m) |> pretty() |> range()
         xvals <- seq(l[1], l[2], length.out = 100)
+    } else if (length(xvals) == 2) {
+        xvals <- seq(xvals[1], xvals[2], length.out = 100)
     }
 
     # Handle probabilities
