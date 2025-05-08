@@ -31,6 +31,7 @@ rblimp(
   fixed,
   output,
   tmpfolder,
+  add_save = TRUE,
   print_output = TRUE,
   nopowershell = FALSE
 )
@@ -38,8 +39,8 @@ rblimp(
 rblimp_fcs(
   variables,
   data,
-  burn = 10000,
-  iter = 10000,
+  burn,
+  iter,
   seed,
   thin,
   nimps,
@@ -49,9 +50,10 @@ rblimp_fcs(
   chains,
   options,
   transform,
-  tmpfolder,
   fixed,
   output,
+  tmpfolder,
+  save_add = TRUE,
   print_output = TRUE,
   nopowershell = FALSE
 )
@@ -131,6 +133,12 @@ rblimp_syntax(
 \item{output}{a character string or vector/list of character strings. Specifies Blimp's OUTPUT command}
 
 \item{tmpfolder}{a character string. If specified \code{rblimp} will use the given
+file path as a temporary directory instead of creating one with \code{\link{tempdir}}}
+
+\item{add_save}{a logical value or a list of logical values.
+If \code{TRUE} then saveLatent, saveResidual, and savePredicted will be included in OPTIONS command.
+Otherwise, a list with elements \code{latent}, \code{residual}, and \code{predicted}
+each containing a logical value can be used to toggle on or off them invidually.
 file path as a temporary directory instead of creating one with \code{\link{tempdir}}}
 
 \item{print_output}{The type of output printed to the console.

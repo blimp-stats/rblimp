@@ -30,6 +30,11 @@
 #' @param output a character string or vector/list of character strings. Specifies Blimp's OUTPUT command
 #' @param tmpfolder a character string. If specified `rblimp` will use the given
 #' file path as a temporary directory instead of creating one with [`tempdir`]
+#' @param add_save a single logical value or a list of logical values.
+#' If `TRUE` then saveLatent, saveResidual, and savePredicted will be included in OPTIONS command.
+#' Otherwise, it will be coerced to a list. The elements of the list should labeled `latent`, `residual`, and `predicted`
+#' each containing a single logical value that can be used to toggle on or off them individually.
+#' Missing elements will be defaulted to `TRUE`.
 #' @param print_output The type of output printed to the console.
 #' `'iteration'` or logical `TRUE` is only iteration history, `'none'` or logical `FALSE`
 #' suppresses all output to console, and `'all'` prints all output to console.
@@ -109,9 +114,20 @@ rblimp <- function(model,
                    fixed,
                    output,
                    tmpfolder,
+                   add_save = TRUE,
                    print_output = TRUE,
                    nopowershell = FALSE) {
-    # TODO Check burn, iter (remove defaults)
+
+    # Check inputs
+    if (length(burn) != 1 || !is.numeric(burn) || burn < 0) throw_error(
+        "{.arg burn} must be a positive numeric value"
+    )
+    if (length(iter) != 1 || !is.numeric(iter) || iter < 0) throw_error(
+        "{.arg iter} must be a positive numeric value"
+    )
+    if (length(nimps) != 1 || !is.numeric(nimps) || nimps < 0) throw_error(
+        "{.arg nimps} must be a positive numeric value"
+    )
 
     # Check output
     if (!is.logical(print_output)) {
@@ -152,7 +168,6 @@ rblimp <- function(model,
     write.csv(data, file.path(tmpfolder, "data.csv"), row.names = F, quote = F)
 
     # Create saveCommand
-    # TODO create way to turn this off
     saveCmd <- vector('list', 5L)
     saveCmd[[1]] <- "estimates = estimates.csv"
     saveCmd[[2]] <- "iterations = iter.csv"
@@ -162,6 +177,44 @@ rblimp <- function(model,
     if (!missing(nimps)) saveCmd[[length(saveCmd) + 1]] <- "stacked = imps.csv"
     if (!missing(waldtest)) saveCmd[[length(saveCmd) + 1]] <- "waldtest = waldtest.csv"
     if (!missing(simple)) saveCmd[[length(saveCmd) + 1]] <- "simple = simple.csv"
+
+    ## append to options
+    if (is.logical(add_save) && length(add_save) == 1) {
+        if (add_save) {
+            if (missing(options)) options <- NULL
+            options <- c(options, "savepredicted savelatent saveresidual")
+        }
+    }
+    else {
+        add_save <- as.list(add_save)
+        if (!is.null(add_save$predicted)) {
+            if (add_save$predicted) {
+                if (missing(options)) options <- NULL
+                options <- c(options, "savepredicted")
+            }
+        } else {
+            if (missing(options)) options <- NULL
+            options <- c(options, "savepredicted")
+        }
+        if (!is.null(add_save$latent)) {
+            if (add_save$latent) {
+                if (missing(options)) options <- NULL
+                options <- c(options, "savelatent")
+            }
+        } else {
+            if (missing(options)) options <- NULL
+            options <- c(options, "savelatent")
+        }
+        if (!is.null(add_save$residual)) {
+            if (add_save$residual) {
+                if (missing(options)) options <- NULL
+                options <- c(options, "saveresidual")
+            }
+        } else {
+            if (missing(options)) options <- NULL
+            options <- c(options, "saveresidual")
+        }
+    }
 
     # Write input file
     imp_file <- rblimp_syntax(
@@ -353,6 +406,7 @@ rblimp <- function(model,
     rownames(output$estimates) <- trimws(lab_row_names)
     colnames(output$estimates) <- gsub('^X', '', colnames(output$estimates))
     colnames(output$estimates) <- gsub('\\.$', '%', colnames(output$estimates))
+
 
     output$iterations <- structure(
         read.csv(file.path(tmpfolder, "iter.csv"), header = F),

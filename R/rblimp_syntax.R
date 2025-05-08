@@ -146,13 +146,6 @@ rblimp_syntax <- function(
         fixed <- parse_formula(fixed)
     }
 
-    ## append to options
-    if (missing(options)) options <- NULL
-
-    # TODO create way to turn this off
-    options <- c(options, "savepred savelatent saveresid")
-
-
     # Return syntax file
     make_syntax(
         "data.csv", model,

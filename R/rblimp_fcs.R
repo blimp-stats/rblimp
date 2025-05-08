@@ -3,8 +3,8 @@
 #' @export
 rblimp_fcs <- function(variables,
                        data,
-                       burn = 10000,
-                       iter = 10000,
+                       burn,
+                       iter,
                        seed,
                        thin,
                        nimps,
@@ -14,12 +14,12 @@ rblimp_fcs <- function(variables,
                        chains,
                        options,
                        transform,
-                       tmpfolder,
                        fixed,
                        output,
+                       tmpfolder,
+                       save_add = TRUE,
                        print_output = TRUE,
                        nopowershell = FALSE) {
-    # TODO Remove default `burn` and `iter`
 
     return(rblimp(
         model = paste0(";FCS: ", paste(variables, collapse = " "), ";"),
