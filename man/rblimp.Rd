@@ -135,11 +135,11 @@ rblimp_syntax(
 \item{tmpfolder}{a character string. If specified \code{rblimp} will use the given
 file path as a temporary directory instead of creating one with \code{\link{tempdir}}}
 
-\item{add_save}{a logical value or a list of logical values.
+\item{add_save}{a single logical value or a list of logical values.
 If \code{TRUE} then saveLatent, saveResidual, and savePredicted will be included in OPTIONS command.
-Otherwise, a list with elements \code{latent}, \code{residual}, and \code{predicted}
-each containing a logical value can be used to toggle on or off them invidually.
-file path as a temporary directory instead of creating one with \code{\link{tempdir}}}
+Otherwise, it will be coerced to a list. The elements of the list should labeled \code{latent}, \code{residual}, and \code{predicted}
+each containing a single logical value that can be used to toggle on or off them individually.
+Missing elements will be defaulted to \code{TRUE}.}
 
 \item{print_output}{The type of output printed to the console.
 \code{'iteration'} or logical \code{TRUE} is only iteration history, \code{'none'} or logical \code{FALSE}

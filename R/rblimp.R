@@ -125,9 +125,11 @@ rblimp <- function(model,
     if (length(iter) != 1 || !is.numeric(iter) || iter < 0) throw_error(
         "{.arg iter} must be a positive numeric value"
     )
-    if (length(nimps) != 1 || !is.numeric(nimps) || nimps < 0) throw_error(
-        "{.arg nimps} must be a positive numeric value"
-    )
+    if (!missing(nimps)) {
+        if (length(nimps) != 1 || !is.numeric(nimps) || nimps < 0) throw_error(
+            "{.arg nimps} must be a positive numeric value"
+        )
+    }
 
     # Check output
     if (!is.logical(print_output)) {
@@ -154,6 +156,11 @@ rblimp <- function(model,
     if (!is.data.frame(data)) throw_error(
         "The {.arg data} must be a data.frame"
     )
+    # Convert to data frame if a tibble
+    if ("tbl_df" %in% class(data)) {
+        cli::cli_alert_warning("Converting data to `data.farme`")
+        data <- as.data.frame(data)
+    }
 
     # Get attributes loop over and convert to numeric
     att_list <- vector('list', NCOL(data))
