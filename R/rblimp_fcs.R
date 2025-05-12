@@ -1,10 +1,11 @@
 # Wrapper for fcs
 #' @rdname rblimp
+#' @param variables list of variables to be included in FCS procedure
 #' @export
 rblimp_fcs <- function(variables,
                        data,
-                       burn,
-                       iter,
+                       burn = 10000,
+                       iter = 10000,
                        seed,
                        thin,
                        nimps,
@@ -17,7 +18,7 @@ rblimp_fcs <- function(variables,
                        fixed,
                        output,
                        tmpfolder,
-                       save_add = TRUE,
+                       add_save = TRUE,
                        print_output = TRUE,
                        nopowershell = FALSE) {
 

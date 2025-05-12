@@ -226,6 +226,7 @@ compute_condeff <- function(value1, value2) {
 #' # Generate Plot
 #' jn_plot(y ~ x | m, m1)
 #' @import ggplot2
+#' @importFrom methods is
 #' @export
 jn_plot <- function(formula, model, ci = 0.95) {
 
@@ -239,7 +240,7 @@ jn_plot <- function(formula, model, ci = 0.95) {
         "Must have the form: `outcome ~ focal | moderator`"
     ))
 
-    if (class(model) != 'blimp_obj') throw_error(
+    if (!is(model, 'blimp_obj')) throw_error(
         "{.arg model} is not a `blimp_obj`"
     )
 

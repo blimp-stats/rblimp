@@ -7,10 +7,14 @@
 This creates a list of blimp_tp object which can be used with plot to create traceplots
 }
 \usage{
-    compare(model0, model, use = "mean", greaterThan = TRUE, suffixes = c("R2: Coefficients",
-        "R2: Level-2 Random Intercepts", "R2: Level-2 Random Slopes",
-        "R2: Level-3 Random Slopes", "R2: Level-3 Random Intercepts",
-        "R2: Residual Variation", "R2: Level-1 Residual Variation"))
+    compare(model0, model, use = "mean", greaterThan = TRUE,
+        suffixes = c(
+            "R2: Coefficients",
+            "R2: Level-2 Random Intercepts", "R2: Level-2 Random Slopes",
+            "R2: Level-3 Random Slopes", "R2: Level-3 Random Intercepts",
+            "R2: Residual Variation", "R2: Level-1 Residual Variation"
+        )
+    )
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

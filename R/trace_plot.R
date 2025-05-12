@@ -180,6 +180,7 @@ make_labeller_traceplot <- function(pnames, psrf_val) {
 #' trace_plot(m1, c(7, 9)) + ggplot2::theme_minimal()
 #' @import ggplot2
 #' @importFrom stats quantile
+#' @importFrom methods is
 #' @export
 trace_plot <- function(
         model, selector,
@@ -187,7 +188,7 @@ trace_plot <- function(
 ) {
 
     # Check model
-    if (class(model) != 'blimp_obj') throw_error(
+    if (!is(model, 'blimp_obj')) throw_error(
         "{.arg model} is not a `blimp_obj`"
     )
 

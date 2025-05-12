@@ -73,6 +73,7 @@ is_blimp_out <- function(x) {
 }
 
 #' Extract output (`blimp_out`) from `blimp_obj`
+#' @noRd
 #' @export
 output <- function(object) {
     if (!is_blimp_obj(object)) throw_error(
@@ -82,6 +83,7 @@ output <- function(object) {
 }
 
 #' Extract POTENTIAL SCALE REDUCTION output from `blimp_obj` or `blimp_out`
+#' @noRd
 #' @export
 psr <- function(object) {
     if (is_blimp_obj(object)) output <- output(object)
@@ -109,6 +111,7 @@ psr <- function(object) {
 
 
 #' Extract ALGORITHMIC OPTIONS output from `blimp_obj` or `blimp_out`
+#' @noRd
 #' @export
 algorithm <- function(object) {
     if (is_blimp_obj(object)) output <- output(object)
@@ -129,6 +132,7 @@ algorithm <- function(object) {
 }
 
 #' Extract DATA INFORMATION output from `blimp_obj` or `blimp_out`
+#' @noRd
 #' @export
 datainfo <- function(object) {
     if (is_blimp_obj(object)) output <- output(object)
@@ -149,6 +153,7 @@ datainfo <- function(object) {
 }
 
 #' Extract MODEL INFORMATION from `blimp_obj` or `blimp_out`
+#' @noRd
 #' @export
 modelinfo <- function(object) {
     if (is_blimp_obj(object)) output <- output(object)
@@ -168,6 +173,8 @@ modelinfo <- function(object) {
     return(output[strt:stop - 1])
 }
 
+#' Extract MODEL FIT from `blimp_obj` or `blimp_out`
+#' @noRd
 #' @export
 modelfit <- function(object) {
     if (is_blimp_obj(object)) output <- output(object)
@@ -188,6 +195,7 @@ modelfit <- function(object) {
 }
 
 #' Obtain MODEL ESTIMATES from `blimp_obj` or `blimp_out`
+#' @noRd
 #' @export
 estimates <- function(object) {
     if (is_blimp_obj(object)) output <- output(object)
@@ -245,7 +253,8 @@ setMethod(
 )
 
 
-#' Coerces a [`blimp_obj`] or `blimp_bygroup` to a `mitml.list`
+#' Coerces a [`blimp_obj`] or [`blimp_bygroup`] to a `mitml.list`
+#' @param object [`blimp_obj`] or [`blimp_bygroup`] object
 #' @export
 as.mitml <- function(object) {
     if (object |> inherits("blimp_bygroup")) {

@@ -3,6 +3,8 @@
 \alias{algorithm}
 \alias{datainfo}
 \alias{modelinfo}
+\alias{modelfit}
+\alias{estimates}
 \alias{psr}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{Output object from rblimp }
@@ -11,26 +13,26 @@ This is the output object and methods for rblimp
 }
 \usage{
 output(object)
+estimates(object)
 psr(object)
 datainfo(object)
 modelinfo(object)
 modelfit(object)
 algorithm(object)
 summary(object, ...)
-
-
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{ }
 \details{
-    Helper functions to extract information from blimp_obj. Some require saving of output instead of printing.
+    Helper functions to extract information from blimp_obj.
 }
 \value{  }
 \references{}
 \author{Brian Keller}
 \seealso{}
 \examples{
-# Generate data
+\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# Generate Data
 mydata <- data.frame(x = rnorm(1000), y = rnorm(1000))
 
 # Nonsensical model
@@ -47,8 +49,9 @@ mdl <- rblimp(
     fixed = ~ x
 )
 
-# Prints psr
+# View psr of model
 psr(mdl)
+\dontshow{\}) # examplesIf}
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

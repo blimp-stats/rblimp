@@ -42,6 +42,7 @@
 #' @import ggplot2
 #' @importFrom grDevices xy.coords
 #' @importFrom stats loess terms var
+#' @importFrom methods is
 #' @export
 residual_plot <- function(
         model, variable, nsigma = 1,
@@ -55,7 +56,7 @@ residual_plot <- function(
     if (nsigma <= 0) throw_error(
         "The {.arg nsigma} must be positive"
     )
-    if (class(model) != 'blimp_obj') throw_error(
+    if (!is(model, 'blimp_obj')) throw_error(
         "{.arg model} is not a `blimp_obj`"
     )
     if (length(model@imputations) == 0) throw_error(c(

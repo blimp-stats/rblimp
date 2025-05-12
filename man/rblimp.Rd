@@ -39,8 +39,8 @@ rblimp(
 rblimp_fcs(
   variables,
   data,
-  burn,
-  iter,
+  burn = 10000,
+  iter = 10000,
   seed,
   thin,
   nimps,
@@ -53,7 +53,7 @@ rblimp_fcs(
   fixed,
   output,
   tmpfolder,
-  save_add = TRUE,
+  add_save = TRUE,
   print_output = TRUE,
   nopowershell = FALSE
 )
@@ -146,6 +146,10 @@ Missing elements will be defaulted to \code{TRUE}.}
 suppresses all output to console, and \code{'all'} prints all output to console.}
 
 \item{nopowershell}{Windows only. Uses cmd.exe with some limited functions (instead of powershell).}
+
+\item{variables}{list of variables to be included in FCS procedure}
+
+\item{save}{Specify SAVE command for blimp syntax}
 }
 \value{
 \code{\link{blimp_obj}}

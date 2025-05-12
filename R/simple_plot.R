@@ -43,6 +43,7 @@
 #' # Generate Plot
 #' simple_plot(y ~ x | m, m1)
 #' @import ggplot2
+#' @importFrom methods is
 #' @export
 simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
 
@@ -58,7 +59,7 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     if (ci >= 1.0 | ci <= 0.0) throw_error(
         "The {.arg ci} must be between 0 and 1"
     )
-    if (class(model) != 'blimp_obj') throw_error(
+    if (!is(model, 'blimp_obj')) throw_error(
         "{.arg model} is not a `blimp_obj`"
     )
     if (NROW(model@simple) == 0) throw_error(c(

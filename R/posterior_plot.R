@@ -106,6 +106,7 @@ make_labeller <- function(pnames, quants) {
 #' posterior_plot(m1, c(7, 9)) + ggplot2::theme_minimal()
 #' @import ggplot2
 #' @importFrom stats quantile
+#' @importFrom methods is
 #' @export
 posterior_plot <- function(
         model, selector,
@@ -113,7 +114,7 @@ posterior_plot <- function(
 ) {
 
     # Check model
-    if (class(model) != 'blimp_obj') throw_error(
+    if (!is(model, 'blimp_obj')) throw_error(
         "{.arg model} is not a `blimp_obj`"
     )
 
