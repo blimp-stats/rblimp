@@ -172,7 +172,7 @@ rblimp <- function(model,
     }
 
     # Write data to temp folder
-    write.csv(data, file.path(tmpfolder, "data.csv"), row.names = F, quote = F)
+    write.csv(data, file.path(tmpfolder, "data.csv"), row.names = FALSE, quote = FALSE)
 
     # Create saveCommand
     saveCmd <- vector('list', 5L)
@@ -297,16 +297,16 @@ rblimp <- function(model,
 
     # parse labels file and create figure titles
     lab$V2[lab$V3 == "Intercept" & lab$V2 != "Odds Ratio"] <- "intercept"
-    lab$V2[lab$V2 == "Beta" | grepl("Level-", lab$V2, fixed = T) & (lab$V3 != "Residual Var.")] <- "regressed on"
-    lab$V2[lab$V2 == "Standardized Beta" | grepl("Level-", lab$V2, fixed = T) & (lab$V3 != "Residual Var.")] <- "regressed on (standardized)"
+    lab$V2[lab$V2 == "Beta" | grepl("Level-", lab$V2, fixed = TRUE) & (lab$V3 != "Residual Var.")] <- "regressed on"
+    lab$V2[lab$V2 == "Standardized Beta" | grepl("Level-", lab$V2, fixed = TRUE) & (lab$V3 != "Residual Var.")] <- "regressed on (standardized)"
     lab$V2[lab$V2 == "Variance" & lab$V3 == "L2 Intercept (i)"] <- "level-2 intercept variance"
     lab$V2[lab$V2 == "Variance" & lab$V3 == "L3 Intercept (i)"] <- "level-3 intercept variance"
-    lab$V2[grepl("L2 ", lab$V3, fixed = T) & endsWith(lab$V3, ", Intercept")] <- "level-2 intercept covariance with"
-    lab$V2[grepl("L3 ", lab$V3, fixed = T) & endsWith(lab$V3, ", Intercept")] <- "level-3 intercept covariance with"
-    lab$V2[grepl(",", lab$V3, fixed = T) & grepl("L2 ", lab$V3, fixed = T) & lab$V2 == "Variance"] <- "level-2 covariance between"
-    lab$V2[grepl(",", lab$V3, fixed = T) & grepl("L3 ", lab$V3, fixed = T) & lab$V2 == "Variance"] <- "level-3 covariance between"
-    lab$V2[grepl("L2 ", lab$V3, fixed = T) & lab$V2 == "Variance"] <- "level-2 slope variance of"
-    lab$V2[grepl("L3 ", lab$V3, fixed = T) & lab$V2 == "Variance"] <- "level-3 slope variance of"
+    lab$V2[grepl("L2 ", lab$V3, fixed = TRUE) & endsWith(lab$V3, ", Intercept")] <- "level-2 intercept covariance with"
+    lab$V2[grepl("L3 ", lab$V3, fixed = TRUE) & endsWith(lab$V3, ", Intercept")] <- "level-3 intercept covariance with"
+    lab$V2[grepl(",", lab$V3, fixed = TRUE) & grepl("L2 ", lab$V3, fixed = TRUE) & lab$V2 == "Variance"] <- "level-2 covariance between"
+    lab$V2[grepl(",", lab$V3, fixed = TRUE) & grepl("L3 ", lab$V3, fixed = TRUE) & lab$V2 == "Variance"] <- "level-3 covariance between"
+    lab$V2[grepl("L2 ", lab$V3, fixed = TRUE) & lab$V2 == "Variance"] <- "level-2 slope variance of"
+    lab$V2[grepl("L3 ", lab$V3, fixed = TRUE) & lab$V2 == "Variance"] <- "level-3 slope variance of"
     lab$V2[lab$V2 == "Level-1" & lab$V3 == "Residual Var."] <- "level-1 residual variance"
     lab$V2[lab$V2 == "Level-2" & lab$V3 == "Residual Var."] <- "level-2 residual variance"
     lab$V2[lab$V2 == "Level-3" & lab$V3 == "Residual Var."] <- "level-3 residual variance"
@@ -316,7 +316,7 @@ rblimp <- function(model,
     lab$V3[r2sel] <- ""
     lab$V3 <- gsub("\\|", "dummy code", lab$V3)
     delete <- c("Grand Mean", "Variance", "Residual Var.", "Tau", "L2 Intercept (i)", "L3 Intercept (i)", "L2 (i),", "L3 (i),", "L2: ", "L3: ", "L2", "L3", ", Intercept", "Intercept")
-    for (i in seq_along(delete)) lab$V3 <- gsub(delete[i], "", lab$V3, fixed = T)
+    for (i in seq_along(delete)) lab$V3 <- gsub(delete[i], "", lab$V3, fixed = TRUE)
     # Deal with odds ratio
     lab$V3[lab$V2 == "Odds Ratio" & lab$V3 == ""] <- "intercept"
     lab$V2[lab$V2 == "Odds Ratio"] <- "regressed on (odds ratio)"
@@ -353,18 +353,18 @@ rblimp <- function(model,
 
     # Row Name parsing
     lab2$V2[lab2$V2 == "Beta" & lab2$V3 == "Intercept"] <- "~ Intercept"
-    lab2$V2[lab2$V2 == "Beta" | grepl("Level-", lab2$V2, fixed = T) & (lab2$V3 != "Residual Var.")] <- "~"
-    lab2$V3[lab2$V2 == "Standardized Beta" | grepl("Level-", lab2$V2, fixed = T) & (lab2$V3 != "Residual Var.")] <-
-        paste0(lab2$V3[lab2$V2 == "Standardized Beta" | grepl("Level-", lab2$V2, fixed = T) & (lab2$V3 != "Residual Var.")], " (standardized)")
-    lab2$V2[lab2$V2 == "Standardized Beta" | grepl("Level-", lab2$V2, fixed = T) & (lab2$V3 != "Residual Var.")] <- "~"
+    lab2$V2[lab2$V2 == "Beta" | grepl("Level-", lab2$V2, fixed = TRUE) & (lab2$V3 != "Residual Var.")] <- "~"
+    lab2$V3[lab2$V2 == "Standardized Beta" | grepl("Level-", lab2$V2, fixed = TRUE) & (lab2$V3 != "Residual Var.")] <-
+        paste0(lab2$V3[lab2$V2 == "Standardized Beta" | grepl("Level-", lab2$V2, fixed = TRUE) & (lab2$V3 != "Residual Var.")], " (standardized)")
+    lab2$V2[lab2$V2 == "Standardized Beta" | grepl("Level-", lab2$V2, fixed = TRUE) & (lab2$V3 != "Residual Var.")] <- "~"
     lab2$V2[lab2$V2 == "Variance" & lab2$V3 == "L2 Intercept (i)"] <- "level-2 intercept variance"
     lab2$V2[lab2$V2 == "Variance" & lab2$V3 == "L3 Intercept (i)"] <- "level-3 intercept variance"
-    lab2$V2[grepl(",", lab2$V3, fixed = T) & grepl("L2 ", lab2$V3, fixed = T) & lab2$V2 == "Variance"] <- "level-2 covariance between"
-    lab2$V2[grepl(",", lab2$V3, fixed = T) & grepl("L3 ", lab2$V3, fixed = T) & lab2$V2 == "Variance"] <- "level-3 covariance between"
-    lab2$V2[grepl("L2 ", lab2$V3, fixed = T) & endsWith(lab2$V3, ", Intercept")] <- "level-2 intercept covariance with"
-    lab2$V2[grepl("L3 ", lab2$V3, fixed = T) & endsWith(lab2$V3, ", Intercept")] <- "level-3 intercept covariance with"
-    lab2$V2[grepl("L2 ", lab2$V3, fixed = T) & lab2$V2 == "Variance"] <- "level-2 slope variance of"
-    lab2$V2[grepl("L3 ", lab2$V3, fixed = T) & lab2$V2 == "Variance"] <- "level-3 slope variance of"
+    lab2$V2[grepl(",", lab2$V3, fixed = TRUE) & grepl("L2 ", lab2$V3, fixed = TRUE) & lab2$V2 == "Variance"] <- "level-2 covariance between"
+    lab2$V2[grepl(",", lab2$V3, fixed = TRUE) & grepl("L3 ", lab2$V3, fixed = TRUE) & lab2$V2 == "Variance"] <- "level-3 covariance between"
+    lab2$V2[grepl("L2 ", lab2$V3, fixed = TRUE) & endsWith(lab2$V3, ", Intercept")] <- "level-2 intercept covariance with"
+    lab2$V2[grepl("L3 ", lab2$V3, fixed = TRUE) & endsWith(lab2$V3, ", Intercept")] <- "level-3 intercept covariance with"
+    lab2$V2[grepl("L2 ", lab2$V3, fixed = TRUE) & lab2$V2 == "Variance"] <- "level-2 slope variance of"
+    lab2$V2[grepl("L3 ", lab2$V3, fixed = TRUE) & lab2$V2 == "Variance"] <- "level-3 slope variance of"
     lab2$V2[lab2$V2 == "Level-1" & lab2$V3 == "Residual Var."] <- "level-1 residual variance"
     lab2$V2[lab2$V2 == "Level-2" & lab2$V3 == "Residual Var."] <- "level-2 residual variance"
     lab2$V2[lab2$V2 == "Level-3" & lab2$V3 == "Residual Var."] <- "level-3 residual variance"
@@ -374,7 +374,7 @@ rblimp <- function(model,
     lab2$V3[r2sel] <- ""
     lab2$V3 <- gsub("\\|", "dummy code", lab2$V3)
     delete <- c("Grand Mean", "Variance", "Residual Var.", "Tau", "L2 Intercept (i)", "L3 Intercept (i)", "L2 (i),", "L3 (i),", "L2: ", "L3: ", "L2", "L3", ", Intercept", "Intercept")
-    for (i in seq_along(delete)) lab2$V3 <- gsub(delete[i], "", lab2$V3, fixed = T)
+    for (i in seq_along(delete)) lab2$V3 <- gsub(delete[i], "", lab2$V3, fixed = TRUE)
 
     # Deal with odds ratio
     lab2$V3[lab2$V2 == "Odds Ratio" & lab2$V3 == ""] <- "Intercept"
@@ -409,14 +409,14 @@ rblimp <- function(model,
 
     # Read data in
     output <- list()
-    output$estimates <- as.matrix(read.csv(file.path(tmpfolder, "estimates.csv"), header = T))
+    output$estimates <- as.matrix(read.csv(file.path(tmpfolder, "estimates.csv"), header = TRUE))
     rownames(output$estimates) <- trimws(lab_row_names)
     colnames(output$estimates) <- gsub('^X', '', colnames(output$estimates))
     colnames(output$estimates) <- gsub('\\.$', '%', colnames(output$estimates))
 
 
     output$iterations <- structure(
-        read.csv(file.path(tmpfolder, "iter.csv"), header = F),
+        read.csv(file.path(tmpfolder, "iter.csv"), header = FALSE),
         parameter_type = ptype
     )
     names(output$iterations) <- lab_names
@@ -447,7 +447,7 @@ rblimp <- function(model,
         'Other'
     ))
 
-    output$psr <- read.csv(file.path(tmpfolder, "psr.csv"), header = F)
+    output$psr <- read.csv(file.path(tmpfolder, "psr.csv"), header = FALSE)
     names(output$psr) <- lab_names
 
     output$burn <- list()
@@ -463,7 +463,7 @@ rblimp <- function(model,
     names(output$psr) <- lab_names
 
     if (file.exists(file.path(tmpfolder, "imps.csv"))) {
-        tmp <- read.csv(file.path(tmpfolder, "imps.csv"), header = T)
+        tmp <- read.csv(file.path(tmpfolder, "imps.csv"), header = TRUE)
         # Loop over and add attributes back in
         for (i in seq_along(att_list)) {
             if (!is.null(att_list[[i]])) {
@@ -471,14 +471,14 @@ rblimp <- function(model,
             }
         }
         # Split imputations
-        output$imputations <- split(tmp[, -1, drop = F], tmp[, 1])
+        output$imputations <- split(tmp[, -1, drop = FALSE], tmp[, 1])
     } else {
         output$imputations <- list()
     }
 
     # Waldtest
     if (file.exists(file.path(tmpfolder, "waldtest.csv"))) {
-        output$waldtest <- read.csv(file.path(tmpfolder, "waldtest.csv"), header = T)
+        output$waldtest <- read.csv(file.path(tmpfolder, "waldtest.csv"), fixed = TRUE)
     } else {
         output$waldtest <- data.frame(
             test_number = numeric(),
@@ -490,7 +490,7 @@ rblimp <- function(model,
 
     # Simple
     if (file.exists(file.path(tmpfolder, "simple.csv"))) {
-        output$simple <- read.csv(file.path(tmpfolder, "simple.csv"), header = T)
+        output$simple <- read.csv(file.path(tmpfolder, "simple.csv"), header = TRUE)
         file.path(tmpfolder, "simple.csv") |> readLines(1)  |>
             strsplit('\\",') |> unlist() |>
             gsub('\"', '', x = _) -> names(output$simple)
@@ -500,13 +500,13 @@ rblimp <- function(model,
 
     # Get average imputation
     if (file.exists(file.path(tmpfolder, "avgimp.csv"))) {
-        output$average_imp <- read.csv(file.path(tmpfolder, "avgimp.csv"), header = T)
+        output$average_imp <- read.csv(file.path(tmpfolder, "avgimp.csv"), header = TRUE)
     } else {
         output$average_imp <- data.frame()
     }
     # Get variance of imputation
     if (file.exists(file.path(tmpfolder, "varimp.csv"))) {
-        output$variance_imp <- read.csv(file.path(tmpfolder, "varimp.csv"), header = T)
+        output$variance_imp <- read.csv(file.path(tmpfolder, "varimp.csv"), header = TRUE)
     } else {
         output$variance_imp <- data.frame()
     }

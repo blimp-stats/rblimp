@@ -104,14 +104,14 @@ residual_plot <- function(
             coord_data <- xy.coords(x, y)
             x <- coord_data$x; y <- coord_data$y; x0 <- sort(x);
             mod <- loess(y ~ x, ...)
-            pred <- predict(mod, data.frame(x = x0), se = T)
+            pred <- predict(mod, data.frame(x = x0), se = TRUE)
             yfit <- pred$fit
             var <- pred$se.fit^2
             list(x = x, y = y, yfit = yfit, var = var)
         },
         x = lapply(pscores, \(.) .[, predi_name]),
         y = lapply(rscores, \(.) .[, resid_name]),
-        SIMPLIFY = F
+        SIMPLIFY = FALSE
     )
 
     # Pool

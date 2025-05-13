@@ -3,7 +3,7 @@
 #' @noRd
 detect_blimp_macos <- function(exec) {
     ## Try to find executable
-    output <- suppressWarnings(system(paste("which", exec), intern = T, ignore.stderr = T)[1])
+    output <- suppressWarnings(system(paste("which", exec), intern = TRUE, ignore.stderr = TRUE)[1])
     if (length(output) != 0) {
         if (file.exists(output)) {
             return(output)
@@ -35,7 +35,7 @@ detect_blimp_macos <- function(exec) {
 #' @noRd
 detect_blimp_linux <- function(exec) {
     ## Try to find executable
-    output <- suppressWarnings(system(paste("which", exec), intern = T, ignore.stderr = T)[1])
+    output <- suppressWarnings(system(paste("which", exec), intern = TRUE, ignore.stderr = TRUE)[1])
     if (length(output) != 0) {
         if (file.exists(output)) {
             return(output)
@@ -53,7 +53,7 @@ detect_blimp_linux <- function(exec) {
 #' @noRd
 detect_blimp_windows <- function(exec) {
     ## Try to find executable
-    output <- suppressWarnings(system(paste("where", exec), intern = T, ignore.stderr = T))
+    output <- suppressWarnings(system(paste("where", exec), intern = TRUE, ignore.stderr = TRUE))
     if (length(output) != 0) {
         if (file.exists(output)) {
             return(output)

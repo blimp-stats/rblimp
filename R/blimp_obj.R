@@ -226,7 +226,7 @@ setMethod(
     function(object, ...) {
         lapply(object@imputations, \(x) {
             x[, endsWith(names(x), ".residual") |
-                  (endsWith(names(x), ".") & names(x) != "imp."), drop = F]
+                  (endsWith(names(x), ".") & names(x) != "imp."), drop = FALSE]
         })
     }
 )
@@ -247,7 +247,7 @@ setMethod(
     function(object, ...) {
         lapply(object@imputations, \(x) {
             x[, endsWith(names(x), ".predicted") |
-                  endsWith(names(x), ".probability"), drop = F]
+                  endsWith(names(x), ".probability"), drop = FALSE]
         })
     }
 )

@@ -268,7 +268,7 @@ make_syntax <- function(datapath,
     if (!missing(simple)) inputfile$simple <- parse_cmd(simple, collapse = ";\n    ")
     if (!missing(waldtest)) {
         if (length(waldtest) > 1) names(waldtest) <- c('', rep('WALDTEST', length(waldtest) - 1))
-        inputfile$waldtest <- parse_cmd(waldtest, collapse = ";\n", use.names = T)
+        inputfile$waldtest <- parse_cmd(waldtest, collapse = ";\n", use.names = TRUE)
     }
     if (!missing(seed))     inputfile$seed   <- parse_cmd(seed)
     if (!missing(burn))     inputfile$burn   <- parse_cmd(burn)

@@ -89,21 +89,21 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     n <- names(slope)
 
     # Split moderator statement
-    mod_state <- regmatches(n, regexpr('(?<= (\\||\\|,) ).+', n, perl = T)) |> strsplit(', ')
+    mod_state <- regmatches(n, regexpr('(?<= (\\||\\|,) ).+', n, perl = TRUE)) |> strsplit(', ')
     m <- sapply(
         mod_state,
-        \(n) regmatches(n, regexpr('.+(?= @ )', n, perl = T)) |> paste(collapse = ' ')
+        \(n) regmatches(n, regexpr('.+(?= @ )', n, perl = TRUE)) |> paste(collapse = ' ')
     )
     v <- sapply(
         mod_state,
-        \(n) regmatches(n, regexpr('(?<= @ ).+', n, perl = T)) |> paste(collapse = ', ')
+        \(n) regmatches(n, regexpr('(?<= @ ).+', n, perl = TRUE)) |> paste(collapse = ', ')
     )
 
     # Create data.frame
     d <- data.frame(
         col = seq_along(n),
-        outcome   = regmatches(n, regexpr('.+(?= ~ )', n, perl = T)),
-        predictor = regmatches(n, regexpr('(?<= ~ ).+(?= (\\||\\|,) )', n, perl = T)),
+        outcome   = regmatches(n, regexpr('.+(?= ~ )', n, perl = TRUE)),
+        predictor = regmatches(n, regexpr('(?<= ~ ).+(?= (\\||\\|,) )', n, perl = TRUE)),
         moderator = m,
         value     = v
     )

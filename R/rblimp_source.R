@@ -51,7 +51,7 @@ rblimp_source <- function(
     folder <- dirname(file)
 
     # Make plot dir
-    if (plots) dir.create(file.path(folder, "plots"), showWarnings = F)
+    if (plots) dir.create(file.path(folder, "plots"), showWarnings = FALSE)
 
     # Make Command
     cmd <- if (plots) {

@@ -183,7 +183,7 @@ jn_plot_func <- function(func, xrange, ci = 0.95) {
 compute_condeff <- function(value1, value2) {
     force(value1); force(value2)
     function(m, func, ...) {
-        o <- sapply(m, \(x) value1 + value2 * x, simplify = T)
+        o <- sapply(m, \(x) value1 + value2 * x, simplify = TRUE)
         apply(o, 2, func, ...)
     }
 }

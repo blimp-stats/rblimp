@@ -21,7 +21,7 @@ psrf <- function(x, split_chain = TRUE) {
         } else {
             return(x[1:n])
         }
-    }, simplify = F))
+    }, simplify = FALSE))
 
     # Compute PSR
     t_j <- colMeans(chaindat)
