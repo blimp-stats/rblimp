@@ -90,6 +90,12 @@ rblimp_source <- function(
     sel <- which(result == "VARIABLE ORDER IN IMPUTED DATA:")
     if (length(sel) == 0) sel <- length(result)
 
+    # Add space on warning message because of Rstudio
+    sel_warn <- which(result == "WARNING MESSAGES:")
+    if (length(sel) != 0) {
+        result[sel_warn] = " WARNING MESSAGES:"
+    }
+
     # Return output
     return(
         structure(
