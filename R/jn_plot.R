@@ -277,7 +277,7 @@ jn_plot <- function(formula, model, ci = 0.95) {
     if (sum(ind) != 1)  throw_error(
         "Cannot find moderator in imputed data"
     )
-    m <- if (pre_is_cent) mean(model@average_imp[,ind]) else 0.0
+    m <- if (mod_is_cent) mean(model@average_imp[,ind]) else 0.0
     m_range <- (model@average_imp[,ind] - m) |> pretty() |> range()
 
     ## Find indicators for two slopes
@@ -328,7 +328,7 @@ jn_plot <- function(formula, model, ci = 0.95) {
         + labs(
             title = "Johnson-Neyman Plot of Conditional Slope",
             subtitle = "Red area represents 0 within 95% interval",
-            y = paste(out, "~", pre),
+            y = paste(out, "~", if (pre_is_cent) paste("Centered", pre) else pre),
             x = if (mod_is_cent) paste("Centered", mod) else mod
         )
     )
