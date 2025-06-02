@@ -478,7 +478,7 @@ rblimp <- function(model,
 
     # Waldtest
     if (file.exists(file.path(tmpfolder, "waldtest.csv"))) {
-        output$waldtest <- read.csv(file.path(tmpfolder, "waldtest.csv"), fixed = TRUE)
+        output$waldtest <- read.csv(file.path(tmpfolder, "waldtest.csv"), header = TRUE)
     } else {
         output$waldtest <- data.frame(
             test_number = numeric(),
