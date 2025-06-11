@@ -162,7 +162,9 @@ posterior_plot <- function(
     else {
         # Check if variable or parameter
         olist <- lapply(selector, \(x) {
-            grep(paste0('\\b', x, '\\b'), oname, ignore.case = TRUE) |> as.list()
+            if (is.numeric(x)) list() # Return empty if it is a number
+            else
+                grep(paste0('\\b', x, '\\b'), oname, ignore.case = TRUE) |> as.list()
         })
         for (i in seq_along(olist)) {
             if (length(olist[[i]]) == 0) olist[[i]] <- selector[i]
