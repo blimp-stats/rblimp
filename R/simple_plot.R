@@ -89,15 +89,22 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     n <- names(slope)
 
     # Split moderator statement
-    mod_state <- regmatches(n, regexpr('(?<= (\\||\\|,) ).+', n, perl = TRUE)) |> strsplit(', ')
+    mod_state <- regmatches(n, regexpr('(?<= (\\||\\|,) ).+', n, perl = TRUE)) |>
+        strsplit(', ')
+
     m <- sapply(
         mod_state,
-        \(n) regmatches(n, regexpr('.+(?= @ )', n, perl = TRUE)) |> paste(collapse = ' ')
+        \(n) regmatches(n, gregexpr("(\\S+)(?=\\s*@)", n, perl = TRUE))[[1]] |>
+            paste(collapse = ' ')
     )
+
     v <- sapply(
         mod_state,
-        \(n) regmatches(n, regexpr('(?<= @ ).+', n, perl = TRUE)) |> paste(collapse = ', ')
+        \(n) regmatches(n, gregexpr("@\\s*([-+]?\\d+(\\.\\d+)?(?:\\s+[A-Za-z]+)?)(?=\\s|$)", n, perl = TRUE))[[1]] |>
+            paste(collapse = ', ') |>
+            gsub("^@\\s*", "", x = _)
     )
+
 
     # Create data.frame
     d <- data.frame(
