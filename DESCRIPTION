@@ -1,7 +1,7 @@
 Package: rblimp
 Type: Package
 Title: Integration of Blimp Software into R
-Version: 0.2.24
+Version: 0.2.25
 Authors@R: 
     person(given = "Brian",
            family = "Keller",
@@ -19,7 +19,7 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Depends:
-    R (>= 4.0.0)
+    R (>= 4.4.0)
 Imports:
     cli,
     methods,
