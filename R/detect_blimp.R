@@ -106,9 +106,6 @@ check_blimp_update <- function() {
             return(FALSE)
         }
     }
-    # Save date to rblimp.env
-    rblimp.env$now <- now
-
     cli::cli_alert('\nChecking for Blimp Update...')
 
     # Check if blimp has update
@@ -116,11 +113,17 @@ check_blimp_update <- function() {
         cli::cli_alert("Blimp has an update!\n Would you like to open up the updater?\n")
         x <- readline('(Yes/No): ')
         if (tolower(x) == 'yes' || tolower(x) == 'y') {
+            # Save date to rblimp.env
+            rblimp.env$now <- now
             update_blimp()
             return(TRUE)
         }
-        else {
+        else if (tolower(x) == 'no' || tolower(x) == 'n') {
             cli::cli_alert_warning("Supressing update messages for 10 hours.")
+            # Save date to rblimp.env
+            rblimp.env$now <- now
+        } else {
+            cli::cli_alert_warning("Did not recognize Yes or No. Skipping update.")
         }
     }
     return(FALSE)
