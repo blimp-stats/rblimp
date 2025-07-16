@@ -301,21 +301,34 @@ rblimp <- function(model,
     lab$V2[lab$V2 == "Standardized Beta" | grepl("Level-", lab$V2, fixed = TRUE) & (lab$V3 != "Residual Var.")] <- "regressed on (standardized)"
     lab$V2[lab$V2 == "Variance" & lab$V3 == "L2 Intercept (i)"] <- "level-2 intercept variance"
     lab$V2[lab$V2 == "Variance" & lab$V3 == "L3 Intercept (i)"] <- "level-3 intercept variance"
-    lab$V2[grepl("L2 ", lab$V3, fixed = TRUE) & endsWith(lab$V3, ", Intercept")] <- "level-2 intercept covariance with"
-    lab$V2[grepl("L3 ", lab$V3, fixed = TRUE) & endsWith(lab$V3, ", Intercept")] <- "level-3 intercept covariance with"
+    lab$V2[lab$V2 == "Standard Deviation" & lab$V3 == "L2 Intercept (i)"] <- "level-2 intercept SD"
+    lab$V2[lab$V2 == "Standard Deviation" & lab$V3 == "L3 Intercept (i)"] <- "level-3 intercept SD"
+    lab$V2[grepl("L2 ", lab$V3, fixed = TRUE) & endsWith(lab$V3, ", Intercept") & lab$V2 == "Variance"] <- "level-2 intercept covariance with"
+    lab$V2[grepl("L3 ", lab$V3, fixed = TRUE) & endsWith(lab$V3, ", Intercept") & lab$V2 == "Variance"] <- "level-3 intercept covariance with"
     lab$V2[grepl(",", lab$V3, fixed = TRUE) & grepl("L2 ", lab$V3, fixed = TRUE) & lab$V2 == "Variance"] <- "level-2 covariance between"
     lab$V2[grepl(",", lab$V3, fixed = TRUE) & grepl("L3 ", lab$V3, fixed = TRUE) & lab$V2 == "Variance"] <- "level-3 covariance between"
     lab$V2[grepl("L2 ", lab$V3, fixed = TRUE) & lab$V2 == "Variance"] <- "level-2 slope variance of"
     lab$V2[grepl("L3 ", lab$V3, fixed = TRUE) & lab$V2 == "Variance"] <- "level-3 slope variance of"
+    lab$V2[grepl("L2 ", lab$V3, fixed = TRUE) & endsWith(lab$V3, ", Intercept") & lab$V2 == "Standard Deviation"] <- "level-2 intercept correlation with"
+    lab$V2[grepl("L3 ", lab$V3, fixed = TRUE) & endsWith(lab$V3, ", Intercept") & lab$V2 == "Standard Deviation"] <- "level-3 intercept correlation with"
+    lab$V2[grepl(",", lab$V3, fixed = TRUE) & grepl("L2 ", lab$V3, fixed = TRUE) & lab$V2 == "Standard Deviation"] <- "level-2 correlation between"
+    lab$V2[grepl(",", lab$V3, fixed = TRUE) & grepl("L3 ", lab$V3, fixed = TRUE) & lab$V2 == "Standard Deviation"] <- "level-3 correlation between"
+    lab$V2[grepl("L2 ", lab$V3, fixed = TRUE) & lab$V2 == "Standard Deviation"] <- "level-2 slope SD of"
+    lab$V2[grepl("L3 ", lab$V3, fixed = TRUE) & lab$V2 == "Standard Deviation"] <- "level-3 slope SD of"
     lab$V2[lab$V2 == "Level-1" & lab$V3 == "Residual Var."] <- "level-1 residual variance"
     lab$V2[lab$V2 == "Level-2" & lab$V3 == "Residual Var."] <- "level-2 residual variance"
     lab$V2[lab$V2 == "Level-3" & lab$V3 == "Residual Var."] <- "level-3 residual variance"
     lab$V2[lab$V2 == "Variance" & lab$V3 == "Residual Var."] <- "residual variance"
+    lab$V2[lab$V2 == "Standard Deviation" & lab$V3 == "Residual SD"] <- "residual SD"
     r2sel <- lab$V2 == "R2"
     lab$V2[r2sel] <- paste("R2:", lab$V3[r2sel])
     lab$V3[r2sel] <- ""
     lab$V3 <- gsub("\\|", "dummy code", lab$V3)
-    delete <- c("Grand Mean", "Variance", "Residual Var.", "Tau", "L2 Intercept (i)", "L3 Intercept (i)", "L2 (i),", "L3 (i),", "L2: ", "L3: ", "L2", "L3", ", Intercept", "Intercept")
+    delete <- c(
+        "Grand Mean", "Variance", "Residual Var.", "Tau", "L2 Intercept (i)",
+        "L3 Intercept (i)", "L2 (i),", "L3 (i),", "L2: ", "L3: ", "L2", "L3",
+        ", Intercept", "Intercept", "Residual SD"
+    )
     for (i in seq_along(delete)) lab$V3 <- gsub(delete[i], "", lab$V3, fixed = TRUE)
     # Deal with odds ratio
     lab$V3[lab$V2 == "Odds Ratio" & lab$V3 == ""] <- "intercept"
@@ -341,6 +354,9 @@ rblimp <- function(model,
     lab$V1[param_select] <- "Parameter:"
     lab$V3[param_select] <- ""
 
+    # Trim white space
+    lab$V3 <- trimws(lab$V3)
+
     # Set up lab names
     lab_names <- vector("character", nrow(lab))
     for (i in seq_along(lab_names)) {
@@ -359,21 +375,34 @@ rblimp <- function(model,
     lab2$V2[lab2$V2 == "Standardized Beta" | grepl("Level-", lab2$V2, fixed = TRUE) & (lab2$V3 != "Residual Var.")] <- "~"
     lab2$V2[lab2$V2 == "Variance" & lab2$V3 == "L2 Intercept (i)"] <- "level-2 intercept variance"
     lab2$V2[lab2$V2 == "Variance" & lab2$V3 == "L3 Intercept (i)"] <- "level-3 intercept variance"
+    lab2$V2[lab2$V2 == "Standard Deviation" & lab2$V3 == "L2 Intercept (i)"] <- "level-2 intercept SD"
+    lab2$V2[lab2$V2 == "Standard Deviation" & lab2$V3 == "L3 Intercept (i)"] <- "level-3 intercept SD"
     lab2$V2[grepl(",", lab2$V3, fixed = TRUE) & grepl("L2 ", lab2$V3, fixed = TRUE) & lab2$V2 == "Variance"] <- "level-2 covariance between"
     lab2$V2[grepl(",", lab2$V3, fixed = TRUE) & grepl("L3 ", lab2$V3, fixed = TRUE) & lab2$V2 == "Variance"] <- "level-3 covariance between"
-    lab2$V2[grepl("L2 ", lab2$V3, fixed = TRUE) & endsWith(lab2$V3, ", Intercept")] <- "level-2 intercept covariance with"
-    lab2$V2[grepl("L3 ", lab2$V3, fixed = TRUE) & endsWith(lab2$V3, ", Intercept")] <- "level-3 intercept covariance with"
+    lab2$V2[grepl("L2 ", lab2$V3, fixed = TRUE) & endsWith(lab2$V3, ", Intercept") & lab2$V2 == "Variance"] <- "level-2 intercept covariance with"
+    lab2$V2[grepl("L3 ", lab2$V3, fixed = TRUE) & endsWith(lab2$V3, ", Intercept") & lab2$V2 == "Variance"] <- "level-3 intercept covariance with"
     lab2$V2[grepl("L2 ", lab2$V3, fixed = TRUE) & lab2$V2 == "Variance"] <- "level-2 slope variance of"
     lab2$V2[grepl("L3 ", lab2$V3, fixed = TRUE) & lab2$V2 == "Variance"] <- "level-3 slope variance of"
+    lab2$V2[grepl(",", lab2$V3, fixed = TRUE) & grepl("L2 ", lab2$V3, fixed = TRUE) & lab2$V2 == "Standard Deviation"] <- "level-2 correlation between"
+    lab2$V2[grepl(",", lab2$V3, fixed = TRUE) & grepl("L3 ", lab2$V3, fixed = TRUE) & lab2$V2 == "Standard Deviation"] <- "level-3 correlation between"
+    lab2$V2[grepl("L2 ", lab2$V3, fixed = TRUE) & endsWith(lab2$V3, ", Intercept") & lab2$V2 == "Standard Deviation"] <- "level-2 intercept correlation with"
+    lab2$V2[grepl("L3 ", lab2$V3, fixed = TRUE) & endsWith(lab2$V3, ", Intercept") & lab2$V2 == "Standard Deviation"] <- "level-3 intercept correlation with"
+    lab2$V2[grepl("L2 ", lab2$V3, fixed = TRUE) & lab2$V2 == "Standard Deviation"] <- "level-2 slope SD of"
+    lab2$V2[grepl("L3 ", lab2$V3, fixed = TRUE) & lab2$V2 == "Standard Deviation"] <- "level-3 slope SD of"
     lab2$V2[lab2$V2 == "Level-1" & lab2$V3 == "Residual Var."] <- "level-1 residual variance"
     lab2$V2[lab2$V2 == "Level-2" & lab2$V3 == "Residual Var."] <- "level-2 residual variance"
     lab2$V2[lab2$V2 == "Level-3" & lab2$V3 == "Residual Var."] <- "level-3 residual variance"
     lab2$V2[lab2$V2 == "Variance" & lab2$V3 == "Residual Var."] <- "residual variance"
+    lab2$V2[lab2$V2 == "Standard Deviation" & lab2$V3 == "Residual SD"] <- "residual SD"
     r2sel <- lab2$V2 == "R2"
     lab2$V2[r2sel] <- paste("R2:", lab2$V3[r2sel])
     lab2$V3[r2sel] <- ""
     lab2$V3 <- gsub("\\|", "dummy code", lab2$V3)
-    delete <- c("Grand Mean", "Variance", "Residual Var.", "Tau", "L2 Intercept (i)", "L3 Intercept (i)", "L2 (i),", "L3 (i),", "L2: ", "L3: ", "L2", "L3", ", Intercept", "Intercept")
+    delete <- c(
+        "Grand Mean", "Variance", "Residual Var.", "Tau", "L2 Intercept (i)",
+        "L3 Intercept (i)", "L2 (i),", "L3 (i),", "L2: ", "L3: ",
+        "L2", "L3",", Intercept", "Intercept", "Residual SD"
+    )
     for (i in seq_along(delete)) lab2$V3 <- gsub(delete[i], "", lab2$V3, fixed = TRUE)
 
     # Deal with odds ratio
@@ -400,6 +429,9 @@ rblimp <- function(model,
     param_select <- lab2$V1 == lab2$V2 & lab2$V2 == lab2$V3
     lab2$V1[param_select] <- "Parameter:"
     lab2$V3[param_select] <- ""
+
+    # Trim white space
+    lab2$V3 <- trimws(lab2$V3)
 
     # Set up lab row names
     lab_row_names <- vector("character", nrow(lab2))
