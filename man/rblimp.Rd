@@ -28,6 +28,7 @@ rblimp(
   waldtest,
   options,
   transform,
+  filter,
   fixed,
   output,
   tmpfolder,
@@ -75,6 +76,7 @@ rblimp_syntax(
   nominal,
   count,
   transform,
+  filter,
   fixed,
   center,
   chains,
@@ -118,15 +120,17 @@ rblimp_syntax(
 
 \item{center}{a character string, formula, or vector/list of character strings. Specifies Blimp's CENTER command. See details.}
 
-\item{chains}{an integer, character string, or vector/list of character strings. Specifies Blimp's CHAINS command}
+\item{chains}{an integer, character string, or vector/list of character strings. Specifies Blimp's CHAINS command.}
 
 \item{simple}{a character string or vector/list of character strings. Specifies Blimp's SIMPLE command. See details.}
 
 \item{waldtest}{a character string or vector/list of character strings. Specifies Blimp's WALDTEST command. See details.}
 
-\item{options}{a character string or vector/list of character strings. Specifies Blimp's OPTIONS command}
+\item{options}{a character string or vector/list of character strings. Specifies Blimp's OPTIONS command.}
 
-\item{transform}{a character string or vector/list of character strings. Specifies Blimp's TRANSFORM command}
+\item{transform}{a character string or vector/list of character strings. Specifies Blimp's TRANSFORM command.}
+
+\item{filter}{a character string. Specifies Blimp's FILTER command.}
 
 \item{fixed}{a character string, formula, or vector/list of character strings. Specifies Blimp's FIXED command. See details.}
 

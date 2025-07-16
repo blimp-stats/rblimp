@@ -21,11 +21,12 @@
 #' @param nominal a character string, formula, or vector/list of character strings. Specifies Blimp's NOMINAL command. See details.
 #' @param count a character string, formula, or vector/list of character strings. Specifies Blimp's COUNT command. See details.
 #' @param center a character string, formula, or vector/list of character strings. Specifies Blimp's CENTER command. See details.
-#' @param chains an integer, character string, or vector/list of character strings. Specifies Blimp's CHAINS command
+#' @param chains an integer, character string, or vector/list of character strings. Specifies Blimp's CHAINS command.
 #' @param simple  a character string or vector/list of character strings. Specifies Blimp's SIMPLE command. See details.
 #' @param waldtest  a character string or vector/list of character strings. Specifies Blimp's WALDTEST command. See details.
-#' @param options a character string or vector/list of character strings. Specifies Blimp's OPTIONS command
-#' @param transform a character string or vector/list of character strings. Specifies Blimp's TRANSFORM command
+#' @param options a character string or vector/list of character strings. Specifies Blimp's OPTIONS command.
+#' @param transform a character string or vector/list of character strings. Specifies Blimp's TRANSFORM command.
+#' @param filter a character string. Specifies Blimp's FILTER command.
 #' @param fixed a character string, formula, or vector/list of character strings. Specifies Blimp's FIXED command. See details.
 #' @param output a character string or vector/list of character strings. Specifies Blimp's OUTPUT command
 #' @param tmpfolder a character string. If specified `rblimp` will use the given
@@ -111,6 +112,7 @@ rblimp <- function(model,
                    waldtest,
                    options,
                    transform,
+                   filter,
                    fixed,
                    output,
                    tmpfolder,
@@ -241,6 +243,7 @@ rblimp <- function(model,
         nominal,
         count,
         transform,
+        filter,
         fixed,
         center,
         chains,

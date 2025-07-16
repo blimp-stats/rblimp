@@ -23,6 +23,7 @@ rblimp_syntax <- function(
         nominal,
         count,
         transform,
+        filter,
         fixed,
         center,
         chains,
@@ -153,7 +154,8 @@ rblimp_syntax <- function(
         burn, seed, iter, names(data),
         thin, nimps, latent, randomeffect, clusterid, weight,
         ordinal, nominal, count, center, parameters, chains,
-        simple, waldtest, options, output, save, transform, fixed
+        simple, waldtest, options, output, save, transform, filter,
+        fixed
     )
 }
 
@@ -246,6 +248,7 @@ make_syntax <- function(datapath,
                         output,
                         save,
                         transform,
+                        filter,
                         fixed) {
     inputfile <- list()
     if (!missing(datapath)) inputfile$data   <- parse_cmd(datapath)
@@ -253,6 +256,7 @@ make_syntax <- function(datapath,
         if (!is.null(variables)) inputfile$variables <- parse_cmd(variables)
     }
     if (!missing(transform)) inputfile$transform <- parse_cmd(transform, collapse = ";\n    ")
+    if (!missing(filter))    inputfile$filter    <- parse_cmd(filter)
     if (!missing(ordinal))   inputfile$ordinal   <- parse_cmd(ordinal)
     if (!missing(nominal))   inputfile$nominal   <- parse_cmd(nominal)
     if (!missing(count))     inputfile$count     <- parse_cmd(count)
