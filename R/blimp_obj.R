@@ -293,3 +293,56 @@ setMethod(
     }
 )
 
+
+## Write blimp files
+#' A function to write out blimp input and output from a model
+#' @param object A [`blimp_obj`].
+#' @param folder a location to a folder to write input and output
+#' @examplesIf has_blimp()
+#' # Generate Data
+#' mydata <- data.frame(x = rnorm(1000), y = rnorm(1000))
+#'
+#' # Nonsensical model
+#' mdl <- rblimp(
+#'     c(
+#'         'y <- x*2',
+#'         'f1 <- 1'
+#'     ),
+#'     mydata,
+#'     seed = 3927,
+#'     nimps = 2,
+#'     latent = ~ f1,
+#'     center = cgm ~ x,
+#'     fixed = ~ x
+#' )
+#'
+#' # Write out input and output
+#' write.blimp(mdl, "folder_location")
+#' @export
+setGeneric("write.blimp", function(object, folder = "") {
+    stop(paste("Does not work with ", class(object)))
+})
+
+setMethod("write.blimp", "blimp_syntax",
+    function(object, folder = "") {
+        fileConn <- base::file(file.path(folder))
+        writeLines(as.character(object), fileConn)
+        close(fileConn)
+    }
+)
+setMethod("write.blimp", "blimp_out",
+    function(object, folder = "") {
+        fileConn <- base::file(file.path(folder))
+        writeLines(as.character(object), fileConn)
+        close(fileConn)
+    }
+)
+
+#' @export
+setMethod("write.blimp", "blimp_obj",
+    function(object, folder = "") {
+        nm <- deparse(substitute(object))
+        write.blimp(object@syntax, file.path(folder, paste0(nm, ".imp")))
+        write.blimp(object@output, file.path(folder, paste0(nm, ".blimp-out")))
+    }
+)
