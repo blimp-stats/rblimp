@@ -116,7 +116,7 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     )
 
     # Subset out effects
-    dsub <- d[d$outcome == f[2] & paste(d$predictor, '|', d$moderator) == f[3], ]
+    dsub <- d[is_equal(d$outcome, f[2]) & is_equal(paste(d$predictor, '|', d$moderator), f[3]), ]
 
     # Get moderator name
     mod <- dsub$moderator |> unique()
@@ -128,8 +128,8 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
         throw_error(c(
             "Unable to select out conditional effects",
             i = "If the moderator is nominal, include dummy code suffix.",
-            i = "Otherwise the simple command doesn't exist for the moderator.",
-            i = "List of moderators: { mod_list }"
+            i = "Otherwise the simple command doesn't exist for the moderator and outcome.",
+            i = "List of moderators: { mod_list }",
         ))
     }
 
@@ -158,11 +158,11 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
 
     # Handle xvals
     if (missing(xvals)) {
-        ind <- (model@average_imp |> names() |> tolower()) == tolower(pre)
+        ind <- is_equal(model@average_imp |> names(), pre)
 
         # Check if it is found. If not check latent variables.
         if (sum(ind) != 1) {
-            ind <- (model@average_imp |> names() |> tolower()) == tolower(paste0(pre, '.latent'))
+            ind <- is_equal(model@average_imp |> names(), paste0(pre, '.latent'))
         }
         # If that isn't found crash out
         if (sum(ind) != 1)  throw_error(

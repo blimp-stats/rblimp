@@ -5,3 +5,10 @@
 throw_error <- function(message, ..., .envir = parent.frame(), .frame = .envir) {
     cli::cli_abort(message, ..., .envir = .envir, .frame = .frame, call = NULL)
 }
+
+
+#' Internal function for checking strings are identical with case insensitive
+#' @noRd
+is_equal <- function(a, b) {
+    tolower(a) == tolower(b)
+}
