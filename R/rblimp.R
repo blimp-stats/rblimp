@@ -482,7 +482,11 @@ rblimp <- function(model,
         'Other'
     ))
 
-    output$psr <- read.csv(file.path(tmpfolder, "psr.csv"), header = FALSE)
+    output$psr <- tryCatch({
+        read.csv(file.path(tmpfolder, "psr.csv"), header = FALSE)
+    }, error = function(e) {
+        matrix(nrow = 0, ncol = NROW(lab_names)) |> as.data.frame()
+    })
     names(output$psr) <- lab_names
 
     output$burn <- list()
