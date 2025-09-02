@@ -125,6 +125,8 @@ check_blimp_update <- function() {
         } else {
             cli::cli_alert_warning("Did not recognize Yes or No. Skipping update.")
         }
+    } else {
+        rblimp.env$now <- now
     }
     return(FALSE)
 }
