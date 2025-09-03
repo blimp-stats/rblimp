@@ -75,6 +75,7 @@ update_version <- function() {
 #' Internal command to check if blimp is up to date
 #' @noRd
 has_blimp_update <- function() {
+    if (interactive() == FALSE) return(invisible(FALSE))
     (blimp_version() < update_version()) |> any()
 }
 
