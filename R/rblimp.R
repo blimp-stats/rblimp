@@ -68,7 +68,7 @@
 #' @returns [`blimp_obj`]
 #' @importFrom graphics abline axis dotchart hist lines points
 #' @importFrom methods new show
-#' @importFrom stats coef median model.matrix ppoints pt qnorm quantile resid sd start vcov
+#' @importFrom stats coef median model.matrix ppoints pt qnorm quantile resid sd start vcov setNames
 #' @importFrom utils read.csv read.table write.csv
 #' @examplesIf has_blimp()
 #' # Generate Data
@@ -465,6 +465,8 @@ rblimp <- function(model,
             x,
             Variance = 1,
             Correlations = 1,
+            `residual SD` = 1,
+            `Standard Deviation` = 1,
             Beta = 2,
             `Grand Mean` = 2,
             `Standardized Beta` = 3,

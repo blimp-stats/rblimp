@@ -34,6 +34,8 @@ mdl <- rblimp(
 )
 
 # Write out input and output
+\dontrun{
 write.blimp(mdl, "folder_location")
+}
 \dontshow{\}) # examplesIf}
 }

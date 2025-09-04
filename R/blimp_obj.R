@@ -44,13 +44,321 @@ setMethod(
     }
 )
 
+#' Summary method for blimp_obj
+#'
+#' @description
+#' Provides formatted summary output for blimp_obj, optionally allowing
+#' selection by variable name or block. Offers cleaner presentation than the
+#' raw estimates matrix.
+#'
+#' @param object A [`blimp_obj`] object containing model results.
+#' @param selector Optional character string specifying the variable name or block to extract.
+#'   If missing, shows all estimates. Can be a variable name (e.g., "y1") or a block name (e.g., "between").
+#' @param digits Integer specifying the number of decimal places for rounding. Default is 3.
+#' @param ... Additional arguments (for S4 method compatibility).
+#'
+#' @return
+#' If selector is provided: invisibly returns a matrix or list of estimates for the selected variable/block.
+#' If no selector: returns the full estimates matrix with improved formatting.
+#'
 #' @export
 setMethod(
     "summary", "blimp_obj",
-    function(object, ...) {
-        return(object@estimates)
+    function(object, selector, digits = 3, ...) {
+
+        # Extract parameter width from ellipsis (used for alignment in multivariate models)
+        passed_par_width <- list(...)$.par_width
+
+        # If no selector provided, show formatted output for all variables
+        if (missing(selector)) {
+            # Get model attributes for processing all variables
+            oname <- attr(object@iterations, "outcome_name")
+            if (is.null(oname)) {
+                # Fallback to basic output if no outcome names
+                niter <- nrow(object@iterations)
+                nchain <- length(object@burn)
+                cli::cli_h1('Model Summary')
+                cli::cli_alert_info("Model fitted with {niter} iterations using {nchain} chains.")
+                if (any(colnames(object@estimates) == "Estimate")) {
+                    cli::cli_alert_info("Estimate column based on posterior median.")
+                }
+                cli::cli_h1('')
+                return(object@estimates)
+            }
+
+            # Show formatted output for all unique variables
+            # Include single variables and multivariate models, but exclude blocks
+            all_variables <- unique(tolower(oname))
+
+            # Get block information for filtering
+            block_info <- attr(object@iterations, "block")
+            if (!is.null(block_info)) {
+                unique_variables <- all_variables[!all_variables %in% tolower(block_info)]
+            } else {
+                unique_variables <- all_variables
+            }
+
+            # Print header
+            niter <- nrow(object@iterations)
+            nchain <- length(object@burn)
+            cli::cli_h1('Model Summary')
+            cli::cli_alert_info("Model fitted with {niter} iterations using {nchain} chains.")
+            if (any(colnames(object@estimates) == "Estimate")) {
+                cli::cli_alert_info("Estimate column based on posterior median.")
+            }
+            cat("\n")
+
+            # Process each variable with dividers
+            result_list <- vector("list", length(unique_variables))
+            names(result_list) <- unique_variables
+
+            # Calculate maximum parameter name width for consistent alignment
+            max_par_width <- if (!is.null(passed_par_width)) {
+                passed_par_width  # Use passed width if available (from parent call)
+            } else {
+                calculate_max_par_width(object, unique_variables)  # Calculate for all variables
+            }
+
+            for (i in seq_along(unique_variables)) {
+                var_name <- unique_variables[i]
+
+                # Add newline between variables (except before first)
+                if (i > 1) {
+                    cat("\n")
+                }
+
+                # Get estimates for this variable
+                result_list[[i]] <- summary(object, var_name, digits = digits, .header_level = 2, .par_width = max_par_width)
+            }
+
+            cli::cli_h1('')
+            return(invisible(result_list))
+        }
+
+        # Input validation for selector
+        if (length(selector) != 1) {
+            throw_error("Argument {.arg selector} must be a single character string.")
+        }
+
+        if (!is.character(selector)) {
+            throw_error("Argument {.arg selector} must be a character string.")
+        }
+
+        if (!is.numeric(digits) || length(digits) != 1 || digits < 0) {
+            throw_error("Argument {.arg digits} must be a non-negative integer.")
+        }
+
+        # Extract header level from ellipsis (controls header hierarchy)
+        header_level <- list(...)$.header_level %||% 1
+
+        # Extract model attributes
+        oname <- attr(object@iterations, "outcome_name")
+        if (is.null(oname)) {
+            throw_error("Model object does not contain outcome name information.")
+        }
+        oname <- tolower(oname)
+
+        ptype <- attr(object@iterations, "parameter_type")
+        if (is.null(ptype)) {
+            throw_error("Model object does not contain parameter type information.")
+        }
+
+        block <- attr(object@iterations, "block")
+        if (is.null(block)) {
+            throw_error("Model object does not contain block information.")
+        }
+        block <- tolower(block)
+
+        # Check if requesting block FIRST (before variable check)
+        if (selector %in% block) {
+            cli::cli_h1('Estimates Summary for {selector} block')
+
+            # Get unique outcome names in this block
+            unique_outcomes <- unique(oname[block %in% selector])
+
+            if (length(unique_outcomes) == 0) {
+                throw_error("No variables found in block {.val {selector}}.")
+            }
+
+            # Create named list and process each outcome
+            result <- stats::setNames(vector("list", length(unique_outcomes)), unique_outcomes)
+            for (i in seq_along(unique_outcomes)) {
+
+                # Calculate maximum parameter name width for consistent alignment across block outcomes
+                max_par_width <- if (!is.null(passed_par_width)) {
+                    passed_par_width  # Use passed width if available
+                } else {
+                    calculate_max_par_width(object, unique_outcomes)  # Calculate for block outcomes
+                }
+
+                outcome <- unique_outcomes[i]
+
+                # Add newline between variables (except before first)
+                if (i > 1) {
+                    cat("\n")
+                }
+
+                result[[outcome]] <- summary(object, outcome, digits = digits, .header_level = 2, .par_width = max_par_width)
+            }
+
+            cli::cli_h1('')
+            return(invisible(result))
+        }
+
+        # Process as variable name
+        variable <- tolower(selector)
+
+        # Get parameter selection for the main variable
+        sel <- which(oname == variable)
+
+        # Check for associated correlation models early
+        correlation_models <- unique(oname[grepl(paste0("\\b", variable, "\\b"), oname) &
+                                          grepl(" ", oname) & oname != variable])
+
+        # If we have correlation models and this is a direct call, handle specially
+        if (length(correlation_models) > 0 && header_level == 1) {
+            # Calculate max parameter name width across all related models
+            all_models <- c(variable, correlation_models)
+
+            # Calculate maximum parameter name width across all related models for consistent alignment
+            max_par_width <- if (!is.null(passed_par_width)) {
+                passed_par_width  # Use passed width if available
+            } else {
+                calculate_max_par_width(object, all_models)  # Calculate for main + correlation models
+            }
+
+            # Print main header with info once
+            cli::cli_h1('Estimates Summary for {selector}')
+            niter <- nrow(object@iterations)
+            nchain <- length(object@burn)
+            cli::cli_alert_info("Summaries based on {niter} iterations using {nchain} chains.")
+            if (any(colnames(object@estimates) == "Estimate")) {
+                cli::cli_alert_info("Estimate column based on posterior median.")
+            }
+
+            # Create result list
+            result_list <- list()
+
+            # Process main variable with level 2 header and shared parameter width
+            if (length(sel) > 0) {
+                result_list[[variable]] <- summary(object, selector, digits = digits, .header_level = 2, .par_width = max_par_width)
+            }
+
+            # Process correlation models with level 2 headers and shared parameter width
+            for (corr_model in correlation_models) {
+                cat("\n")
+                result_list[[corr_model]] <- summary(object, corr_model, digits = digits, .header_level = 2, .par_width = max_par_width)
+            }
+
+            cli::cli_h1('')
+            return(invisible(result_list))
+        }
+
+        if (length(sel) == 0) {
+            available_vars <- unique(oname)
+            available_blocks <- unique(block)
+            throw_error(c(
+                "Variable {.val {selector}} not found in model.",
+                "i" = "Available variables: {.val {available_vars}}",
+                "i" = "Available blocks: {.val {available_blocks}}"
+            ))
+        }
+
+        # Subset estimates
+        est <- object@estimates[sel, , drop = FALSE]
+
+        # Clean up row names
+        rownames(est) <- gsub(paste0(variable, ' '), '   ', rownames(est))
+        rownames(est) <- gsub(' ~', '', rownames(est))
+        rownames(est) <- gsub(' R2:', '', rownames(est))
+        rownames(est) <- gsub('\\(standardized\\)', '', rownames(est))
+        rownames(est) <- gsub('residual variance', 'Residual Var.', rownames(est))
+        rownames(est) <- gsub('residual SD', 'Residual SD', rownames(est))
+
+        # Add extra prefix spacing for correlation/covariance models to align with main variables
+        # This ensures "Cov( x, z )" aligns with "   Intercept" from main models
+        if (any(grepl("^(Cov|Cor)\\(", rownames(est)))) {
+            rownames(est) <- paste0("   ", rownames(est))
+        }
+
+        # Determine parameter name width for consistent alignment
+        # Use shared width in multivariate models, otherwise calculate locally
+        if (!is.null(passed_par_width)) {
+            nw <- passed_par_width  # Use shared width from multivariate calculation
+        } else {
+            nw <- max(nchar(rownames(est)))  # Calculate width for this model only
+        }
+
+        # Use paste0 to append spaces to row names until they match max width
+        rname <- sapply(rownames(est), function(name) {
+            current_length <- nchar(name)
+            if (current_length < nw) {
+                paste0(name, strrep(" ", nw - current_length))
+            } else {
+                name
+            }
+        }, USE.NAMES = FALSE)
+
+        # Format values
+        values <- est |>
+            round(digits = digits) |>
+            apply(2, format, width = max(nchar(colnames(est)), 4 + digits))
+
+        # Print output header
+        if (header_level == 1) {
+            cli::cli_h1('Estimates Summary for {selector}')
+
+            # Only show iteration/chain info for direct calls (level 1 headers)
+            niter <- nrow(object@iterations)
+            nchain <- length(object@burn)
+            cli::cli_alert_info("Summaries based on {niter} iterations using {nchain} chains.")
+
+            # Check if Estimate column is used
+            if (any(colnames(est) == "Estimate")) {
+                cli::cli_alert_info("Estimate column based on posterior median.")
+            }
+        } else {
+            cli::cli_h2('Estimates Summary for {selector}')
+        }
+
+        # Print column headers
+        cat("\n")
+        cname <- colnames(values)
+
+        # Format column names to align with values
+        cname_formatted <- sapply(seq_along(cname), function(i) {
+            format(
+                cname[i],
+                width = max(nchar(values[, i])),
+                justify = 'right'
+            )
+        })
+
+        # Print header row - use the actual row width (nw) not max(nchar(rname))
+        cat(c(strrep(' ', nw), cname_formatted), fill = TRUE)
+
+        # Print estimates by parameter type
+        for (param_level in levels(ptype[sel])) {
+            param_indices <- which(ptype[sel] == param_level)
+            if (length(param_indices) > 0) {
+                cli::cli_h3(paste0(param_level, ':'))
+                for (j in param_indices) {
+                    cat(paste0(rname[j], ' '))
+                    cat(values[j, , drop = FALSE], fill = TRUE)
+                }
+            }
+        }
+
+        # End with empty header only for direct calls (not recursive calls)
+        if (header_level == 1) {
+            cli::cli_h1('')
+        }
+
+        # Return subset of estimates invisibly
+        invisible(nw)
     }
 )
+
 
 #' @export
 setMethod(
@@ -317,7 +625,9 @@ setMethod(
 #' )
 #'
 #' # Write out input and output
+#' \dontrun{
 #' write.blimp(mdl, "folder_location")
+#' }
 #' @export
 setGeneric("write.blimp", function(object, folder = "") {
     stop(paste("Does not work with ", class(object)))
