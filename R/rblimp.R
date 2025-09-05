@@ -341,14 +341,26 @@ rblimp <- function(model,
     # Parse multivariate models
     cov_sel <- lab$V2 == "variance" & startsWith(lab$V3, "Cov(")
     if (any(cov_sel)) {
-        lab$V1[cov_sel] <- sapply(strsplit(lab$V1[cov_sel], " "), \(x) paste0(x, collapse = '.'))
+        vars_list <- strsplit(lab$V1[cov_sel], " ")
+        expanded_pairs <- lapply(vars_list, function(vars) {
+            if (length(vars) < 2) return(paste0(vars, collapse = '.'))
+            pairs <- combn(vars, 2, simplify = FALSE)
+            sapply(pairs, function(pair) paste0(pair, collapse = '.'))
+        })
+        lab$V1[cov_sel] <- unlist(expanded_pairs)
         lab$V2[cov_sel] <- "covariance"
         lab$V3[cov_sel] <- ""
     }
 
     cor_sel <- lab$V2 == "correlations" & startsWith(lab$V3, "Cor(")
     if (any(cor_sel)) {
-        lab$V1[cor_sel] <- sapply(strsplit(lab$V1[cor_sel], " "), \(x) paste0(x, collapse = '.'))
+        vars_list <- strsplit(lab$V1[cor_sel], " ")
+        expanded_pairs <- lapply(vars_list, function(vars) {
+            if (length(vars) < 2) return(paste0(vars, collapse = '.'))
+            pairs <- combn(vars, 2, simplify = FALSE)
+            sapply(pairs, function(pair) paste0(pair, collapse = '.'))
+        })
+        lab$V1[cor_sel] <- unlist(expanded_pairs)
         lab$V3[cor_sel] <- ""
     }
 
@@ -416,14 +428,26 @@ rblimp <- function(model,
     # Parse multivariate models
     cov_sel <- lab2$V2 == "Variance" & startsWith(lab2$V3, "Cov(")
     if (any(cov_sel)) {
-        lab2$V2[cov_sel] <- sapply(strsplit(lab2$V1[cov_sel], " "), \(x) paste0(x, collapse = ', '))
+        vars_list <- strsplit(lab2$V1[cov_sel], " ")
+        expanded_pairs <- lapply(vars_list, function(vars) {
+            if (length(vars) < 2) return(paste0(vars, collapse = ', '))
+            pairs <- combn(vars, 2, simplify = FALSE)
+            sapply(pairs, function(pair) paste0(pair, collapse = ', '))
+        })
+        lab2$V2[cov_sel] <- unlist(expanded_pairs)
         lab2$V1[cov_sel] <- "Cov("
         lab2$V3[cov_sel] <- ")"
     }
 
     cor_sel <- lab2$V2 == "Correlations" & startsWith(lab2$V3, "Cor(")
     if (any(cor_sel)) {
-        lab2$V2[cor_sel] <- sapply(strsplit(lab2$V1[cor_sel], " "), \(x) paste0(x, collapse = ', '))
+        vars_list <- strsplit(lab2$V1[cor_sel], " ")
+        expanded_pairs <- lapply(vars_list, function(vars) {
+            if (length(vars) < 2) return(paste0(vars, collapse = ', '))
+            pairs <- combn(vars, 2, simplify = FALSE)
+            sapply(pairs, function(pair) paste0(pair, collapse = ', '))
+        })
+        lab2$V2[cor_sel] <- unlist(expanded_pairs)
         lab2$V1[cor_sel] <- "Cor("
         lab2$V3[cor_sel] <- ")"
     }
