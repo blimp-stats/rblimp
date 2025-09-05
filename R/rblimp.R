@@ -338,29 +338,55 @@ rblimp <- function(model,
     lab$V2[lab$V2 == "Odds Ratio"] <- "regressed on (odds ratio)"
     lab$V2 <- tolower(lab$V2)
 
-    # Parse multivariate models
+    # Parse multivariate models - map each row to correct pairwise combination
     cov_sel <- lab$V2 == "variance" & startsWith(lab$V3, "Cov(")
     if (any(cov_sel)) {
-        vars_list <- strsplit(lab$V1[cov_sel], " ")
-        expanded_pairs <- lapply(vars_list, function(vars) {
-            if (length(vars) < 2) return(paste0(vars, collapse = '.'))
-            pairs <- combn(vars, 2, simplify = FALSE)
-            sapply(pairs, function(pair) paste0(pair, collapse = '.'))
-        })
-        lab$V1[cov_sel] <- unlist(expanded_pairs)
+        cov_indices <- which(cov_sel)
+        unique_var_sets <- unique(lab$V1[cov_indices])
+        
+        for (var_set in unique_var_sets) {
+            matching_indices <- cov_indices[lab$V1[cov_indices] == var_set]
+            vars <- strsplit(var_set, " ")[[1]]
+            
+            if (length(vars) >= 2 && length(matching_indices) > 1) {
+                pairs <- combn(vars, 2, simplify = FALSE)
+                # Map each row to its corresponding pair
+                for (i in seq_along(matching_indices)) {
+                    if (i <= length(pairs)) {
+                        lab$V1[matching_indices[i]] <- paste0(pairs[[i]], collapse = '.')
+                    }
+                }
+            } else if (length(matching_indices) == 1) {
+                # Single pair case
+                lab$V1[matching_indices[1]] <- paste0(vars[1:min(2, length(vars))], collapse = '.')
+            }
+        }
         lab$V2[cov_sel] <- "covariance"
         lab$V3[cov_sel] <- ""
     }
 
     cor_sel <- lab$V2 == "correlations" & startsWith(lab$V3, "Cor(")
     if (any(cor_sel)) {
-        vars_list <- strsplit(lab$V1[cor_sel], " ")
-        expanded_pairs <- lapply(vars_list, function(vars) {
-            if (length(vars) < 2) return(paste0(vars, collapse = '.'))
-            pairs <- combn(vars, 2, simplify = FALSE)
-            sapply(pairs, function(pair) paste0(pair, collapse = '.'))
-        })
-        lab$V1[cor_sel] <- unlist(expanded_pairs)
+        cor_indices <- which(cor_sel)
+        unique_var_sets <- unique(lab$V1[cor_indices])
+        
+        for (var_set in unique_var_sets) {
+            matching_indices <- cor_indices[lab$V1[cor_indices] == var_set]
+            vars <- strsplit(var_set, " ")[[1]]
+            
+            if (length(vars) >= 2 && length(matching_indices) > 1) {
+                pairs <- combn(vars, 2, simplify = FALSE)
+                # Map each row to its corresponding pair
+                for (i in seq_along(matching_indices)) {
+                    if (i <= length(pairs)) {
+                        lab$V1[matching_indices[i]] <- paste0(pairs[[i]], collapse = '.')
+                    }
+                }
+            } else if (length(matching_indices) == 1) {
+                # Single pair case
+                lab$V1[matching_indices[1]] <- paste0(vars[1:min(2, length(vars))], collapse = '.')
+            }
+        }
         lab$V3[cor_sel] <- ""
     }
 
@@ -425,31 +451,61 @@ rblimp <- function(model,
     lab2$V3[lab2$V2 == "Odds Ratio"] <- paste0(lab2$V3[lab2$V2 == "Odds Ratio"], " (odds ratio)")
     lab2$V2[lab2$V2 == "Odds Ratio"] <- "~"
 
-    # Parse multivariate models
+    # Parse multivariate models - map each row to correct pairwise combination for row names
     cov_sel <- lab2$V2 == "Variance" & startsWith(lab2$V3, "Cov(")
     if (any(cov_sel)) {
-        vars_list <- strsplit(lab2$V1[cov_sel], " ")
-        expanded_pairs <- lapply(vars_list, function(vars) {
-            if (length(vars) < 2) return(paste0(vars, collapse = ', '))
-            pairs <- combn(vars, 2, simplify = FALSE)
-            sapply(pairs, function(pair) paste0(pair, collapse = ', '))
-        })
-        lab2$V2[cov_sel] <- unlist(expanded_pairs)
-        lab2$V1[cov_sel] <- "Cov("
-        lab2$V3[cov_sel] <- ")"
+        cov_indices <- which(cov_sel)
+        unique_var_sets <- unique(lab2$V1[cov_indices])
+        
+        for (var_set in unique_var_sets) {
+            matching_indices <- cov_indices[lab2$V1[cov_indices] == var_set]
+            vars <- strsplit(var_set, " ")[[1]]
+            
+            if (length(vars) >= 2 && length(matching_indices) > 1) {
+                pairs <- combn(vars, 2, simplify = FALSE)
+                # Map each row to its corresponding pair
+                for (i in seq_along(matching_indices)) {
+                    if (i <= length(pairs)) {
+                        lab2$V1[matching_indices[i]] <- "Cov("
+                        lab2$V2[matching_indices[i]] <- paste0(pairs[[i]], collapse = ', ')
+                        lab2$V3[matching_indices[i]] <- ")"
+                    }
+                }
+            } else if (length(matching_indices) == 1) {
+                # Single pair case
+                lab2$V1[matching_indices[1]] <- "Cov("
+                lab2$V2[matching_indices[1]] <- paste0(vars[1:min(2, length(vars))], collapse = ', ')
+                lab2$V3[matching_indices[1]] <- ")"
+            }
+        }
     }
 
     cor_sel <- lab2$V2 == "Correlations" & startsWith(lab2$V3, "Cor(")
     if (any(cor_sel)) {
-        vars_list <- strsplit(lab2$V1[cor_sel], " ")
-        expanded_pairs <- lapply(vars_list, function(vars) {
-            if (length(vars) < 2) return(paste0(vars, collapse = ', '))
-            pairs <- combn(vars, 2, simplify = FALSE)
-            sapply(pairs, function(pair) paste0(pair, collapse = ', '))
-        })
-        lab2$V2[cor_sel] <- unlist(expanded_pairs)
-        lab2$V1[cor_sel] <- "Cor("
-        lab2$V3[cor_sel] <- ")"
+        cor_indices <- which(cor_sel)
+        unique_var_sets <- unique(lab2$V1[cor_indices])
+        
+        for (var_set in unique_var_sets) {
+            matching_indices <- cor_indices[lab2$V1[cor_indices] == var_set]
+            vars <- strsplit(var_set, " ")[[1]]
+            
+            if (length(vars) >= 2 && length(matching_indices) > 1) {
+                pairs <- combn(vars, 2, simplify = FALSE)
+                # Map each row to its corresponding pair
+                for (i in seq_along(matching_indices)) {
+                    if (i <= length(pairs)) {
+                        lab2$V1[matching_indices[i]] <- "Cor("
+                        lab2$V2[matching_indices[i]] <- paste0(pairs[[i]], collapse = ', ')
+                        lab2$V3[matching_indices[i]] <- ")"
+                    }
+                }
+            } else if (length(matching_indices) == 1) {
+                # Single pair case
+                lab2$V1[matching_indices[1]] <- "Cor("
+                lab2$V2[matching_indices[1]] <- paste0(vars[1:min(2, length(vars))], collapse = ', ')
+                lab2$V3[matching_indices[1]] <- ")"
+            }
+        }
     }
 
     # Parse parameters
@@ -469,6 +525,7 @@ rblimp <- function(model,
     # Read data in
     output <- list()
     output$estimates <- as.matrix(read.csv(file.path(tmpfolder, "estimates.csv"), header = TRUE))
+    
     rownames(output$estimates) <- trimws(lab_row_names)
     colnames(output$estimates) <- gsub('^X', '', colnames(output$estimates))
     colnames(output$estimates) <- gsub('\\.$', '%', colnames(output$estimates))
