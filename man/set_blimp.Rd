@@ -23,7 +23,7 @@ standard operating system installation locations. This function is useful for no
 or when wanting to use a beta version of blimp's computational engine (which must be installed via the updater).
 }
 \examples{
-\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
 # example code
 # Use blimp executable at `filepath` location
 \dontrun{set_blimp('filepath')}

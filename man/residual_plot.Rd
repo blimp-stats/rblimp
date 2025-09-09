@@ -45,7 +45,7 @@ Generates a conditional effect plots based on the posterior summaries from the o
 All colors are passed into \code{ggplot2}. See \code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for details on changing colors.
 }
 \examples{
-\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
 # set seed
 set.seed(981273)
 

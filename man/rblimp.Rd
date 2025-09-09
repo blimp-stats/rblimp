@@ -189,7 +189,7 @@ Running \code{rblimp} will also check if blimp is up to date.
 See details in \code{\link{rblimp_source}} for more information.
 }
 \examples{
-\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
 # Generate Data
 mydata <- data.frame(x = rnorm(1000), y = rnorm(1000))
 

@@ -15,7 +15,7 @@ write.blimp(object, folder = "")
 A function to write out blimp input and output from a model
 }
 \examples{
-\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
 # Generate Data
 mydata <- data.frame(x = rnorm(1000), y = rnorm(1000))
 

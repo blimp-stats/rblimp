@@ -22,7 +22,7 @@ is used to specify the FCS command in Blimp. \code{rblimp_syntax} will generate 
 Separates by grouping to run blimp command on each individual sub data set.
 }
 \examples{
-\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
 # Generate Data
 mydata <- data.frame(
     x = rnorm(1000),

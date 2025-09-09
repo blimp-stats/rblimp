@@ -31,7 +31,7 @@ This behavior can be disabled by setting the \code{check_blimp_update} option to
 This check is not performed if R is not being run with an interactive session. See \code{\link{interactive}} for more information.
 }
 \examples{
-\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
 # Run blimp script
 \dontrun{output <- rblimp_source("filepath/to/syntax")}
 \dontshow{\}) # examplesIf}

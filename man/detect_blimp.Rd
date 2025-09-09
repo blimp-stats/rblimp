@@ -19,7 +19,7 @@ check if \code{R_BLIMP} is set in the environment variables. Finally, it will fa
 Blimp install location based on the operating system.
 }
 \examples{
-\dontshow{if (has_blimp()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
 # Obtain blimp location
 detect_blimp()
 \dontshow{\}) # examplesIf}

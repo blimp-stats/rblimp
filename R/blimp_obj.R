@@ -257,6 +257,7 @@ setMethod(
         if (length(sel) == 0) {
             available_vars <- unique(oname)
             available_blocks <- unique(block)
+            available_vars <- available_vars[available_vars != '#parameter']
             throw_error(c(
                 "Variable {.val {selector}} not found in model.",
                 "i" = "Available variables: {.val {available_vars}}",
@@ -304,9 +305,17 @@ setMethod(
             round(digits = digits) |>
             apply(2, format, width = max(nchar(colnames(est)), 4 + digits))
 
+        # Check if values is one dim
+        if (values |> dim() |> is.null()) {
+            dim(values) <- c(1, length(values))
+        }
+
+        # Update selector name
+        sel_name <- if (selector == '#_parameter') "Parameters" else selector
+
         # Print output header
         if (header_level == 1) {
-            cli::cli_h1('Estimates Summary for {selector}')
+            cli::cli_h1('Estimates Summary for {sel_name}')
 
             # Only show iteration/chain info for direct calls (level 1 headers)
             niter <- nrow(object@iterations)
@@ -318,12 +327,12 @@ setMethod(
                 cli::cli_alert_info("Estimate column based on posterior median.")
             }
         } else {
-            cli::cli_h2('Estimates Summary for {selector}')
+            cli::cli_h2('Estimates Summary for {sel_name}')
         }
 
         # Print column headers
         cat("\n")
-        cname <- colnames(values)
+        cname <- colnames(object@estimates)
 
         # Format column names to align with values
         cname_formatted <- sapply(seq_along(cname), function(i) {
@@ -341,7 +350,10 @@ setMethod(
         for (param_level in levels(ptype[sel])) {
             param_indices <- which(ptype[sel] == param_level)
             if (length(param_indices) > 0) {
-                cli::cli_h3(paste0(param_level, ':'))
+                # Handle parameters
+                if (param_level != 'Other' | selector != '#_parameter') {
+                    cli::cli_h3(paste0(param_level, ':'))
+                }
                 for (j in param_indices) {
                     cat(paste0(rname[j], ' '))
                     cat(values[j, , drop = FALSE], fill = TRUE)

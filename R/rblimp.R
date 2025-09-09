@@ -287,6 +287,11 @@ rblimp <- function(model,
     oname <- lab$V1
     ptype <- lab$V2
     block <- lab$V5
+
+    # Handle parameters
+    oname[block == '#_parameter'] <- '#_parameter'
+    block[block == '#_parameter'] <- '#parameter'
+
     # Handle predictor models
     lab$V3[startsWith(ptype, "Level-")] |>
         sapply(\(x) {
@@ -343,11 +348,11 @@ rblimp <- function(model,
     if (any(cov_sel)) {
         cov_indices <- which(cov_sel)
         unique_var_sets <- unique(lab$V1[cov_indices])
-        
+
         for (var_set in unique_var_sets) {
             matching_indices <- cov_indices[lab$V1[cov_indices] == var_set]
             vars <- strsplit(var_set, " ")[[1]]
-            
+
             if (length(vars) >= 2 && length(matching_indices) > 1) {
                 pairs <- combn(vars, 2, simplify = FALSE)
                 # Map each row to its corresponding pair
@@ -369,11 +374,11 @@ rblimp <- function(model,
     if (any(cor_sel)) {
         cor_indices <- which(cor_sel)
         unique_var_sets <- unique(lab$V1[cor_indices])
-        
+
         for (var_set in unique_var_sets) {
             matching_indices <- cor_indices[lab$V1[cor_indices] == var_set]
             vars <- strsplit(var_set, " ")[[1]]
-            
+
             if (length(vars) >= 2 && length(matching_indices) > 1) {
                 pairs <- combn(vars, 2, simplify = FALSE)
                 # Map each row to its corresponding pair
@@ -456,11 +461,11 @@ rblimp <- function(model,
     if (any(cov_sel)) {
         cov_indices <- which(cov_sel)
         unique_var_sets <- unique(lab2$V1[cov_indices])
-        
+
         for (var_set in unique_var_sets) {
             matching_indices <- cov_indices[lab2$V1[cov_indices] == var_set]
             vars <- strsplit(var_set, " ")[[1]]
-            
+
             if (length(vars) >= 2 && length(matching_indices) > 1) {
                 pairs <- combn(vars, 2, simplify = FALSE)
                 # Map each row to its corresponding pair
@@ -484,11 +489,11 @@ rblimp <- function(model,
     if (any(cor_sel)) {
         cor_indices <- which(cor_sel)
         unique_var_sets <- unique(lab2$V1[cor_indices])
-        
+
         for (var_set in unique_var_sets) {
             matching_indices <- cor_indices[lab2$V1[cor_indices] == var_set]
             vars <- strsplit(var_set, " ")[[1]]
-            
+
             if (length(vars) >= 2 && length(matching_indices) > 1) {
                 pairs <- combn(vars, 2, simplify = FALSE)
                 # Map each row to its corresponding pair
@@ -525,7 +530,7 @@ rblimp <- function(model,
     # Read data in
     output <- list()
     output$estimates <- as.matrix(read.csv(file.path(tmpfolder, "estimates.csv"), header = TRUE))
-    
+
     rownames(output$estimates) <- trimws(lab_row_names)
     colnames(output$estimates) <- gsub('^X', '', colnames(output$estimates))
     colnames(output$estimates) <- gsub('\\.$', '%', colnames(output$estimates))
