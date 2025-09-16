@@ -37,7 +37,7 @@ describe(
   object,
   depth = 1,
   pars,
-  prob = 0.95,
+  prob = 0.5,
   digits = 2,
   sort = NULL,
   decreasing = FALSE,

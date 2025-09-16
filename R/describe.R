@@ -310,7 +310,7 @@ setMethod(
 #' @export
 setMethod(
     "describe", "data.frame",
-    function(object, depth = 1, pars, prob = 0.95, digits = 2, sort = NULL, decreasing = FALSE, hist = TRUE, ...) {
+    function(object, depth = 1, pars, prob = 0.50, digits = 2, sort = NULL, decreasing = FALSE, hist = TRUE, ...) {
         plo <- (1 - prob) / 2
         phi <- 1 - plo
         # replace any character or factor columns with NA numeric columns
