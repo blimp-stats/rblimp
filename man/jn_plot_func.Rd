@@ -4,7 +4,7 @@
 \alias{jn_plot_func}
 \title{Function to generate a Johnson-Neyman Plot of Conditional Slope based on a function to produce the conditional effect.}
 \usage{
-jn_plot_func(func, xrange, ci = 0.95)
+jn_plot_func(func, xrange, ci = 0.95, ...)
 }
 \arguments{
 \item{func}{a \code{\link{function}} used to compute the conditional effect on moderator.}
@@ -12,9 +12,11 @@ jn_plot_func(func, xrange, ci = 0.95)
 \item{xrange}{a \code{\link{numeric}} of length two with the min and max of the x-axis}
 
 \item{ci}{a value between 0 and 1 specifying the credible interval size}
+
+\item{...}{values passed to internal boundary search algorithm. See Details below.}
 }
 \value{
-a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
+a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot. The bounding values are saved in the attribute 'bounds'.
 }
 \description{
 Generates a Johnson-Neyman Plot using a function to produce the conditional effect
@@ -22,6 +24,27 @@ Generates a Johnson-Neyman Plot using a function to produce the conditional effe
 \details{
 To change colors use ggplot2's scale system. Both fill and color are used. See
 \code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for more information about setting a manual set of colors.
+
+For \code{...}, the arguments are passed to the internal boundary search algorithm.
+This algorithm uses an initial grid search to locate boundaries based on the range
+and then a binary search to refine the estimates.
+The following arguments are available:
+\describe{
+\item{n_initial}{Number of points in the initial coarse grid search used to
+locate approximate boundary positions. Higher values improve detection of
+closely-spaced boundaries but increase computation time. Default is 1000.}
+\item{refine_tol}{Tolerance for binary search refinement. The algorithm
+refines each boundary until the interval width is smaller than this value.
+Smaller values give higher precision but require more function evaluations.
+Default is 1e-12.}
+\item{max_iter}{Maximum number of iterations for binary search refinement
+per boundary. Prevents infinite loops if tolerance cannot be achieved.
+Default is 100.}
+\item{adaptive}{Logical indicating whether to perform additional refinement
+in regions where boundaries are detected to be closely spaced. When TRUE,
+uses a finer grid to resolve boundaries that may be missed by the initial
+coarse grid. Default is TRUE.}
+}
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}

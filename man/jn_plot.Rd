@@ -4,7 +4,7 @@
 \alias{jn_plot}
 \title{Function to generate a Johnson-Neyman Plot of Conditional Slope with \code{\link{rblimp}}}
 \usage{
-jn_plot(formula, model, ci = 0.95)
+jn_plot(formula, model, ci = 0.95, ...)
 }
 \arguments{
 \item{formula}{an object of class \code{\link{formula}} to specify simple effect to plot.
@@ -13,9 +13,11 @@ The formula must have the following form: \code{outcome ~ focal | moderator}. Se
 \item{model}{an \code{\link{blimp_obj}}.}
 
 \item{ci}{a value between 0 and 1 specifying the credible interval size}
+
+\item{...}{passed bounds search algorithm. See \code{\link{jn_plot_func}} for details.}
 }
 \value{
-a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
+a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot. The bounding values are saved in the attribute 'bounds'.
 }
 \description{
 Generates a Johnson-Neyman Plot based on the posterior summaries from the output of \code{\link{rblimp}}.

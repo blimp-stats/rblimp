@@ -15,10 +15,32 @@ set_group <- function(x){ with(rle(x), {
 #' @param func a [`function`] used to compute the conditional effect on moderator.
 #' @param xrange a [`numeric`] of length two with the min and max of the x-axis
 #' @param ci a value between 0 and 1 specifying the credible interval size
-#' @returns a [`ggplot2::ggplot`] plot
+#' @param ... values passed to internal boundary search algorithm. See Details below.
+#' @returns a [`ggplot2::ggplot`] plot. The bounding values are saved in the attribute 'bounds'.
 #' @details
 #' To change colors use ggplot2's scale system. Both fill and color are used. See
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
+#'
+#' For `...`, the arguments are passed to the internal boundary search algorithm.
+#' This algorithm uses an initial grid search to locate boundaries based on the range
+#' and then a binary search to refine the estimates.
+#' The following arguments are available:
+#' \describe{
+#'   \item{n_initial}{Number of points in the initial coarse grid search used to
+#'     locate approximate boundary positions. Higher values improve detection of
+#'     closely-spaced boundaries but increase computation time. Default is 1000.}
+#'   \item{refine_tol}{Tolerance for binary search refinement. The algorithm
+#'     refines each boundary until the interval width is smaller than this value.
+#'     Smaller values give higher precision but require more function evaluations.
+#'     Default is 1e-12.}
+#'   \item{max_iter}{Maximum number of iterations for binary search refinement
+#'     per boundary. Prevents infinite loops if tolerance cannot be achieved.
+#'     Default is 100.}
+#'   \item{adaptive}{Logical indicating whether to perform additional refinement
+#'     in regions where boundaries are detected to be closely spaced. When TRUE,
+#'     uses a finer grid to resolve boundaries that may be missed by the initial
+#'     coarse grid. Default is TRUE.}
+#' }
 #' @examplesIf has_blimp()
 #' # set seed
 #' set.seed(981273)
@@ -67,7 +89,7 @@ set_group <- function(x){ with(rle(x), {
 #' @seealso [compute_condeff()]
 #' @import ggplot2
 #' @export
-jn_plot_func <- function(func, xrange, ci = 0.95) {
+jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
 
     # Check inputs
     if (is.function(func) == FALSE) throw_error(
@@ -78,54 +100,91 @@ jn_plot_func <- function(func, xrange, ci = 0.95) {
         "The {.arg ci} must be between 0 and 1"
     )
 
+    if (!is.numeric(xrange) || !is.vector(xrange) || is.list(xrange) || length(xrange) != 2) {
+        throw_error("{.arg {xrange}} must be a numeric vector of length 2")
+    }
+
+    if (any(is.na(xrange))) throw_error(
+        "{.arg {xrange}} cannot contain NA or NaN values"
+    )
+
+    if (any(is.infinite(xrange))) throw_error(
+        "{.arg {xrange}} cannot contain Inf values"
+    )
+
+    if (xrange[1] >= xrange[2]) throw_error(
+        "{.arg {xrange}}[1] ({xrange[1]}) must be < {.arg {xrange}}[2] ({xrange[2]})"
+    )
+
+
     # Handle probabilities
     ci <- (1 - ci) / 2
     probs <- c(ci, 1 - ci)
 
+    # Create function
+    f <- function(m) {
+        # Check if 0 is within the interval (product will be negative)
+        apply(func(m, quantile, probs = probs), 2, prod) >= 0
+    }
+
+    # Obtain boundaries
+    boundaries <- find_boundaries(f, xrange[1], xrange[2], ...)
+    bound_y <- sapply(boundaries, func, quantile, probs = probs)
+
     # Return plot
     return(
-        ggplot()
-        # Set 0 value line
-        + geom_hline(yintercept = 0)
-        # Create Ribbon
-        + stat_function(
-            fun = \(m) {
-                # Check if 0 is within the interval (product will be negative)
-                apply(func(m, quantile, probs = probs), 2, prod) >= 0
-            },
-            aes(
-                # Draw ribbon along lower
-                ymin = func(after_stat(x), quantile, probs = probs[1]),
-                # Draw ribbon along upper
-                ymax = func(after_stat(x), quantile, probs = probs[2]),
-                # Set color based on 0 being in the interval
-                fill = after_stat(y), group = set_group(after_stat(y))
-            ),
-            # Draws a ribbon transparency and
-            geom = 'ribbon', alpha = 0.25, n = 1000
+        structure(
+            ggplot()
+            # Set 0 value line
+            + geom_hline(yintercept = 0)
+            # Create Ribbon
+            + stat_function(
+                fun = f,
+                aes(
+                    # Draw ribbon along lower
+                    ymin = func(after_stat(x), quantile, probs = probs[1]),
+                    # Draw ribbon along upper
+                    ymax = func(after_stat(x), quantile, probs = probs[2]),
+                    # Set color based on 0 being in the interval
+                    fill = after_stat(y), group = set_group(after_stat(y))
+                ),
+                # Draws a ribbon transparency and
+                geom = 'ribbon', alpha = 0.25, n = 1000
+            )
+            # Line for 2.5%
+            + geom_function(
+                fun = func,
+                args = list(quantile, probs = probs[1]),
+                color = 'black', linetype = 'dashed'
+            )
+            # Line for 97.5%
+            + geom_function(
+                fun = func,
+                args = list(quantile, probs = probs[2]),
+                color = 'black', linetype = 'dashed'
+            )
+            # Line for Median
+            + geom_function(
+                fun = func,
+                args = list(median),
+                color = 'black'
+            )
+            # Add boundary lines
+            + geom_segment(
+                aes(
+                    x = boundaries,
+                    xend = boundaries,
+                    y = bound_y[1,],
+                    yend = bound_y[2,],
+                ),
+                color = 'black', alpha = 0.50
+            )
+            # Set range
+            + xlim(xrange)
+            # Set fill values
+            + scale_fill_manual(guide = 'none', values = c('#ca0020', '#0571b0')),
+            boundaries = boundaries
         )
-        # Line for 2.5%
-        + geom_function(
-            fun = func,
-            args = list(quantile, probs = probs[1]),
-            color = 'black', linetype = 'dashed'
-        )
-        # Line for 97.5%
-        + geom_function(
-            fun = func,
-            args = list(quantile, probs = probs[2]),
-            color = 'black', linetype = 'dashed'
-        )
-        # Line for Median
-        + geom_function(
-            fun = func,
-            args = list(median),
-            color = 'black'
-        )
-        # Set range
-        + xlim(xrange)
-        # Set fill values
-        + scale_fill_manual(guide = 'none', values = c('#ca0020', '#0571b0'))
     )
 }
 
@@ -195,7 +254,8 @@ compute_condeff <- function(value1, value2) {
 #' The formula must have the following form: `outcome ~ focal | moderator`. See Details below for nominal moderators.
 #' @param model an [`blimp_obj`].
 #' @param ci a value between 0 and 1 specifying the credible interval size
-#' @returns a [`ggplot2::ggplot`] plot
+#' @param ... passed bounds search algorithm. See [`jn_plot_func`] for details.
+#' @returns a [`ggplot2::ggplot`] plot. The bounding values are saved in the attribute 'bounds'.
 #' @details
 #' To change colors use ggplot2's scale system. Both fill and color are used. See
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
@@ -228,7 +288,7 @@ compute_condeff <- function(value1, value2) {
 #' @import ggplot2
 #' @importFrom methods is
 #' @export
-jn_plot <- function(formula, model, ci = 0.95) {
+jn_plot <- function(formula, model, ci = 0.95, ...) {
 
     # Extract Characters
     f <- formula |> as.character() |>
@@ -313,23 +373,40 @@ jn_plot <- function(formula, model, ci = 0.95) {
     ## Obtain iterations
     iter <- model |> as.matrix()
 
+    # Create plot
+    plt <- jn_plot_func(
+        compute_condeff(
+            iter[, bx_sel],
+            iter[, c(bxm_s1, bxm_s2)]
+        ),
+        xrange = m_range,
+        ci = ci
+    )
+
+    # Get boundaries and create subtitle
+    bounds <- attr(plt, 'boundaries')
+    subt <- if (length(bounds) == 1L) {
+        paste0("\nBound: ",  paste(sprintf("%.3g", bounds), collapse = ", "))
+    } else if (length(bounds) > 1L) {
+        paste0("\nBounds: ",  paste(sprintf("%.3g", bounds), collapse = ", "))
+    } else NULL
+
     # Return plot
     return(
-        # Compute plot based on function
-        jn_plot_func(
-            compute_condeff(
-                iter[, bx_sel],
-                iter[, c(bxm_s1, bxm_s2)]
+        structure(
+            # Compute plot based on function
+            plt
+            # Set labels
+            + labs(
+                title = "Johnson-Neyman Plot of Conditional Slope",
+                subtitle = paste0(
+                    "Red area represents 0 within 95% interval",
+                    subt
+                ),
+                y = paste(out, "~", if (pre_is_cent) paste("Centered", pre) else pre),
+                x = if (mod_is_cent) paste("Centered", mod) else mod
             ),
-            xrange = m_range,
-            ci = ci
-        )
-        # Set labels
-        + labs(
-            title = "Johnson-Neyman Plot of Conditional Slope",
-            subtitle = "Red area represents 0 within 95% interval",
-            y = paste(out, "~", if (pre_is_cent) paste("Centered", pre) else pre),
-            x = if (mod_is_cent) paste("Centered", mod) else mod
+            bounds = bounds
         )
     )
 }
