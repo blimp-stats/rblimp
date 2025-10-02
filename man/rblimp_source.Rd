@@ -18,7 +18,7 @@ suppresses all output to console, and \code{'all'} prints all output to console.
 \item{nopowershell}{Windows only. Uses cmd.exe with some limited functions (instead of powershell).}
 }
 \value{
-a \code{\link{blimp_out}} object
+a \code{blimp_out} object
 }
 \description{
 This function runs 'imp' file with Blimp and captures the output only.

@@ -573,8 +573,8 @@ setMethod(
 )
 
 
-#' Coerces a [`blimp_obj`] or [`blimp_bygroup`] to a `mitml.list`
-#' @param object [`blimp_obj`] or [`blimp_bygroup`] object
+#' Coerces a [`blimp_obj`] or `blimp_bygroup` to a `mitml.list`
+#' @param object [`blimp_obj`] or `blimp_bygroup` object
 #' @export
 as.mitml <- function(object) {
     if (object |> inherits("blimp_bygroup")) {

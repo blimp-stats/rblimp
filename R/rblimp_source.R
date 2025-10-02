@@ -7,7 +7,7 @@
 #' `'iteration'` or logical `TRUE` is only iteration history, `'none'` or logical `FALSE`
 #' suppresses all output to console, and `'all'` prints all output to console.
 #' @param nopowershell Windows only. Uses cmd.exe with some limited functions (instead of powershell).
-#' @returns a [`blimp_out`] object
+#' @returns a `blimp_out` object
 #' @details
 #' Running `rblimp_source` will also run a check to see if Blimp is up to date.
 #' If Blimp is not up to date, it will prompt the user if it would like to update or not.

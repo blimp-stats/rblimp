@@ -1,7 +1,7 @@
 Package: rblimp
 Type: Package
 Title: Integration of Blimp Software into R
-Version: 0.2.37
+Version: 0.2.38
 Authors@R: 
     person(given = "Brian",
            family = "Keller",

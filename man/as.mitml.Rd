@@ -2,13 +2,13 @@
 % Please edit documentation in R/blimp_obj.R
 \name{as.mitml}
 \alias{as.mitml}
-\title{Coerces a \code{\link{blimp_obj}} or \code{\link{blimp_bygroup}} to a \code{mitml.list}}
+\title{Coerces a \code{\link{blimp_obj}} or \code{blimp_bygroup} to a \code{mitml.list}}
 \usage{
 as.mitml(object)
 }
 \arguments{
-\item{object}{\code{\link{blimp_obj}} or \code{\link{blimp_bygroup}} object}
+\item{object}{\code{\link{blimp_obj}} or \code{blimp_bygroup} object}
 }
 \description{
-Coerces a \code{\link{blimp_obj}} or \code{\link{blimp_bygroup}} to a \code{mitml.list}
+Coerces a \code{\link{blimp_obj}} or \code{blimp_bygroup} to a \code{mitml.list}
 }
