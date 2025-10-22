@@ -628,12 +628,16 @@ rblimp <- function(model,
     # Get average imputation
     if (file.exists(file.path(tmpfolder, "avgimp.csv"))) {
         output$average_imp <- read.csv(file.path(tmpfolder, "avgimp.csv"), header = TRUE)
+        file.path(tmpfolder, "avgimp.csv") |> readLines(1)  |>
+            strsplit(',') |> unlist() -> names(output$average_imp)
     } else {
         output$average_imp <- data.frame()
     }
     # Get variance of imputation
     if (file.exists(file.path(tmpfolder, "varimp.csv"))) {
         output$variance_imp <- read.csv(file.path(tmpfolder, "varimp.csv"), header = TRUE)
+        file.path(tmpfolder, "varimp.csv") |> readLines(1)  |>
+            strsplit(',') |> unlist() -> names(output$variance_imp)
     } else {
         output$variance_imp <- data.frame()
     }
