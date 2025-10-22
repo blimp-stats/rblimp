@@ -331,12 +331,13 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
 
     # Check if it is centered
     pre_is_cent <- if (is.null(model@syntax$center)) FALSE else{
-        tolower(pre) %in% (
-            model@syntax$center |> strsplit(' ') |> unlist() |> tolower()
+        (tolower(pre) |> sub("\\s*\\[[^]]*\\]$", "", x = _)) %in% (
+            model@syntax$center |> strsplit(' ') |> unlist() |> tolower() |>
+                gsub(';', '', x = _)
         )
     }
     mod_is_cent <- if (is.null(model@syntax$center)) FALSE else{
-        tolower(mod) %in% (
+        (tolower(mod) |> sub("\\s*\\[[^]]*\\]$", "", x = _)) %in% (
             model@syntax$center |> strsplit(' ') |> unlist() |> tolower()
         )
     }
