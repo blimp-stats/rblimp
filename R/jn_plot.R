@@ -170,7 +170,7 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
         )
     )
 
-    if (length(boundaries) == 2) {
+    if (NROW(bound_y) == 2) {
         p <- (
             p
             # Add boundary lines
