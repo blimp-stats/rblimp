@@ -591,6 +591,8 @@ rblimp <- function(model,
 
     if (file.exists(file.path(tmpfolder, "imps.csv"))) {
         tmp <- read.csv(file.path(tmpfolder, "imps.csv"), header = TRUE)
+        file.path(tmpfolder, "imps.csv") |> readLines(1)  |>
+            strsplit(',') |> unlist() -> names(tmp)
         # Loop over and add attributes back in
         for (i in seq_along(att_list)) {
             if (!is.null(att_list[[i]])) {
