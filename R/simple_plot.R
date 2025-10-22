@@ -151,7 +151,8 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     }
     mod_is_cent <- if (is.null(model@syntax$center)) FALSE else{
         (tolower(mod) |> sub("\\s*\\[[^]]*\\]$", "", x = _)) %in% (
-            model@syntax$center |> strsplit(' ') |> unlist() |> tolower()
+            model@syntax$center |> strsplit(' ') |> unlist() |> tolower() |>
+                gsub(';', '', x = _)
         )
     }
 
