@@ -131,44 +131,48 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
     boundaries <- find_boundaries(f, xrange[1], xrange[2], ...)
     bound_y <- sapply(boundaries, func, quantile, probs = probs)
 
-    # Return plot
-    return(
-        structure(
-            ggplot()
-            # Set 0 value line
-            + geom_hline(yintercept = 0)
-            # Create Ribbon
-            + stat_function(
-                fun = f,
-                aes(
-                    # Draw ribbon along lower
-                    ymin = func(after_stat(x), quantile, probs = probs[1]),
-                    # Draw ribbon along upper
-                    ymax = func(after_stat(x), quantile, probs = probs[2]),
-                    # Set color based on 0 being in the interval
-                    fill = after_stat(y), group = set_group(after_stat(y))
-                ),
-                # Draws a ribbon transparency and
-                geom = 'ribbon', alpha = 0.25, n = 1000
-            )
-            # Line for 2.5%
-            + geom_function(
-                fun = func,
-                args = list(quantile, probs = probs[1]),
-                color = 'black', linetype = 'dashed'
-            )
-            # Line for 97.5%
-            + geom_function(
-                fun = func,
-                args = list(quantile, probs = probs[2]),
-                color = 'black', linetype = 'dashed'
-            )
-            # Line for Median
-            + geom_function(
-                fun = func,
-                args = list(median),
-                color = 'black'
-            )
+    # Create plot
+    p <- (
+        ggplot()
+        # Set 0 value line
+        + geom_hline(yintercept = 0)
+        # Create Ribbon
+        + stat_function(
+            fun = f,
+            aes(
+                # Draw ribbon along lower
+                ymin = func(after_stat(x), quantile, probs = probs[1]),
+                # Draw ribbon along upper
+                ymax = func(after_stat(x), quantile, probs = probs[2]),
+                # Set color based on 0 being in the interval
+                fill = after_stat(y), group = set_group(after_stat(y))
+            ),
+            # Draws a ribbon transparency and
+            geom = 'ribbon', alpha = 0.25, n = 1000
+        )
+        # Line for 2.5%
+        + geom_function(
+            fun = func,
+            args = list(quantile, probs = probs[1]),
+            color = 'black', linetype = 'dashed'
+        )
+        # Line for 97.5%
+        + geom_function(
+            fun = func,
+            args = list(quantile, probs = probs[2]),
+            color = 'black', linetype = 'dashed'
+        )
+        # Line for Median
+        + geom_function(
+            fun = func,
+            args = list(median),
+            color = 'black'
+        )
+    )
+
+    if (length(boundaries) == 2) {
+        p <- (
+            p
             # Add boundary lines
             + geom_segment(
                 aes(
@@ -179,10 +183,21 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
                 ),
                 color = 'black', alpha = 0.50
             )
-            # Set range
-            + xlim(xrange)
-            # Set fill values
-            + scale_fill_manual(guide = 'none', values = c('#ca0020', '#0571b0')),
+        )
+    }
+
+    p <- (
+        p
+        # Set range
+        + xlim(xrange)
+        # Set fill values
+        + scale_fill_manual(guide = 'none', values = c('#ca0020', '#0571b0'))
+    )
+
+    # Return plot
+    return(
+        structure(
+            p,
             boundaries = boundaries
         )
     )
