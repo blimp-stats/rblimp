@@ -191,7 +191,7 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
         # Set range
         + xlim(xrange)
         # Set fill values
-        + scale_fill_manual(guide = 'none', values = c('#ca0020', '#0571b0'))
+        + scale_fill_manual(guide = 'none', values = c(`FALSE` = '#ca0020', `TRUE` = '#0571b0'))
     )
 
     # Return plot
