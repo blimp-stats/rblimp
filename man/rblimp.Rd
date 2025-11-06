@@ -90,7 +90,9 @@ rblimp_syntax(
 \arguments{
 \item{model}{a character string or vector/list of character strings. Specifies Blimp's MODEL command. See details.}
 
-\item{data}{a \code{\link{data.frame}}. The data set used by Blimp}
+\item{data}{a \code{\link{data.frame}} or a \code{\link{SIMULATE}} object.
+If a data.frame, the data set used by Blimp.
+If a SIMULATE object (created with \code{\link[=SIMULATE]{SIMULATE()}}), Blimp will generate simulated data instead of using existing data}
 
 \item{burn}{an integer. The number of burn-in iterations to be run}
 
@@ -210,4 +212,7 @@ mdl <- rblimp(
 # View results
 summary(mdl)
 \dontshow{\}) # examplesIf}
+}
+\seealso{
+\code{\link[=SIMULATE]{SIMULATE()}} for creating simulated data to fit models to, \code{\link[=rblimp_sim]{rblimp_sim()}} for generating simulated datasets
 }

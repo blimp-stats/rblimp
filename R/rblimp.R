@@ -6,7 +6,9 @@
 #' `rblimp` will generate the input, run the script, and load most the saved data into an R object. `rblimp_fcs`
 #' is used to specify the FCS command in Blimp. `rblimp_syntax` will generate the Blimp syntax file only.
 #' @param model a character string or vector/list of character strings. Specifies Blimp's MODEL command. See details.
-#' @param data a [`data.frame`]. The data set used by Blimp
+#' @param data a [`data.frame`] or a [`SIMULATE`] object.
+#'   If a data.frame, the data set used by Blimp.
+#'   If a SIMULATE object (created with [`SIMULATE()`]), Blimp will generate simulated data instead of using existing data
 #' @param burn an integer. The number of burn-in iterations to be run
 #' @param iter an integer. The number of post burn-in iterations to be run
 #' @param seed a positive integer. The seeding value for Blimp's pseudo random number generator
@@ -65,6 +67,9 @@
 #'
 #' Running `rblimp` will also check if blimp is up to date.
 #' See details in [`rblimp_source`] for more information.
+#'
+#' @seealso [`SIMULATE()`] for creating simulated data to fit models to, [`rblimp_sim()`] for generating simulated datasets
+#'
 #' @returns [`blimp_obj`]
 #' @importFrom graphics abline axis dotchart hist lines points
 #' @importFrom methods new show
@@ -154,27 +159,35 @@ rblimp <- function(model,
         )
     }
 
-    # Check if data.frame
-    if (!is.data.frame(data)) throw_error(
-        "The {.arg data} must be a data.frame"
-    )
-    # Convert to data frame if a tibble
-    if ("tbl_df" %in% class(data)) {
-        cli::cli_alert_warning("Converting data to `data.farme`")
-        data <- as.data.frame(data)
-    }
+    # Check if data is a simulation specification or data.frame
+    is_simulation <- inherits(data, "blimp_simulate")
 
-    # Get attributes loop over and convert to numeric
-    att_list <- vector('list', NCOL(data))
-    for (i in seq_along(att_list)) {
-        if (!is.numeric(data[, i])) {
-            att_list[[i]] <- attributes(data[,i])
-            data[, i] <- as.numeric(data[, i])
+    if (!is_simulation) {
+        # Check if data.frame
+        if (!is.data.frame(data)) throw_error(
+            "The {.arg data} must be a data.frame or a blimp_simulate object"
+        )
+        # Convert to data frame if a tibble
+        if ("tbl_df" %in% class(data)) {
+            cli::cli_alert_warning("Converting data to `data.farme`")
+            data <- as.data.frame(data)
         }
-    }
 
-    # Write data to temp folder
-    write.csv(data, file.path(tmpfolder, "data.csv"), row.names = FALSE, quote = FALSE)
+        # Get attributes loop over and convert to numeric
+        att_list <- vector('list', NCOL(data))
+        for (i in seq_along(att_list)) {
+            if (!is.numeric(data[, i])) {
+                att_list[[i]] <- attributes(data[,i])
+                data[, i] <- as.numeric(data[, i])
+            }
+        }
+
+        # Write data to temp folder
+        write.csv(data, file.path(tmpfolder, "data.csv"), row.names = FALSE, quote = FALSE)
+    } else {
+        # For simulation, no data file needed
+        att_list <- NULL
+    }
 
     # Create saveCommand
     saveCmd <- vector('list', 5L)
@@ -254,10 +267,12 @@ rblimp <- function(model,
         output
     )
 
-    # Change file path
-    imp_file$data <- file.path(tmpfolder, "data.csv")
-    # Remove variables
-    imp_file$variables <- NULL
+    # For data.frame: set data path and remove variables
+    # For simulation: keep variables, no data path
+    if (!is_simulation) {
+        imp_file$data <- file.path(tmpfolder, "data.csv")
+        imp_file$variables <- NULL
+    }
 
     # Write imp file
     fileConn <- file(file.path(tmpfolder, "input.imp"))
