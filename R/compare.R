@@ -1,5 +1,26 @@
 ## Compares Models
 # Copyright Brian Keller 2022, all rights reserved
+
+#' Compare two Blimp models
+#'
+#' @description
+#' Generates a blimp_cp object to compare two models by evaluating how many
+#' iterations are above/below a cutpoint.
+#'
+#' @param model0 Reference model used to get the cutpoint
+#' @param model Comparison model to evaluate
+#' @param use A character, numeric value, function, or list. If character, recognizes
+#'   'mean' and 'median'. If numeric < 1, acts as proportion for quantile. If numeric >= 1,
+#'   converts to proportion out of 100. If function, applies that function. Use list for
+#'   multiple columns.
+#' @param greaterThan Logical. If TRUE, evaluates proportion greater than cutpoint
+#' @param suffixes Character vector of parameter name suffixes to compare. Defaults to
+#'   all R-squared values.
+#'
+#' @return A `blimp_cp` object containing comparison results
+#'
+#' @note Due to R restrictions, lists of functions will not give useful printed names.
+#'
 #' @export
 setGeneric("compare", function(model0, model, use = "mean", greaterThan = TRUE, suffixes =
                                    c(
@@ -11,10 +32,21 @@ setGeneric("compare", function(model0, model, use = "mean", greaterThan = TRUE, 
     stop(paste("Does not work with ", class(model)))
 })
 
-# Compare class
+#' S4 class for Blimp model comparison results
+#'
+#' @description
+#' Result object from comparing two Blimp models.
+#'
+#' @slot table Matrix of comparison results
+#' @slot model0 The reference blimp_obj model
+#' @slot model The comparison blimp_obj model
+#' @slot greaterThan Logical indicating direction of comparison
+#'
 #' @export
 setClass("blimp_cp", slots = list(table = "matrix", model0 = "blimp_obj", model = "blimp_obj", greaterThan = "logical"))
 
+#' Show method for blimp_cp
+#' @param object A `blimp_cp` object
 #' @export
 setMethod(
     "show", "blimp_cp",
@@ -78,6 +110,7 @@ model_compare_wrapper <- function(suffix, model, model0, use, greaterThan) {
     return(output)
 }
 
+#' @describeIn compare Compare two blimp_obj models
 #' @export
 setMethod(
     "compare", signature(model = "blimp_obj", model0 = "blimp_obj"),

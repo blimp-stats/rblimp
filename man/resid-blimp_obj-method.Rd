@@ -6,6 +6,11 @@
 \usage{
 \S4method{resid}{blimp_obj}(object, ...)
 }
+\arguments{
+\item{object}{A \code{blimp_obj} object}
+
+\item{...}{Additional arguments passed to residuals}
+}
 \description{
 Residuals scores from \code{blimp_obj}
 }

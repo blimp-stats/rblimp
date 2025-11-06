@@ -51,6 +51,9 @@ by_group <- function(expr, group) {
 }
 
 #' Fit Model across imputations with `mitml` package using [`by_group`]
+#' @param data A `blimp_bygroup` object
+#' @param expr An expression to evaluate on each imputation
+#' @param ... Additional arguments (unused)
 #' @export
 setMethod(
     "with", "blimp_bygroup",

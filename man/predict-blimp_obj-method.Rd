@@ -6,6 +6,11 @@
 \usage{
 \S4method{predict}{blimp_obj}(object, ...)
 }
+\arguments{
+\item{object}{A \code{blimp_obj} object}
+
+\item{...}{Additional arguments (unused)}
+}
 \description{
 Predicted scores from \code{blimp_obj}
 }

@@ -20,6 +20,27 @@ print.blimp_out <- function(x, ...) {
     )
 }
 
+#' S4 class for Blimp model results
+#'
+#' @description
+#' The main result object containing Blimp model estimates, iterations, and output.
+#'
+#' @name blimp_obj
+#' @aliases blimp_obj-class
+#'
+#' @slot call The function call that created the object
+#' @slot estimates Matrix of parameter estimates
+#' @slot burn List of burn-in information for each chain
+#' @slot iterations Data frame of MCMC iterations
+#' @slot psr Data frame of Potential Scale Reduction values
+#' @slot imputations List of imputed datasets
+#' @slot average_imp Data frame of average imputations
+#' @slot variance_imp Data frame of imputation variances
+#' @slot waldtest Data frame of Wald test results
+#' @slot simple Data frame for simple slopes analysis
+#' @slot syntax The blimp_syntax object used to run the model
+#' @slot output The blimp_out object containing raw output text
+#'
 #' @export
 setClass("blimp_obj", slots = list(
     call = "language", estimates = "matrix", burn = "list", iterations = "data.frame",
@@ -28,6 +49,11 @@ setClass("blimp_obj", slots = list(
     syntax = "blimp_syntax", output = "blimp_out"
 ))
 
+#' Convert blimp_obj to data.frame
+#' @param x A `blimp_obj` object
+#' @param row.names NULL or a character vector giving row names
+#' @param optional Logical. If TRUE, setting row names is optional
+#' @param ... Additional arguments passed to as.data.frame
 #' @export
 setMethod(
     "as.data.frame", "blimp_obj",
@@ -36,6 +62,9 @@ setMethod(
     }
 )
 
+#' Convert blimp_obj to matrix
+#' @param x A `blimp_obj` object
+#' @param ... Additional arguments (unused)
 #' @export
 setMethod(
     "as.matrix", "blimp_obj",
@@ -372,6 +401,8 @@ setMethod(
 )
 
 
+#' Show method for blimp_obj
+#' @param object A `blimp_obj` object
 #' @export
 setMethod(
     "show", "blimp_obj",
@@ -392,8 +423,13 @@ is_blimp_out <- function(x) {
     inherits(x, 'blimp_out')
 }
 
-#' Extract output (`blimp_out`) from `blimp_obj`
-#' @noRd
+#' Extract output from blimp_obj
+#'
+#' @description
+#' Extracts the raw Blimp output text from a blimp_obj.
+#'
+#' @param object A `blimp_obj` object
+#' @return A `blimp_out` object containing the raw Blimp output text
 #' @export
 output <- function(object) {
     if (!is_blimp_obj(object)) throw_error(
@@ -402,8 +438,13 @@ output <- function(object) {
     object@output
 }
 
-#' Extract POTENTIAL SCALE REDUCTION output from `blimp_obj` or `blimp_out`
-#' @noRd
+#' Extract Potential Scale Reduction (PSR) output
+#'
+#' @description
+#' Extracts the PSR convergence diagnostic section from Blimp output.
+#'
+#' @param object A `blimp_obj` or `blimp_out` object
+#' @return A `blimp_out` object containing PSR output
 #' @export
 psr <- function(object) {
     if (is_blimp_obj(object)) output <- output(object)
@@ -430,8 +471,13 @@ psr <- function(object) {
 }
 
 
-#' Extract ALGORITHMIC OPTIONS output from `blimp_obj` or `blimp_out`
-#' @noRd
+#' Extract algorithmic options from Blimp output
+#'
+#' @description
+#' Extracts the algorithmic options section from Blimp output.
+#'
+#' @param object A `blimp_obj` or `blimp_out` object
+#' @return A `blimp_out` object containing algorithmic options
 #' @export
 algorithm <- function(object) {
     if (is_blimp_obj(object)) output <- output(object)
@@ -451,8 +497,13 @@ algorithm <- function(object) {
     return(output[strt:stop - 1])
 }
 
-#' Extract DATA INFORMATION output from `blimp_obj` or `blimp_out`
-#' @noRd
+#' Extract data information from Blimp output
+#'
+#' @description
+#' Extracts the data information section from Blimp output.
+#'
+#' @param object A `blimp_obj` or `blimp_out` object
+#' @return A `blimp_out` object containing data information
 #' @export
 datainfo <- function(object) {
     if (is_blimp_obj(object)) output <- output(object)
@@ -472,8 +523,13 @@ datainfo <- function(object) {
     return(output[strt:stop - 1])
 }
 
-#' Extract MODEL INFORMATION from `blimp_obj` or `blimp_out`
-#' @noRd
+#' Extract model information from Blimp output
+#'
+#' @description
+#' Extracts the model information section from Blimp output.
+#'
+#' @param object A `blimp_obj` or `blimp_out` object
+#' @return A `blimp_out` object containing model information
 #' @export
 modelinfo <- function(object) {
     if (is_blimp_obj(object)) output <- output(object)
@@ -493,8 +549,13 @@ modelinfo <- function(object) {
     return(output[strt:stop - 1])
 }
 
-#' Extract MODEL FIT from `blimp_obj` or `blimp_out`
-#' @noRd
+#' Extract model fit from Blimp output
+#'
+#' @description
+#' Extracts the model fit section from Blimp output.
+#'
+#' @param object A `blimp_obj` or `blimp_out` object
+#' @return A `blimp_out` object containing model fit information
 #' @export
 modelfit <- function(object) {
     if (is_blimp_obj(object)) output <- output(object)
@@ -514,8 +575,13 @@ modelfit <- function(object) {
     return(output[strt:stop - 1])
 }
 
-#' Obtain MODEL ESTIMATES from `blimp_obj` or `blimp_out`
-#' @noRd
+#' Extract model estimates from Blimp output
+#'
+#' @description
+#' Extracts the model estimates section from Blimp output.
+#'
+#' @param object A `blimp_obj` or `blimp_out` object
+#' @return A `blimp_out` object containing model estimates
 #' @export
 estimates <- function(object) {
     if (is_blimp_obj(object)) output <- output(object)
@@ -540,6 +606,8 @@ estimates <- function(object) {
 }
 
 #' Residuals scores from `blimp_obj`
+#' @param object A `blimp_obj` object
+#' @param ... Additional arguments (unused)
 #' @export
 setMethod(
     "residuals", "blimp_obj",
@@ -552,6 +620,8 @@ setMethod(
 )
 
 #' Residuals scores from `blimp_obj`
+#' @param object A `blimp_obj` object
+#' @param ... Additional arguments passed to residuals
 #' @export
 setMethod(
     "resid", "blimp_obj",
@@ -561,6 +631,8 @@ setMethod(
 )
 
 #' Predicted scores from `blimp_obj`
+#' @param object A `blimp_obj` object
+#' @param ... Additional arguments (unused)
 #' @export
 setMethod(
     "predict", "blimp_obj",
@@ -601,6 +673,9 @@ as.mitml <- function(object) {
 
 
 #' Fit Model across imputations with `mitml` package
+#' @param data A `blimp_obj` object
+#' @param expr An expression to evaluate on each imputation
+#' @param ... Additional arguments (unused)
 #' @export
 setMethod(
     "with", "blimp_obj",
@@ -645,6 +720,7 @@ setGeneric("write.blimp", function(object, folder = "") {
     stop(paste("Does not work with ", class(object)))
 })
 
+#' @describeIn write.blimp Write blimp_syntax to file
 setMethod("write.blimp", "blimp_syntax",
     function(object, folder = "") {
         fileConn <- base::file(file.path(folder))
@@ -652,6 +728,8 @@ setMethod("write.blimp", "blimp_syntax",
         close(fileConn)
     }
 )
+
+#' @describeIn write.blimp Write blimp_out to file
 setMethod("write.blimp", "blimp_out",
     function(object, folder = "") {
         fileConn <- base::file(file.path(folder))
@@ -660,6 +738,7 @@ setMethod("write.blimp", "blimp_out",
     }
 )
 
+#' @describeIn write.blimp Write blimp_obj files to folder
 #' @export
 setMethod("write.blimp", "blimp_obj",
     function(object, folder = "") {

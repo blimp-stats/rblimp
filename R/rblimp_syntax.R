@@ -374,6 +374,8 @@ normalize_syntax_value <- function(value) {
 
 
 #' Convert `blimp_syntax` to character vector
+#' @param x A `blimp_syntax` object
+#' @param ... Additional arguments (unused)
 #' @importFrom utils packageVersion
 #' @export
 as.character.blimp_syntax <- function(x, ...) {
@@ -411,6 +413,8 @@ as.character.blimp_syntax <- function(x, ...) {
 }
 
 #' Print `blimp_syntax`
+#' @param x A `blimp_syntax` object
+#' @param ... Additional arguments (unused)
 #' @export
 print.blimp_syntax <- function(x, ...) {
     cat(as.character(x))

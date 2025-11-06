@@ -129,7 +129,7 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
             "Unable to select out conditional effects",
             i = "If the moderator is nominal, include dummy code suffix.",
             i = "Otherwise the simple command doesn't exist for the moderator and outcome.",
-            i = "List of moderators: { mod_list }",
+            i = "List of moderators: { mod_list }"
         ))
     }
 
@@ -212,6 +212,8 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     if (pre_is_cent) subtitle <- paste(subtitle, pre)
     if (mod_is_cent) subtitle <- paste(subtitle, mod)
 
+    # Suppress R CMD check NOTEs about ggplot2 NSE
+    focal <- moderator <- h <- outcome <- NULL
     ## Make Conditional Effects Plot
     (
         ggplot2::ggplot(rib_data, ggplot2::aes(focal, color = moderator, fill = moderator))

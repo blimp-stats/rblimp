@@ -131,6 +131,8 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
     boundaries <- find_boundaries(f, xrange[1], xrange[2], ...)
     bound_y <- sapply(boundaries, func, quantile, probs = probs)
 
+    # Suppress R CMD check NOTEs about ggplot2 NSE
+    x <- y <- NULL
     # Create plot
     p <- (
         ggplot()

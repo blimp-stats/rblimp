@@ -2,9 +2,18 @@
 % Please edit documentation in R/blimp_obj.R
 \name{write.blimp}
 \alias{write.blimp}
+\alias{write.blimp,blimp_syntax-method}
+\alias{write.blimp,blimp_out-method}
+\alias{write.blimp,blimp_obj-method}
 \title{A function to write out blimp input and output from a model}
 \usage{
 write.blimp(object, folder = "")
+
+\S4method{write.blimp}{blimp_syntax}(object, folder = "")
+
+\S4method{write.blimp}{blimp_out}(object, folder = "")
+
+\S4method{write.blimp}{blimp_obj}(object, folder = "")
 }
 \arguments{
 \item{object}{A \code{\link{blimp_obj}}.}
@@ -14,6 +23,15 @@ write.blimp(object, folder = "")
 \description{
 A function to write out blimp input and output from a model
 }
+\section{Methods (by class)}{
+\itemize{
+\item \code{write.blimp(blimp_syntax)}: Write blimp_syntax to file
+
+\item \code{write.blimp(blimp_out)}: Write blimp_out to file
+
+\item \code{write.blimp(blimp_obj)}: Write blimp_obj files to folder
+
+}}
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
 # Generate Data

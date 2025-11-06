@@ -4,21 +4,12 @@
 \name{describe-class}
 \alias{describe-class}
 \alias{show,describe-method}
-\alias{plot,describe-method}
 \title{The 'describe' class for object summaries}
 \usage{
 \S4method{show}{describe}(object)
-
-\S4method{plot}{describe}(x, y, ...)
 }
 \arguments{
 \item{object}{An object of class \code{describe}.}
-
-\item{x}{An object of class \code{describe}.}
-
-\item{y}{Not used.}
-
-\item{...}{Additional arguments passed to the plotting function.}
 }
 \description{
 An S4 class that holds a summary data frame and formatting

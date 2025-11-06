@@ -278,6 +278,9 @@ trace_plot <- function(
         }
     }
 
+    # Suppress R CMD check NOTEs about ggplot2 NSE
+    Iteration <- Parameter <- Chain <- NULL
+
     # Return Plot information
     return(
         ggplot2::ggplot(plot_data, ggplot2::aes(Iteration, Parameter, color = Chain))

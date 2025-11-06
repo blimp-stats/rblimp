@@ -6,6 +6,11 @@
 \usage{
 \method{as.character}{blimp_syntax}(x, ...)
 }
+\arguments{
+\item{x}{A \code{blimp_syntax} object}
+
+\item{...}{Additional arguments (unused)}
+}
 \description{
 Convert \code{blimp_syntax} to character vector
 }

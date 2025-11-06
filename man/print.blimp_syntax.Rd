@@ -6,6 +6,11 @@
 \usage{
 \method{print}{blimp_syntax}(x, ...)
 }
+\arguments{
+\item{x}{A \code{blimp_syntax} object}
+
+\item{...}{Additional arguments (unused)}
+}
 \description{
 Print \code{blimp_syntax}
 }

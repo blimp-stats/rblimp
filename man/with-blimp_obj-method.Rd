@@ -6,6 +6,13 @@
 \usage{
 \S4method{with}{blimp_obj}(data, expr, ...)
 }
+\arguments{
+\item{data}{A \code{blimp_obj} object}
+
+\item{expr}{An expression to evaluate on each imputation}
+
+\item{...}{Additional arguments (unused)}
+}
 \description{
 Fit Model across imputations with \code{mitml} package
 }

@@ -1,3 +1,6 @@
+#' @importFrom utils combn
+NULL
+
 #' Internal error function
 #' Wrapper for `cli_abort` to not specify the call
 #' @importFrom cli cli_abort
@@ -216,7 +219,7 @@ refine_close_boundaries <- function(f_cached, boundaries, lower, upper,
                 if (length(transitions_fine) > 0) {
                     # Refine boundaries in this region
                     new_boundaries <- vapply(transitions_fine, function(i) {
-                        binary_search_boundary_cached(
+                        binary_search_boundary(
                             f_cached,
                             x_fine[i],
                             x_fine[i + 1],

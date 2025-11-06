@@ -203,6 +203,8 @@ posterior_plot <- function(
         }
     }
 
+    # Suppress R CMD check NOTEs about ggplot2 NSE
+    Parameter <- `Parameter Type` <- x <- NULL
     # Return Plot information
     return(
         ggplot2::ggplot(plot_data, ggplot2::aes(Parameter))

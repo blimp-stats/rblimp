@@ -6,8 +6,6 @@
 \alias{describe,numeric-method}
 \alias{describe,data.frame-method}
 \alias{describe,list-method}
-\alias{describe,glm-method}
-\alias{describe,lm-method}
 \alias{describe,blimp_obj-method}
 \title{Describe an object}
 \usage{
@@ -54,28 +52,6 @@ describe(
   sort = NULL,
   decreasing = FALSE,
   hist = TRUE,
-  ...
-)
-
-\S4method{describe}{glm}(
-  object,
-  depth = 1,
-  pars,
-  prob = 0.95,
-  digits = 2,
-  sort = NULL,
-  decreasing = FALSE,
-  ...
-)
-
-\S4method{describe}{lm}(
-  object,
-  depth = 1,
-  pars,
-  prob = 0.95,
-  digits = 2,
-  sort = NULL,
-  decreasing = FALSE,
   ...
 )
 

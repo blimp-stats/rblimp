@@ -11,7 +11,7 @@
 #' @noRd
 format_show <- function(x, digits) {
     r <- as.data.frame(lapply(1:length(x), function(i) {
-        if (class(x[[i]]) != "character") {
+        if (!is.character(x[[i]])) {
             if (names(x)[i] %in% names(digits)) {
                 round(x[[i]], digits[names(x)[i]])
             } else {
@@ -102,123 +102,6 @@ describe_show <- function(object) {
 #' @param object An object of class `describe`.
 #' @export
 setMethod("show", "describe", function(object) describe_show(object))
-
-#' Plot method for 'describe' objects
-#' @description Internal implementation for the `plot` method. It creates a
-#' dot chart of parameter estimates with confidence intervals.
-#' @param x A `describe` object.
-#' @param y Not used.
-#' @param pars Optional character vector of parameter names to plot.
-#' @param col.ci Color for the confidence interval lines.
-#' @param xlab X-axis label.
-#' @param add Logical, if `TRUE`, adds to an existing plot.
-#' @param xlim Numeric vector of length 2, setting the x-axis limits.
-#' @param labels Character vector of labels for the parameters.
-#' @param ... Additional arguments passed to `dotchart`.
-#' @noRd
-describe_plot <- function(x, y, pars, col.ci = "black", xlab = "Value", add = FALSE, xlim = NULL, labels = rownames(x)[1:n], ...) {
-    if (!missing(pars)) {
-        x <- x[pars, ]
-    }
-    n <- nrow(x)
-    mu <- x[n:1, 1]
-    left <- x[[3]][n:1]
-    right <- x[[4]][n:1]
-    set_nice_margins()
-    labels <- labels[n:1]
-    if (is.null(xlim)) xlim <- c(min(left), max(right))
-    if (add == FALSE) {
-        dotchart(mu, labels = labels, xlab = xlab, xlim = xlim, ...)
-    } else {
-        points(mu[n:1], n:1, ...)
-    }
-    for (i in 1:length(mu)) lines(c(left[i], right[i]), c(i, i), lwd = 2, col = col.ci)
-    if (add == FALSE) abline(v = 0, lty = 1, col = col.alpha("black", 0.15))
-}
-
-#' @rdname describe-class
-#' @param x An object of class `describe`.
-#' @param y Not used.
-#' @param ... Additional arguments passed to the plotting function.
-#' @export
-setMethod("plot", "describe", function(x, y, ...) describe_plot(x, y, ...))
-
-#' Summarize a list of posterior samples
-#' @description An internal function to compute summary statistics from a list
-#' of posterior samples, correctly handling scalar, vector, and matrix parameters.
-#' @param post A list where each element is a numeric vector, matrix, or array
-#' representing posterior samples for a parameter.
-#' @param prob The probability mass for the highest posterior density interval (HPDI).
-#' @param spark If `FALSE` (default), computes HPDI. If a numeric width is
-#' provided, it generates a `histospark` instead of interval bounds.
-#' @return A data frame summarizing the posterior samples.
-#' @noRd
-postlistdescribe <- function(post, prob = 0.95, spark = FALSE) {
-    n_pars <- length(post)
-    result <- data.frame(Mean = 0, StdDev = 0, lower = 0, upper = 0)
-    if (spark != FALSE) {
-        result <- data.frame(Mean = 0, StdDev = 0, Min = 0, Distribution = "", Max = 0)
-        result$Distribution <- as.character(result$Distribution)
-    }
-    r <- 1
-    for (k in 1:n_pars) {
-        dims <- dim(post[[k]])
-        if (length(dims) == 1) {
-            # single parameter
-            if (spark == FALSE) {
-                hpd <- as.numeric(HPDI(post[[k]], prob = prob))
-                result[r, ] <- c(mean(post[[k]]), sd(post[[k]]), hpd[1], hpd[2])
-            } else {
-                # histosparks in place of HPDI
-                the_spark <- histospark(post[[k]], width = spark)
-                result[r, 1:3] <- c(mean(post[[k]]), sd(post[[k]]), min(post[[k]]))
-                result[r, 4] <- the_spark
-                result[r, 5] <- max(post[[k]])
-            }
-            rownames(result)[r] <- names(post)[k]
-            r <- r + 1
-        }
-        if (length(dims) == 2) {
-            # vector of parameters
-            # loop over
-            for (i in 1:dims[2]) {
-                if (spark == FALSE) {
-                    hpd <- as.numeric(HPDI(post[[k]][, i], prob = prob))
-                    result[r, ] <- c(mean(post[[k]][, i]), sd(post[[k]][, i]), hpd[1], hpd[2])
-                } else {
-                    the_spark <- histospark(post[[k]][, i], width = spark)
-                    result[r, 1:3] <- c(mean(post[[k]][, i]), sd(post[[k]][, i]), min(post[[k]][, i]))
-                    result[r, 4] <- the_spark
-                    result[r, 5] <- max(post[[k]][, i])
-                }
-                rownames(result)[r] <- concat(names(post)[k], "[", i, "]")
-                r <- r + 1
-            }
-        }
-        if (length(dims) == 3) {
-            # matrix of parameters
-            for (i in 1:dims[2]) {
-                for (j in 1:dims[3]) {
-                    if (spark == FALSE) {
-                        hpd <- as.numeric(HPDI(post[[k]][, i, j], prob = prob))
-                        result[r, ] <- c(mean(post[[k]][, i, j]), sd(post[[k]][, i, j]), hpd[1], hpd[2])
-                    } else {
-                        the_spark <- histospark(post[[k]][, i, j], width = spark)
-                        result[r, 1:3] <- c(mean(post[[k]][, i, j]), sd(post[[k]][, i, j]), min(post[[k]][, i, j]))
-                        result[r, 4] <- the_spark
-                        result[r, 5] <- max(post[[k]][, i, j])
-                    }
-                    rownames(result)[r] <- concat(names(post)[k], "[", i, ",", j, "]")
-                    r <- r + 1
-                }
-            }
-        }
-    }
-    if (spark == FALSE) {
-        colnames(result)[3:4] <- c(paste("lower", prob), paste("upper", prob))
-    }
-    result
-}
 
 #' Describe an object
 #'
@@ -388,65 +271,6 @@ setMethod(
             attr(result, "source") <- attr(object, "source")
         }
         describe(result, depth, pars, prob, digits, sort, decreasing, hist = hist, ...)
-    }
-)
-
-#' Template for describing GLM-like models
-#' @description An internal template function to summarize models that have `coef`
-#' and `vcov` methods. It calculates confidence intervals based on a normal
-#' approximation.
-#' @param object A model object.
-#' @inheritParams describe
-#' @return An object of class `describe`.
-#' @noRd
-xdescribe_glm <- function(object, depth, pars, prob, digits, sort, decreasing, ...) {
-    plo <- (1 - prob) / 2
-    phi <- 1 - plo
-    z <- qnorm(phi)
-    result <- data.frame(
-        mean = coef(object),
-        sd = se(object),
-        lo = coef(object) - z * se(object),
-        hi = coef(object) + z * se(object)
-    )
-    colnames(result)[3:4] <- paste(c(plo, phi) * 100, "%", sep = "")
-
-    result <- describe_format(result, depth, sort, decreasing)
-
-    # obey pars list
-    if (!missing(pars)) {
-        # need to handle vector/matrix parameters
-        # for each element in pars, add a copy with '[' on end
-        # then use grep to white list any parameter that starts with element of pars
-        pars_new <- paste(pars, "[", sep = "")
-        pars <- c(pars, pars_new)
-        keep_idx <- rep(FALSE, nrow(result))
-        for (i in 1:length(pars)) {
-            keep_idx <- keep_idx | startsWith(rownames(result), pars[i])
-        }
-        result <- result[keep_idx, ]
-    }
-
-    return(new("describe", result, digits = digits))
-}
-
-#' @rdname describe
-#' @export
-setMethod(
-    "describe", "glm",
-    function(object, depth = 1, pars, prob = 0.95, digits = 2, sort = NULL, decreasing = FALSE, ...) {
-        # just pass to glm method
-        xdescribe_glm(object, depth, pars, prob, digits, sort, decreasing, ...)
-    }
-)
-
-#' @rdname describe
-#' @export
-setMethod(
-    "describe", "lm",
-    function(object, depth = 1, pars, prob = 0.95, digits = 2, sort = NULL, decreasing = FALSE, ...) {
-        # just pass to glm method
-        xdescribe_glm(object, depth, pars, prob, digits, sort, decreasing, ...)
     }
 )
 
