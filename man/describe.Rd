@@ -3,24 +3,11 @@
 \name{describe}
 \alias{describe}
 \alias{describe-methods}
-\alias{describe,numeric-method}
 \alias{describe,data.frame-method}
-\alias{describe,list-method}
 \alias{describe,blimp_obj-method}
 \title{Describe an object}
 \usage{
 describe(
-  object,
-  depth = 1,
-  pars,
-  prob = 0.95,
-  digits = 2,
-  sort = NULL,
-  decreasing = FALSE,
-  ...
-)
-
-\S4method{describe}{numeric}(
   object,
   depth = 1,
   pars,
@@ -36,18 +23,6 @@ describe(
   depth = 1,
   pars,
   prob = 0.5,
-  digits = 2,
-  sort = NULL,
-  decreasing = FALSE,
-  hist = TRUE,
-  ...
-)
-
-\S4method{describe}{list}(
-  object,
-  depth = 1,
-  pars,
-  prob = 0.95,
   digits = 2,
   sort = NULL,
   decreasing = FALSE,
@@ -95,6 +70,12 @@ summary statistics and attributes for printing.
 }
 \description{
 \code{describe} provides a flexible summary of various R objects,
-such as data frames, lists of samples, or statistical models. It is an
+such as data frames or Blimp model objects. It is an
 alternative to \code{summary} and is inspired by \code{precis} from the \code{rethinking} package.
+}
+\author{
+The \code{data.frame} method is adapted from Richard McElreath's \code{precis}
+function in the \code{rethinking} package (\url{https://github.com/rmcelreath/rethinking}).
+The \code{histospark} function is by Hadley Wickham (GPL-3).
+The \code{blimp_obj} method was written for this package.
 }

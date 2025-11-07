@@ -1,5 +1,3 @@
-# mcelreath  version of precis. Renamed to be described: see https://github.com/rmcelreath/rethinking
-
 #' Format a data frame for printing
 #' @description An internal helper function that rounds the numeric columns of a
 #' data frame based on a named list of digits.
@@ -106,8 +104,13 @@ setMethod("show", "describe", function(object) describe_show(object))
 #' Describe an object
 #'
 #' @description `describe` provides a flexible summary of various R objects,
-#' such as data frames, lists of samples, or statistical models. It is an
+#' such as data frames or Blimp model objects. It is an
 #' alternative to `summary` and is inspired by `precis` from the `rethinking` package.
+#'
+#' @author The `data.frame` method is adapted from Richard McElreath's `precis`
+#' function in the `rethinking` package (\url{https://github.com/rmcelreath/rethinking}).
+#' The `histospark` function is by Hadley Wickham (GPL-3).
+#' The `blimp_obj` method was written for this package.
 #'
 #' @param object The object to describe.
 #' @param depth An integer (`1`, `2`, or `3`) that controls the display of vector
@@ -176,18 +179,6 @@ describe_format <- function(result, depth, sort, decreasing) {
 }
 
 #' @rdname describe
-#' @export
-setMethod(
-    "describe", "numeric",
-    function(object, depth = 1, pars, prob = 0.95, digits = 2, sort = NULL, decreasing = FALSE, ...) {
-        oname <- deparse(match.call()[[2]])
-        df <- list()
-        df[[oname]] <- object
-        describe(df, prob = prob, ...)
-    }
-)
-
-#' @rdname describe
 #' @param hist Logical. If `TRUE` (and on a Unix-like OS), a unicode histogram
 #' (`histospark`) is included in the output. Defaults to `TRUE`.
 #' @export
@@ -237,40 +228,6 @@ setMethod(
         attr(result, "header") <- header_string
 
         return(new("describe", result, digits = digits))
-    }
-)
-
-#' @rdname describe
-#' @export
-setMethod(
-    "describe", "list",
-    function(object, depth = 1, pars, prob = 0.95, digits = 2, sort = NULL, decreasing = FALSE, hist = TRUE, ...) {
-        # coerce to data frame and format row names for vectors/matrices to [] style
-        result <- as.data.frame(object, stringsAsFactors = FALSE)
-        # since data frame conversion vectorizes matrices, need to treat each variable
-        for (i in 1:length(object)) {
-            # check dimension and process names when > 1
-            n <- length(dim(object[[i]]))
-            if (n > 1) {
-                dims <- dim(object[[i]])
-                idx <- grep(concat("^", names(object)[i], "."), names(result))
-                if (n == 2) {
-                    # vector
-                    new_names <- paste(names(object)[i], "[", 1:dims[2], "]", sep = "")
-                    names(result)[idx] <- new_names
-                } # 2
-                if (n == 3) {
-                    # matrix
-                    new_names <- paste(names(object)[i], "[", rep(1:dims[2], each = dims[3]), ",", rep(1:dims[3], times = dims[2]), "]", sep = "")
-                    names(result)[idx] <- new_names
-                } # 3
-            } # n>1
-        } # i
-        # hand off to data frame method
-        if (!is.null(attr(object, "source"))) {
-            attr(result, "source") <- attr(object, "source")
-        }
-        describe(result, depth, pars, prob, digits, sort, decreasing, hist = hist, ...)
     }
 )
 
