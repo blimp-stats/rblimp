@@ -24,10 +24,14 @@ Separates by grouping to run blimp command on each individual sub data set.
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
 # Generate Data
-mydata <- data.frame(
-    x = rnorm(1000),
-    y = rnorm(1000),
-    group = rbinom(1000, 1, .5)
+mydata <- rblimp_sim(
+    c(
+        'x ~ normal(0, 1)',
+        'y ~ normal(0, 1)',
+        'group = uniform(0, 1) < 0.5'
+    ),
+    n = 1000,
+    seed = 10972
 )
 
 # Nonsensical model

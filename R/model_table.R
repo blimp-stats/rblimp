@@ -24,18 +24,35 @@
 #' @return 
 #' Invisibly returns the HTML content. Primary purpose is displaying in Viewer.
 #'
-#' @examples
-#' \dontrun{
+#' @examplesIf has_blimp()
+#' # Generate Data
+#' mydata <- rblimp_sim(
+#'     c(
+#'         'x ~ normal(0, 1)',
+#'         'y ~ normal(10 + 0.5*x, 1)'
+#'     ),
+#'     n = 100,
+#'     seed = 10972
+#' )
+#'
+#' # Fit model
+#' model <- rblimp(
+#'     'y ~ x',
+#'     mydata,
+#'     seed = 10972,
+#'     burn = 1000,
+#'     iter = 1000
+#' )
+#'
 #' # Create APA table for all variables
 #' model_table(model)
-#' 
+#'
 #' # Create table for specific variable
-#' model_table(model, "y1")
-#' 
+#' model_table(model, "y")
+#'
 #' # Customize formatting
 #' model_table(model, digits = 2, caption = "Bayesian Model Results")
-#' }
-#' 
+#'
 #' @export
 model_table <- function(object, selector, digits = 3, caption = NULL, 
                        show_chains = TRUE, show_neff = FALSE) {

@@ -68,7 +68,9 @@
 #' Running `rblimp` will also check if blimp is up to date.
 #' See details in [`rblimp_source`] for more information.
 #'
-#' @seealso [`SIMULATE()`] for creating simulated data to fit models to, [`rblimp_sim()`] for generating simulated datasets
+#' @seealso
+#' - [`SIMULATE()`] for creating simulated data to fit within [`rblimp()`]
+#' - [`rblimp_sim()`] for generating simulated datasets
 #'
 #' @returns [`blimp_obj`]
 #' @importFrom graphics abline axis dotchart hist lines points
@@ -76,25 +78,31 @@
 #' @importFrom stats coef median model.matrix ppoints pt qnorm quantile resid sd start vcov setNames
 #' @importFrom utils read.csv read.table write.csv
 #' @examplesIf has_blimp()
-#' # Generate Data
-#' mydata <- data.frame(x = rnorm(1000), y = rnorm(1000))
-#'
-#' # Nonsensical model
-#' mdl <- rblimp(
+#' # Generate Data with `rblimp_sim`
+#' mydata <- rblimp_sim(
 #'     c(
-#'         'y <- x*2',
-#'         'f1 <- 1'
+#'         'f ~ normal(0, 1)',
+#'         'x1:x5 ~ normal(f, 1)',
+#'         'y ~ normal(10 + 0.3*f, 1 - .3^2)'
+#'      ),
+#'      n = 500,
+#'      seed = 19723,
+#'      variables = c('y', 'x1:x5')
+#' )
+#'
+#' # Fit SEM Model
+#' model <- rblimp(
+#'     list(
+#'         structure = 'y ~ f',
+#'         measurement = 'f -> x1:x5'
 #'     ),
 #'     mydata,
 #'     seed = 3927,
-#'     nimps = 2,
-#'     latent = ~ f1,
-#'     center = cgm ~ x,
-#'     fixed = ~ x
+#'     latent = ~ f
 #' )
 #'
 #' # View results
-#' summary(mdl)
+#' summary(model)
 #' @export
 rblimp <- function(model,
                    data,

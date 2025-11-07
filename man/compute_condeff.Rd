@@ -19,21 +19,16 @@ Convenience Function for computing conditional effects for \code{\link{jn_plot_f
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
-# set seed
-set.seed(981273)
-
 # Generate Data
-mydata <- data.frame(
-    x1 = rnorm(100),
-    x2 = rnorm(100),
-    m = rnorm(100)
-)
-mydata$y <- with(
-    mydata,
-    rnorm(100,
-          10 + x1*0.5 + x2*0.5 + m + .2*x1*x2 + .3*x2*m + .1*x1*m + .7*x1*x2*m,
-          1
-    )
+mydata <- rblimp_sim(
+    c(
+        'x1 ~ normal(0, 1)',
+        'x2 ~ normal(0, 1)',
+        'm ~ normal(0, 1)',
+        'y ~ normal(10 + 0.5*x1 + 0.5*x2 + m + 0.2*x1*x2 + 0.3*x2*m + 0.1*x1*m + 0.7*x1*x2*m, 1)'
+    ),
+    n = 100,
+    seed = 981273
 )
 
 # Run Rblimp

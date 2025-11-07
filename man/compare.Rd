@@ -2,7 +2,6 @@
 % Please edit documentation in R/compare.R
 \name{compare}
 \alias{compare}
-\alias{compare,blimp_obj,blimp_obj-method}
 \title{Compare two Blimp models}
 \usage{
 compare(
@@ -15,45 +14,79 @@ compare(
     "R2: Level-3 Random Intercepts", "R2: Residual Variation",
     "R2: Level-1 Residual Variation")
 )
-
-\S4method{compare}{blimp_obj,blimp_obj}(
-  model0,
-  model,
-  use = "mean",
-  greaterThan = TRUE,
-  suffixes = c("R2: Coefficients", "R2: Level-2 Random Intercepts",
-    "R2: Level-2 Random Slopes", "R2: Level-3 Random Slopes",
-    "R2: Level-3 Random Intercepts", "R2: Residual Variation",
-    "R2: Level-1 Residual Variation")
-)
 }
 \arguments{
-\item{model0}{Reference model used to get the cutpoint}
+\item{model0}{A \code{blimp_obj}. The baseline or simpler model used as the reference point.}
 
-\item{model}{Comparison model to evaluate}
+\item{model}{A \code{blimp_obj}. The comparison model (typically more complex) to evaluate.}
 
-\item{use}{A character, numeric value, function, or list. If character, recognizes
-'mean' and 'median'. If numeric < 1, acts as proportion for quantile. If numeric >= 1,
-converts to proportion out of 100. If function, applies that function. Use list for
-multiple columns.}
+\item{use}{Summary statistic to use as the cutpoint from \code{model0}. Options:
+\itemize{
+\item Character: \code{"mean"} or \code{"median"}
+\item Numeric < 1: Quantile proportion (e.g., \code{0.5} for median)
+\item Numeric >= 1: Percentile (e.g., \code{50} for median)
+\item Function: Custom function applied to \code{model0} iterations
+\item List: Multiple summary statistics
+}}
 
-\item{greaterThan}{Logical. If TRUE, evaluates proportion greater than cutpoint}
+\item{greaterThan}{Logical. If \code{TRUE} (default), calculates the proportion of \code{model}
+iterations greater than the \code{model0} cutpoint. If \code{FALSE}, calculates proportion less than.}
 
 \item{suffixes}{Character vector of parameter name suffixes to compare. Defaults to
-all R-squared values.}
+all R-squared values (coefficients, random effects, residual variation).}
 }
 \value{
-A \code{blimp_cp} object containing comparison results
+A \code{blimp_cp} object containing a matrix of comparison proportions.
 }
 \description{
-Generates a blimp_cp object to compare two models by evaluating how many
-iterations are above/below a cutpoint.
+Compares two Bayesian models by calculating the proportion of posterior samples
+where the comparison model's parameters exceed (or fall below) the reference model's
+summary statistic. This is useful for model comparison and assessing incremental
+variance explained (e.g., R-squared differences).
 }
-\section{Methods (by class)}{
-\itemize{
-\item \code{compare(model0 = blimp_obj, model = blimp_obj)}: Compare two blimp_obj models
-
-}}
+\details{
+The comparison works by:
+\enumerate{
+\item Computing a summary statistic (e.g., mean) from \code{model0}'s posterior samples
+\item Calculating what proportion of \code{model}'s posterior samples exceed this value
+\item Reporting this proportion for each parameter matching the specified suffixes
+}
+}
 \note{
 Due to R restrictions, lists of functions will not give useful printed names.
+}
+\examples{
+\dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
+# Generate data
+mydata <- rblimp_sim(
+    c(
+        'x1 ~ normal(0, 1)',
+        'x2 ~ normal(0, 1)',
+        'y ~ normal(10 + 0.5*x1 + 0.3*x2, 1)'
+    ),
+    n = 200,
+    seed = 123
+)
+
+# Fit baseline model (x1 only)
+model0 <- rblimp(
+    'y ~ x1',
+    mydata,
+    seed = 123,
+    burn = 1000,
+    iter = 1000
+)
+
+# Fit comparison model (x1 + x2)
+model1 <- rblimp(
+    'y ~ x1 x2',
+    mydata,
+    seed = 123,
+    burn = 1000,
+    iter = 1000
+)
+
+# Compare models - proportion of model1 R-squared > mean(model0 R-squared)
+compare(model0, model1)
+\dontshow{\}) # examplesIf}
 }

@@ -694,30 +694,36 @@ setMethod(
 #' @param object A [`blimp_obj`].
 #' @param folder a location to a folder to write input and output
 #' @examplesIf has_blimp()
-#' # Generate Data
-#' mydata <- data.frame(x = rnorm(1000), y = rnorm(1000))
-#'
-#' # Nonsensical model
-#' mdl <- rblimp(
+#' # Generate Data with `rblimp_sim`
+#' mydata <- rblimp_sim(
 #'     c(
-#'         'y <- x*2',
-#'         'f1 <- 1'
+#'         'f ~ normal(0, 1)',
+#'         'x1:x5 ~ normal(f, 1)',
+#'         'y ~ normal(10 + 0.3*f, 1 - .3^2)'
+#'      ),
+#'      n = 500,
+#'      seed = 19723,
+#'      variables = c('y', 'x1:x5')
+#' )
+#'
+#' # Fit SEM Model
+#' model <- rblimp(
+#'     list(
+#'         structure = 'y ~ f',
+#'         measurement = 'f -> x1:x5'
 #'     ),
 #'     mydata,
 #'     seed = 3927,
-#'     nimps = 2,
-#'     latent = ~ f1,
-#'     center = cgm ~ x,
-#'     fixed = ~ x
+#'     latent = ~ f
 #' )
 #'
 #' # Write out input and output
 #' \dontrun{
-#' write.blimp(mdl, "folder_location")
+#' write.blimp(model, "folder_location")
 #' }
 #' @export
 setGeneric("write.blimp", function(object, folder = "") {
-    stop(paste("Does not work with ", class(object)))
+    throw_error("Does not work with class {.cls {class(object)}}")
 })
 
 #' @describeIn write.blimp Write blimp_syntax to file

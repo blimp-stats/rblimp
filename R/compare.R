@@ -1,36 +1,6 @@
 ## Compares Models
 # Copyright Brian Keller 2022, all rights reserved
 
-#' Compare two Blimp models
-#'
-#' @description
-#' Generates a blimp_cp object to compare two models by evaluating how many
-#' iterations are above/below a cutpoint.
-#'
-#' @param model0 Reference model used to get the cutpoint
-#' @param model Comparison model to evaluate
-#' @param use A character, numeric value, function, or list. If character, recognizes
-#'   'mean' and 'median'. If numeric < 1, acts as proportion for quantile. If numeric >= 1,
-#'   converts to proportion out of 100. If function, applies that function. Use list for
-#'   multiple columns.
-#' @param greaterThan Logical. If TRUE, evaluates proportion greater than cutpoint
-#' @param suffixes Character vector of parameter name suffixes to compare. Defaults to
-#'   all R-squared values.
-#'
-#' @return A `blimp_cp` object containing comparison results
-#'
-#' @note Due to R restrictions, lists of functions will not give useful printed names.
-#'
-#' @export
-setGeneric("compare", function(model0, model, use = "mean", greaterThan = TRUE, suffixes =
-                                   c(
-                                       "R2: Coefficients", "R2: Level-2 Random Intercepts",
-                                       "R2: Level-2 Random Slopes", "R2: Level-3 Random Slopes",
-                                       "R2: Level-3 Random Intercepts", "R2: Residual Variation",
-                                       "R2: Level-1 Residual Variation"
-                                   )) {
-    stop(paste("Does not work with ", class(model)))
-})
 
 #' S4 class for Blimp model comparison results
 #'
@@ -70,7 +40,7 @@ get_value <- function(x, use) {
             return(median(x))
         } else {
             use <- suppressWarnings(as.numeric(use))
-            if (is.na(use)) stop("use is not a numeric value or 'mean' / 'median'")
+            if (is.na(use)) throw_error("{.arg use} is not a numeric value or 'mean' / 'median'")
         }
     }
     # Return Function
@@ -110,17 +80,90 @@ model_compare_wrapper <- function(suffix, model, model0, use, greaterThan) {
     return(output)
 }
 
-#' @describeIn compare Compare two blimp_obj models
+#' Compare two Blimp models
+#'
+#' @description
+#' Compares two Bayesian models by calculating the proportion of posterior samples
+#' where the comparison model's parameters exceed (or fall below) the reference model's
+#' summary statistic. This is useful for model comparison and assessing incremental
+#' variance explained (e.g., R-squared differences).
+#'
+#' @param model0 A `blimp_obj`. The baseline or simpler model used as the reference point.
+#' @param model A `blimp_obj`. The comparison model (typically more complex) to evaluate.
+#' @param use Summary statistic to use as the cutpoint from `model0`. Options:
+#'   \itemize{
+#'     \item Character: `"mean"` or `"median"`
+#'     \item Numeric < 1: Quantile proportion (e.g., `0.5` for median)
+#'     \item Numeric >= 1: Percentile (e.g., `50` for median)
+#'     \item Function: Custom function applied to `model0` iterations
+#'     \item List: Multiple summary statistics
+#'   }
+#' @param greaterThan Logical. If `TRUE` (default), calculates the proportion of `model`
+#'   iterations greater than the `model0` cutpoint. If `FALSE`, calculates proportion less than.
+#' @param suffixes Character vector of parameter name suffixes to compare. Defaults to
+#'   all R-squared values (coefficients, random effects, residual variation).
+#'
+#' @return A `blimp_cp` object containing a matrix of comparison proportions.
+#'
+#' @details
+#' The comparison works by:
+#' \enumerate{
+#'   \item Computing a summary statistic (e.g., mean) from `model0`'s posterior samples
+#'   \item Calculating what proportion of `model`'s posterior samples exceed this value
+#'   \item Reporting this proportion for each parameter matching the specified suffixes
+#' }
+#'
+#' @note Due to R restrictions, lists of functions will not give useful printed names.
+#'
+#' @examplesIf has_blimp()
+#' # Generate data
+#' mydata <- rblimp_sim(
+#'     c(
+#'         'x1 ~ normal(0, 1)',
+#'         'x2 ~ normal(0, 1)',
+#'         'y ~ normal(10 + 0.5*x1 + 0.3*x2, 1)'
+#'     ),
+#'     n = 200,
+#'     seed = 123
+#' )
+#'
+#' # Fit baseline model (x1 only)
+#' model0 <- rblimp(
+#'     'y ~ x1',
+#'     mydata,
+#'     seed = 123,
+#'     burn = 1000,
+#'     iter = 1000
+#' )
+#'
+#' # Fit comparison model (x1 + x2)
+#' model1 <- rblimp(
+#'     'y ~ x1 x2',
+#'     mydata,
+#'     seed = 123,
+#'     burn = 1000,
+#'     iter = 1000
+#' )
+#'
+#' # Compare models - proportion of model1 R-squared > mean(model0 R-squared)
+#' compare(model0, model1)
+#'
 #' @export
-setMethod(
-    "compare", signature(model = "blimp_obj", model0 = "blimp_obj"),
-    function(model0, model, use = "mean", greaterThan = TRUE, suffixes =
+compare <- function(model0, model, use = "mean", greaterThan = TRUE, suffixes =
                  c(
                      "R2: Coefficients", "R2: Level-2 Random Intercepts",
                      "R2: Level-2 Random Slopes", "R2: Level-3 Random Slopes",
                      "R2: Level-3 Random Intercepts", "R2: Residual Variation",
                      "R2: Level-1 Residual Variation"
                  )) {
+
+        # Check inputs
+        if (!inherits(model0, "blimp_obj")) {
+            throw_error("{.arg model0} must be a {.cls blimp_obj}")
+        }
+        if (!inherits(model, "blimp_obj")) {
+            throw_error("{.arg model} must be a {.cls blimp_obj}")
+        }
         # Loop over multiple uses if needed
         old_use_function_name <- deparse(substitute(use))
         use <- c(use)
@@ -174,5 +217,4 @@ setMethod(
             greaterThan = greaterThan
         )
         return(output)
-    }
-)
+}

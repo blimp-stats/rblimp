@@ -42,21 +42,16 @@ set_group <- function(x){ with(rle(x), {
 #'     coarse grid. Default is TRUE.}
 #' }
 #' @examplesIf has_blimp()
-#' # set seed
-#' set.seed(981273)
-#'
 #' # Generate Data
-#' mydata <- data.frame(
-#'     x1 = rnorm(100),
-#'     x2 = rnorm(100),
-#'     m = rnorm(100)
-#' )
-#' mydata$y <- with(
-#'     mydata,
-#'     rnorm(100,
-#'           10 + x1*0.5 + x2*0.5 + m + .2*x1*x2 + .3*x2*m + .1*x1*m + .7*x1*x2*m,
-#'           1
-#'     )
+#' mydata <- rblimp_sim(
+#'     c(
+#'         'x1 ~ normal(0, 1)',
+#'         'x2 ~ normal(0, 1)',
+#'         'm ~ normal(0, 1)',
+#'         'y ~ normal(10 + 0.5*x1 + 0.5*x2 + m + 0.2*x1*x2 + 0.3*x2*m + 0.1*x1*m + 0.7*x1*x2*m, 1)'
+#'     ),
+#'     n = 100,
+#'     seed = 981273
 #' )
 #'
 #' # Run Rblimp
@@ -211,21 +206,16 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
 #' @returns a [`function`]
 #' @seealso [jn_plot_func()]
 #' @examplesIf has_blimp()
-#' # set seed
-#' set.seed(981273)
-#'
 #' # Generate Data
-#' mydata <- data.frame(
-#'     x1 = rnorm(100),
-#'     x2 = rnorm(100),
-#'     m = rnorm(100)
-#' )
-#' mydata$y <- with(
-#'     mydata,
-#'     rnorm(100,
-#'           10 + x1*0.5 + x2*0.5 + m + .2*x1*x2 + .3*x2*m + .1*x1*m + .7*x1*x2*m,
-#'           1
-#'     )
+#' mydata <- rblimp_sim(
+#'     c(
+#'         'x1 ~ normal(0, 1)',
+#'         'x2 ~ normal(0, 1)',
+#'         'm ~ normal(0, 1)',
+#'         'y ~ normal(10 + 0.5*x1 + 0.5*x2 + m + 0.2*x1*x2 + 0.3*x2*m + 0.1*x1*m + 0.7*x1*x2*m, 1)'
+#'     ),
+#'     n = 100,
+#'     seed = 981273
 #' )
 #'
 #' # Run Rblimp
@@ -279,15 +269,16 @@ compute_condeff <- function(value1, value2) {
 #'
 #' @seealso [jn_plot_func()]
 #' @examplesIf has_blimp()
-#' # set seed
-#' set.seed(981273)
-#'
 #' # Generate Data
-#' mydata <- data.frame(
-#'     x = rnorm(100),
-#'     m = rnorm(100)
+#' mydata <- rblimp_sim(
+#'     c(
+#'         'x ~ normal(0, 1)',
+#'         'm ~ normal(0, 1)',
+#'         'y ~ normal(10 + 0.5*x + m + 0.2*x*m, 1)'
+#'     ),
+#'     n = 100,
+#'     seed = 981273
 #' )
-#' mydata$y <- with(mydata, rnorm(100, 10 + x*0.5 + m + .2*x*m, 1))
 #'
 #' # Run Rblimp
 #' m1 <- rblimp(

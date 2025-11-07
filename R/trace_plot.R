@@ -12,7 +12,7 @@ psrf <- function(x, split_chain = TRUE) {
     n <- ifelse(split_chain, floor(NROW(x) / 2), NROW(x))
     m <- ifelse(split_chain, NCOL(x) * 2, NCOL(x))
     # If not enough draws error
-    if (n < 2) stop("Not enough draws")
+    if (n < 2) throw_error("Not enough draws")
 
     # Create matrix of entire parameters
     chaindat <- do.call("cbind", apply(x, 2, function(x) {
@@ -136,15 +136,16 @@ make_labeller_traceplot <- function(pnames, psrf_val) {
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
 #'
 #' @examplesIf has_blimp()
-#' # set seed
-#' set.seed(981273)
-#'
 #' # Generate Data
-#' mydata <- data.frame(
-#'     x = rnorm(100),
-#'     m = rnorm(100)
+#' mydata <- rblimp_sim(
+#'     c(
+#'         'x ~ normal(0, 1)',
+#'         'm ~ normal(0, 1)',
+#'         'y ~ normal(10 + 0.5*x + m + 0.2*x*m, 1)'
+#'     ),
+#'     n = 100,
+#'     seed = 981273
 #' )
-#' mydata$y <- with(mydata, rnorm(100, 10 + x*0.5 + m + .2*x*m, 1))
 #'
 #' # Run Rblimp
 #' m1 <- rblimp(
