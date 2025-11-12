@@ -353,15 +353,11 @@ normalize_syntax_value <- function(value) {
             # Base indentation (4 spaces) + relative indentation
             full_indent <- paste0("    ", strrep(" ", relative_indent))
 
-            # Lines ending with ":" (block headers like n:, define:) - no semicolon
-            if (endsWith(content, ":")) {
-                normalized[j] <- paste0(full_indent, content)
-            } else if (endsWith(content, ";")) {
-                # Already has semicolon - preserve it
-                normalized[j] <- paste0(full_indent, content)
-            } else {
-                # Add semicolon
+            # Add semicolon to last line if it doesn't have one
+            if (j == length(lines) && !endsWith(content, ";")) {
                 normalized[j] <- paste0(full_indent, content, ";")
+            } else {
+                normalized[j] <- paste0(full_indent, content)
             }
         }
 
