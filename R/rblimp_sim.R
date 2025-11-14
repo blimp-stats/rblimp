@@ -296,17 +296,17 @@ build_simulate_block <- function(n, model, define) {
     result <- character()
 
     if (is.numeric(n) && length(n) == 1) {
-        result <- c(result, paste0("n = ", n))
+        result <- c(result, paste0("n = ", n, ";"))
 
         if (!is.null(define)) {
             define_lines <- normalize_input(define)
             result <- c(result, "define:")
-            result <- c(result, paste0("    ", define_lines))
+            result <- c(result, paste0("    ", define_lines, ";"))
         }
 
         model_lines <- normalize_input(model)
         result <- c(result, "n:")
-        result <- c(result, paste0("    ", model_lines))
+        result <- c(result, paste0("    ", model_lines, ";"))
 
     } else if (is.list(n)) {
         n_values <- unlist(n)
@@ -323,13 +323,13 @@ build_simulate_block <- function(n, model, define) {
 
         for (i in seq_along(level_names)) {
             level_name <- level_names[i]
-            result <- c(result, paste0(level_name, "(", i, ") = ", n_sorted[i]))
+            result <- c(result, paste0(level_name, "(", i, ") = ", n_sorted[i], ";"))
         }
 
         if (!is.null(define)) {
             define_lines <- normalize_input(define)
             result <- c(result, "define:")
-            result <- c(result, paste0("    ", define_lines))
+            result <- c(result, paste0("    ", define_lines, ";"))
         }
 
         # Model blocks - higher levels (smaller n) come first, so reverse order
@@ -338,7 +338,7 @@ build_simulate_block <- function(n, model, define) {
             if (!is.null(model[[level_name]])) {
                 model_lines <- normalize_input(model[[level_name]])
                 result <- c(result, paste0(level_name, ":"))
-                result <- c(result, paste0("    ", model_lines))
+                result <- c(result, paste0("    ", model_lines, ";"))
             }
         }
 
