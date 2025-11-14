@@ -16,6 +16,56 @@ is_equal <- function(a, b) {
     tolower(a) == tolower(b)
 }
 
+#' Parse CSV header line respecting parentheses and quotes
+#'
+#' @description
+#' Splits a CSV header line on commas, but treats commas inside parentheses
+#' or quotes as part of the field name rather than delimiters. This handles
+#' variable names like "yjt(x,0)" or quoted names like "variable(x,0)".
+#'
+#' @param header_line Character string containing the CSV header line
+#' @return Character vector of field names
+#' @noRd
+parse_csv_header <- function(header_line) {
+    if (length(header_line) == 0 || header_line == "") {
+        return(character(0))
+    }
+
+    chars <- strsplit(header_line, "")[[1]]
+    fields <- character()
+    current_field <- character()
+    paren_depth <- 0
+    in_quotes <- FALSE
+
+    for (char in chars) {
+        if (char == '"' && (length(current_field) == 0 ||
+                           current_field[length(current_field)] != "\\")) {
+            in_quotes <- !in_quotes
+            current_field <- c(current_field, char)
+        } else if (!in_quotes && char == "(") {
+            paren_depth <- paren_depth + 1
+            current_field <- c(current_field, char)
+        } else if (!in_quotes && char == ")") {
+            paren_depth <- paren_depth - 1
+            current_field <- c(current_field, char)
+        } else if (char == "," && paren_depth == 0 && !in_quotes) {
+            fields <- c(fields, paste(current_field, collapse = ""))
+            current_field <- character()
+        } else {
+            current_field <- c(current_field, char)
+        }
+    }
+
+    if (length(current_field) > 0) {
+        fields <- c(fields, paste(current_field, collapse = ""))
+    }
+
+    # Remove surrounding quotes from fields if present
+    fields <- gsub('^"(.*)"$', '\\1', fields)
+
+    return(fields)
+}
+
 #' Calculate maximum parameter name width across multiple variables for alignment
 #' 
 #' @description

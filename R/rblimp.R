@@ -613,9 +613,9 @@ rblimp <- function(model,
     names(output$psr) <- lab_names
 
     if (file.exists(file.path(tmpfolder, "imps.csv"))) {
-        tmp <- read.csv(file.path(tmpfolder, "imps.csv"), header = TRUE)
+        tmp <- read.csv(file.path(tmpfolder, "imps.csv"), skip = 1, header = FALSE)
         file.path(tmpfolder, "imps.csv") |> readLines(1)  |>
-            strsplit(',') |> unlist() -> names(tmp)
+            parse_csv_header() -> names(tmp)
         # Loop over and add attributes back in
         for (i in seq_along(att_list)) {
             if (!is.null(att_list[[i]])) {
@@ -642,27 +642,26 @@ rblimp <- function(model,
 
     # Simple
     if (file.exists(file.path(tmpfolder, "simple.csv"))) {
-        output$simple <- read.csv(file.path(tmpfolder, "simple.csv"), header = TRUE)
+        output$simple <- read.csv(file.path(tmpfolder, "simple.csv"), skip = 1, header = FALSE)
         file.path(tmpfolder, "simple.csv") |> readLines(1)  |>
-            strsplit('\\",') |> unlist() |>
-            gsub('\"', '', x = _) -> names(output$simple)
+            parse_csv_header() -> names(output$simple)
     } else {
         output$simple <- data.frame()
     }
 
     # Get average imputation
     if (file.exists(file.path(tmpfolder, "avgimp.csv"))) {
-        output$average_imp <- read.csv(file.path(tmpfolder, "avgimp.csv"), header = TRUE)
+        output$average_imp <- read.csv(file.path(tmpfolder, "avgimp.csv"), skip = 1, header = FALSE)
         file.path(tmpfolder, "avgimp.csv") |> readLines(1)  |>
-            strsplit(',') |> unlist() -> names(output$average_imp)
+            parse_csv_header() -> names(output$average_imp)
     } else {
         output$average_imp <- data.frame()
     }
     # Get variance of imputation
     if (file.exists(file.path(tmpfolder, "varimp.csv"))) {
-        output$variance_imp <- read.csv(file.path(tmpfolder, "varimp.csv"), header = TRUE)
+        output$variance_imp <- read.csv(file.path(tmpfolder, "varimp.csv"), skip = 1, header = FALSE)
         file.path(tmpfolder, "varimp.csv") |> readLines(1)  |>
-            strsplit(',') |> unlist() -> names(output$variance_imp)
+            parse_csv_header() -> names(output$variance_imp)
     } else {
         output$variance_imp <- data.frame()
     }
