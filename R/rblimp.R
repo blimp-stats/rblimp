@@ -644,7 +644,7 @@ rblimp <- function(model,
     if (file.exists(file.path(tmpfolder, "simple.csv"))) {
         output$simple <- read.csv(file.path(tmpfolder, "simple.csv"), skip = 1, header = FALSE)
         file.path(tmpfolder, "simple.csv") |> readLines(1)  |>
-            parse_csv_header() -> names(output$simple)
+            parse_csv_header() |> gsub(",", "", x = _) -> names(output$simple)
     } else {
         output$simple <- data.frame()
     }
