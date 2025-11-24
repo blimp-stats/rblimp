@@ -177,7 +177,7 @@ rblimp <- function(model,
         )
         # Convert to data frame if a tibble
         if ("tbl_df" %in% class(data)) {
-            cli::cli_alert_warning("Converting data to `data.farme`")
+            cli::cli_alert_warning("Converting data to `data.frame`")
             data <- as.data.frame(data)
         }
 
