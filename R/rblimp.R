@@ -177,7 +177,7 @@ rblimp <- function(model,
         )
         # Convert to data frame if a tibble
         if ("tbl_df" %in% class(data)) {
-            cli::cli_alert_warning("Converting data to `data.farme`")
+            cli::cli_alert_warning("Converting data to `data.frame`")
             data <- as.data.frame(data)
         }
 
@@ -619,7 +619,11 @@ rblimp <- function(model,
         # Loop over and add attributes back in
         for (i in seq_along(att_list)) {
             if (!is.null(att_list[[i]])) {
-                attributes(tmp[, i + 1]) <-  att_list[[i]]
+                tryCatch(
+                    {attributes(tmp[, i + 1]) <-  att_list[[i]]},
+                    error = function(e) NULL
+                )
+
             }
         }
         # Split imputations
