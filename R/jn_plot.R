@@ -187,8 +187,8 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
         p
         # Set range
         + xlim(xrange)
-        # Set fill values
-        + scale_fill_manual(guide = 'none', values = c(`FALSE` = '#ca0020', `TRUE` = '#0571b0'))
+        # Remove guide
+        + guides(fill = "none")
     )
 
     # Return plot
@@ -236,6 +236,10 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
 #'     jn_plot_func(
 #'         compute_condeff(params[,6], params[,9]),
 #'         xrange = c(-3, 3)
+#'     )
+#'     # Set custom colors
+#'     + ggplot2::scale_fill_manual(
+#'         values = c(`FALSE` = '#ca0020', `TRUE` = '#0571b0')
 #'     )
 #'     + ggplot2::labs(
 #'         title = 'Johnson-Neyman Plot for `x1` * `x2` Moderated by `x2`',
@@ -293,6 +297,14 @@ compute_condeff <- function(value1, value2) {
 #'
 #' # Generate Plot
 #' jn_plot(y ~ x | m, m1)
+#'
+#' # Generate Plot with different colors
+#' (
+#'     jn_plot(y ~ x | m, m1)
+#'     + ggplot2::scale_fill_manual(
+#'         values = c(`FALSE` = '#ca0020', `TRUE` = '#0571b0')
+#'     )
+#' )
 #' @import ggplot2
 #' @importFrom methods is
 #' @export

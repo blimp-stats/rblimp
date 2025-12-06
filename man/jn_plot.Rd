@@ -52,6 +52,14 @@ m1 <- rblimp(
 
 # Generate Plot
 jn_plot(y ~ x | m, m1)
+
+# Generate Plot with different colors
+(
+    jn_plot(y ~ x | m, m1)
+    + ggplot2::scale_fill_manual(
+        values = c(`FALSE` = '#ca0020', `TRUE` = '#0571b0')
+    )
+)
 \dontshow{\}) # examplesIf}
 }
 \seealso{

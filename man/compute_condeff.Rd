@@ -50,6 +50,10 @@ params <- m1 |> as.matrix()
         compute_condeff(params[,6], params[,9]),
         xrange = c(-3, 3)
     )
+    # Set custom colors
+    + ggplot2::scale_fill_manual(
+        values = c(`FALSE` = '#ca0020', `TRUE` = '#0571b0')
+    )
     + ggplot2::labs(
         title = 'Johnson-Neyman Plot for `x1` * `x2` Moderated by `x2`',
         subtitle = 'Red area represents 0 within 95\% interval',
