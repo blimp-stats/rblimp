@@ -85,6 +85,7 @@ update_blimp()
 \item \code{\link{describe}} - Descriptive statistics
 \item \code{\link{psr}} - Potential Scale Reduction values
 \item \code{\link{output}} - Raw Blimp output
+\item \code{\link{standardized}} - Extract standardized parameters only
 \item \code{\link{compare}} - Compare models
 }
 
@@ -102,6 +103,7 @@ update_blimp()
 \itemize{
 \item \code{\link{by_group}} - Grouped analysis
 \item \code{\link{as.mitml}} - Convert to mitml format
+\item \code{\link[=names,blimp_obj-method]{names}} - Obtain imputation variable names
 \item \code{\link[=with,blimp_obj-method]{with}} - Evaluate across imputations
 \item \code{\link{write.blimp}} - Write results to files
 }
