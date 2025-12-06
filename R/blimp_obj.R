@@ -605,6 +605,29 @@ estimates <- function(object) {
     return(output[strt:stop - 1])
 }
 
+#' Extract standardized solutions from Blimp
+#'
+#' @description
+#' Extracts the data information section from Blimp output.
+#'
+#' @param object A `blimp_obj` or `blimp_out` object
+#' @return A [`base::matrix`] with standardized solutions
+#' @export
+standardized <- function(object) {
+    if (is_blimp_obj(object)) output <- output(object)
+    else if (is_blimp_out(object)) output <- object
+    else throw_error(
+        "Object is not a {.cls blimp_obj} or {.cls blimp_out}."
+    )
+    ptype <- attr(object@iterations, 'parameter_type')
+    pname <- rownames(object@estimates)
+    sel <- c(
+        which(ptype == 'Standardized'),
+        which(ptype == 'Var/Cov/Cor' & startsWith(pname, 'Cor('))
+    )
+    return(object@estimates[sel,])
+}
+
 #' Residuals scores from `blimp_obj`
 #' @param object A `blimp_obj` object
 #' @param ... Additional arguments (unused)
