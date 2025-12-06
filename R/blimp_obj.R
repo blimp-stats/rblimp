@@ -776,3 +776,9 @@ setMethod("write.blimp", "blimp_obj",
         write.blimp(object@output, file.path(folder, paste0(nm, ".blimp-out")))
     }
 )
+
+
+#' Return variable names from `blimp_obj` object
+#' @param x A `blimp_obj` object
+#' @export
+setMethod("names", "blimp_obj",function(x) {names(x@average_imp)})
