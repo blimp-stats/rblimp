@@ -18,6 +18,7 @@ rblimp(
   randomeffect,
   parameters,
   clusterid,
+  timeid,
   weight,
   ordinal,
   nominal,
@@ -28,6 +29,7 @@ rblimp(
   waldtest,
   options,
   transform,
+  dropout,
   filter,
   fixed,
   output,
@@ -71,11 +73,13 @@ rblimp_syntax(
   randomeffect,
   parameters,
   clusterid,
+  timeid,
   weight,
   ordinal,
   nominal,
   count,
   transform,
+  dropout,
   filter,
   fixed,
   center,
@@ -112,6 +116,8 @@ If a SIMULATE object (created with \code{\link[=SIMULATE]{SIMULATE()}}), Blimp w
 
 \item{clusterid}{a character string, formula, or vector/list of character strings. Specifies Blimp's CLUSTERID command. See details.}
 
+\item{timeid}{a character string, formula, or vector/list of character strings. Specifies Blimp's TIMEID command. See details.}
+
 \item{weight}{a character string, formula, or vector/list of character strings. Specifies Blimp's WEIGHT command. See details.}
 
 \item{ordinal}{a character string, formula, or vector/list of character strings. Specifies Blimp's ORDINAL command. See details.}
@@ -131,6 +137,8 @@ If a SIMULATE object (created with \code{\link[=SIMULATE]{SIMULATE()}}), Blimp w
 \item{options}{a character string or vector/list of character strings. Specifies Blimp's OPTIONS command.}
 
 \item{transform}{a character string or vector/list of character strings. Specifies Blimp's TRANSFORM command.}
+
+\item{dropout}{a character string, formula, or vector/list of character strings. Specifies Blimp's DROPOUT command. See details.}
 
 \item{filter}{a character string. Specifies Blimp's FILTER command.}
 

@@ -18,11 +18,13 @@ rblimp_syntax <- function(
         randomeffect,
         parameters,
         clusterid,
+        timeid,
         weight,
         ordinal,
         nominal,
         count,
         transform,
+        dropout,
         filter,
         fixed,
         center,
@@ -125,6 +127,11 @@ rblimp_syntax <- function(
         clusterid <- parse_formula(clusterid)
     }
 
+    ## parse timeid
+    if (!missing(timeid) && is.formula(timeid)) {
+        timeid <- parse_formula(timeid)
+    }
+
     ## parse weight
     if (!missing(weight) && is.formula(weight)) {
         weight <- parse_formula(weight)
@@ -145,6 +152,11 @@ rblimp_syntax <- function(
         count <- parse_formula(count)
     }
 
+    ## parse dropout
+    if (!missing(dropout) && is.formula(dropout)) {
+        dropout <- parse_formula(dropout)
+    }
+
     ## parse fixed
     if (!missing(fixed) && is.formula(fixed)) {
         fixed <- parse_formula(fixed)
@@ -160,9 +172,9 @@ rblimp_syntax <- function(
     syntax <- make_syntax(
         "data.csv", model,
         burn, seed, iter, variables_list,
-        thin, nimps, latent, randomeffect, clusterid, weight,
+        thin, nimps, latent, randomeffect, clusterid, timeid, weight,
         ordinal, nominal, count, center, parameters, chains,
-        simple, waldtest, options, output, save, transform, filter,
+        simple, waldtest, options, output, save, transform, dropout, filter,
         fixed
     )
 
@@ -260,6 +272,7 @@ make_syntax <- function(datapath,
                         latent,
                         randomeffect,
                         clusterid,
+                        timeid,
                         weight,
                         ordinal,
                         nominal,
@@ -273,6 +286,7 @@ make_syntax <- function(datapath,
                         output,
                         save,
                         transform,
+                        dropout,
                         filter,
                         fixed) {
     inputfile <- list()
@@ -281,6 +295,7 @@ make_syntax <- function(datapath,
         if (!is.null(variables)) inputfile$variables <- parse_cmd(variables)
     }
     if (!missing(transform)) inputfile$transform <- parse_cmd(transform, collapse = ";\n    ")
+    if (!missing(dropout))   inputfile$dropout   <- parse_cmd(dropout)
     if (!missing(filter))    inputfile$filter    <- parse_cmd(filter)
     if (!missing(ordinal))   inputfile$ordinal   <- parse_cmd(ordinal)
     if (!missing(nominal))   inputfile$nominal   <- parse_cmd(nominal)
@@ -288,6 +303,7 @@ make_syntax <- function(datapath,
     if (!missing(fixed))     inputfile$fixed     <- parse_cmd(fixed)
     inputfile$missing <- parse_cmd("NA")
     if (!missing(clusterid)) inputfile$clusterid <- parse_cmd(clusterid)
+    if (!missing(timeid))    inputfile$timeid    <- parse_cmd(timeid)
     if (!missing(weight))    inputfile$weight    <- parse_cmd(weight)
     if (!missing(latent))   inputfile$latent <- parse_cmd(latent)
     if (!missing(randomeffect)) inputfile$randomeffect <- parse_cmd(randomeffect)

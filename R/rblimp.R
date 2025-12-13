@@ -18,6 +18,7 @@
 #' @param randomeffect a character string or vector/list of character strings. Specifies Blimp's RANDOMEFFECTS command.
 #' @param parameters a character string or vector/list of character strings. Specifies Blimp's MODEL command. See details.
 #' @param clusterid a character string, formula, or vector/list of character strings. Specifies Blimp's CLUSTERID command. See details.
+#' @param timeid a character string, formula, or vector/list of character strings. Specifies Blimp's TIMEID command. See details.
 #' @param weight a character string, formula, or vector/list of character strings. Specifies Blimp's WEIGHT command. See details.
 #' @param ordinal a character string, formula, or vector/list of character strings. Specifies Blimp's ORDINAL command. See details.
 #' @param nominal a character string, formula, or vector/list of character strings. Specifies Blimp's NOMINAL command. See details.
@@ -28,6 +29,7 @@
 #' @param waldtest  a character string or vector/list of character strings. Specifies Blimp's WALDTEST command. See details.
 #' @param options a character string or vector/list of character strings. Specifies Blimp's OPTIONS command.
 #' @param transform a character string or vector/list of character strings. Specifies Blimp's TRANSFORM command.
+#' @param dropout a character string, formula, or vector/list of character strings. Specifies Blimp's DROPOUT command. See details.
 #' @param filter a character string. Specifies Blimp's FILTER command.
 #' @param fixed a character string, formula, or vector/list of character strings. Specifies Blimp's FIXED command. See details.
 #' @param output a character string or vector/list of character strings. Specifies Blimp's OUTPUT command
@@ -115,6 +117,7 @@ rblimp <- function(model,
                    randomeffect,
                    parameters,
                    clusterid,
+                   timeid,
                    weight,
                    ordinal,
                    nominal,
@@ -125,6 +128,7 @@ rblimp <- function(model,
                    waldtest,
                    options,
                    transform,
+                   dropout,
                    filter,
                    fixed,
                    output,
@@ -259,11 +263,13 @@ rblimp <- function(model,
         randomeffect,
         parameters,
         clusterid,
+        timeid,
         weight,
         ordinal,
         nominal,
         count,
         transform,
+        dropout,
         filter,
         fixed,
         center,
