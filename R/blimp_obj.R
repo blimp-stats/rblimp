@@ -542,7 +542,7 @@ modelinfo <- function(object) {
         "i" = "Set {.arg print = FALSE}.")
     )
     strt <- which(output %in% "MODEL INFORMATION:")
-    stop <- which(output %in% "WARNING MESSAGES:")
+    stop <- which((output %in% " WARNING MESSAGES:") | (output %in% "WARNING MESSAGES:"))
     if (length(strt) == 0) throw_error("Could not find Model Information.")
     if (length(stop) == 0) throw_error("Could not find end of Model Information.")
     if (strt >= stop) throw_error("Could not parse Model Information.")
