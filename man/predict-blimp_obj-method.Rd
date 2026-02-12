@@ -11,6 +11,10 @@
 
 \item{...}{Additional arguments (unused)}
 }
+\value{
+A list of data frames, one per imputation, each containing the
+predicted values and probability columns from the model.
+}
 \description{
 Predicted scores from \code{blimp_obj}
 }

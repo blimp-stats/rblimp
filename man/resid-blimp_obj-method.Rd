@@ -11,6 +11,10 @@
 
 \item{...}{Additional arguments passed to residuals}
 }
+\value{
+A list of data frames, one per imputation, each containing the
+residual columns from the model.
+}
 \description{
 Residuals scores from \code{blimp_obj}
 }

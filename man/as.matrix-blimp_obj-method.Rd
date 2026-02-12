@@ -11,6 +11,9 @@
 
 \item{...}{Additional arguments (unused)}
 }
+\value{
+A numeric matrix containing the MCMC iterations from the model.
+}
 \description{
 Convert blimp_obj to matrix
 }

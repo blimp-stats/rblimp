@@ -54,6 +54,7 @@ setClass("blimp_obj", slots = list(
 #' @param row.names NULL or a character vector giving row names
 #' @param optional Logical. If TRUE, setting row names is optional
 #' @param ... Additional arguments passed to as.data.frame
+#' @return A `data.frame` containing the MCMC iterations from the model.
 #' @export
 setMethod(
     "as.data.frame", "blimp_obj",
@@ -65,6 +66,7 @@ setMethod(
 #' Convert blimp_obj to matrix
 #' @param x A `blimp_obj` object
 #' @param ... Additional arguments (unused)
+#' @return A numeric matrix containing the MCMC iterations from the model.
 #' @export
 setMethod(
     "as.matrix", "blimp_obj",
@@ -403,6 +405,8 @@ setMethod(
 
 #' Show method for blimp_obj
 #' @param object A `blimp_obj` object
+#' @return No return value, called for the side effect of printing the
+#'   model estimates to the console.
 #' @export
 setMethod(
     "show", "blimp_obj",
@@ -631,6 +635,8 @@ standardized <- function(object) {
 #' Residuals scores from `blimp_obj`
 #' @param object A `blimp_obj` object
 #' @param ... Additional arguments (unused)
+#' @return A list of data frames, one per imputation, each containing the
+#'   residual columns from the model.
 #' @export
 setMethod(
     "residuals", "blimp_obj",
@@ -645,6 +651,8 @@ setMethod(
 #' Residuals scores from `blimp_obj`
 #' @param object A `blimp_obj` object
 #' @param ... Additional arguments passed to residuals
+#' @return A list of data frames, one per imputation, each containing the
+#'   residual columns from the model.
 #' @export
 setMethod(
     "resid", "blimp_obj",
@@ -656,6 +664,8 @@ setMethod(
 #' Predicted scores from `blimp_obj`
 #' @param object A `blimp_obj` object
 #' @param ... Additional arguments (unused)
+#' @return A list of data frames, one per imputation, each containing the
+#'   predicted values and probability columns from the model.
 #' @export
 setMethod(
     "predict", "blimp_obj",
@@ -670,6 +680,8 @@ setMethod(
 
 #' Coerces a [`blimp_obj`] or `blimp_bygroup` to a `mitml.list`
 #' @param object [`blimp_obj`] or `blimp_bygroup` object
+#' @return A list of class `"mitml.list"` containing the imputed data sets,
+#'   suitable for use with functions from the 'mitml' package.
 #' @export
 as.mitml <- function(object) {
     if (object |> inherits("blimp_bygroup")) {
@@ -699,6 +711,8 @@ as.mitml <- function(object) {
 #' @param data A `blimp_obj` object
 #' @param expr An expression to evaluate on each imputation
 #' @param ... Additional arguments (unused)
+#' @return A list of class `"mitml.result"` containing the results of
+#'   evaluating `expr` on each imputed data set.
 #' @export
 setMethod(
     "with", "blimp_obj",
@@ -716,6 +730,8 @@ setMethod(
 #' A function to write out blimp input and output from a model
 #' @param object A [`blimp_obj`].
 #' @param folder a location to a folder to write input and output
+#' @return No return value, called for its side effect of writing 'Blimp'
+#'   input and output files to disk.
 #' @examplesIf has_blimp()
 #' # Generate Data with `rblimp_sim`
 #' mydata <- rblimp_sim(
@@ -780,5 +796,7 @@ setMethod("write.blimp", "blimp_obj",
 
 #' Return variable names from `blimp_obj` object
 #' @param x A `blimp_obj` object
+#' @return A character vector of variable names from the average imputation
+#'   data.
 #' @export
 setMethod("names", "blimp_obj",function(x) {names(x@average_imp)})

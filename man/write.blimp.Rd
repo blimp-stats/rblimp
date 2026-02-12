@@ -20,6 +20,10 @@ write.blimp(object, folder = "")
 
 \item{folder}{a location to a folder to write input and output}
 }
+\value{
+No return value, called for its side effect of writing 'Blimp'
+input and output files to disk.
+}
 \description{
 A function to write out blimp input and output from a model
 }

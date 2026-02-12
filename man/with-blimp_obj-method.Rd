@@ -13,6 +13,10 @@
 
 \item{...}{Additional arguments (unused)}
 }
+\value{
+A list of class \code{"mitml.result"} containing the results of
+evaluating \code{expr} on each imputed data set.
+}
 \description{
 Fit Model across imputations with \code{mitml} package
 }

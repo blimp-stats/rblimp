@@ -9,6 +9,10 @@ as.mitml(object)
 \arguments{
 \item{object}{\code{\link{blimp_obj}} or \code{blimp_bygroup} object}
 }
+\value{
+A list of class \code{"mitml.list"} containing the imputed data sets,
+suitable for use with functions from the 'mitml' package.
+}
 \description{
 Coerces a \code{\link{blimp_obj}} or \code{blimp_bygroup} to a \code{mitml.list}
 }

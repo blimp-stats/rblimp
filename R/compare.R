@@ -17,6 +17,8 @@ setClass("blimp_cp", slots = list(table = "matrix", model0 = "blimp_obj", model 
 
 #' Show method for blimp_cp
 #' @param object A `blimp_cp` object
+#' @return No return value, called for the side effect of printing the
+#'   comparison table to the console.
 #' @export
 setMethod(
     "show", "blimp_cp",

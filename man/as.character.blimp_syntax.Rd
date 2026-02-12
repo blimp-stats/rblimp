@@ -11,6 +11,10 @@
 
 \item{...}{Additional arguments (unused)}
 }
+\value{
+A character string containing the formatted 'Blimp' input syntax
+with a header comment and all commands.
+}
 \description{
 Convert \code{blimp_syntax} to character vector
 }

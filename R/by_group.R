@@ -58,6 +58,8 @@ by_group <- function(expr, group) {
 #' @param data A `blimp_bygroup` object
 #' @param expr An expression to evaluate on each imputation
 #' @param ... Additional arguments (unused)
+#' @return A list of class `"mitml.result"` containing the results of
+#'   evaluating `expr` on each imputed data set.
 #' @export
 setMethod(
     "with", "blimp_bygroup",

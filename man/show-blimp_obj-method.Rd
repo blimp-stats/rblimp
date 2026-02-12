@@ -9,6 +9,10 @@
 \arguments{
 \item{object}{A \code{blimp_obj} object}
 }
+\value{
+No return value, called for the side effect of printing the
+model estimates to the console.
+}
 \description{
 Show method for blimp_obj
 }

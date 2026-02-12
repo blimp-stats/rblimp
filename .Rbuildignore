@@ -3,3 +3,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE
+^cran-comments\.md$
+.DS_Store
+^CRAN-SUBMISSION$

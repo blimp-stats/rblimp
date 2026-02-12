@@ -9,6 +9,10 @@
 \arguments{
 \item{x}{A \code{blimp_obj} object}
 }
+\value{
+A character vector of variable names from the average imputation
+data.
+}
 \description{
 Return variable names from \code{blimp_obj} object
 }

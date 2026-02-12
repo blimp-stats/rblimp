@@ -11,6 +11,10 @@
 
 \item{...}{Additional arguments (unused)}
 }
+\value{
+The \code{blimp_syntax} object (invisibly). Called for its side effect
+of printing the formatted syntax to the console.
+}
 \description{
 Print \code{blimp_syntax}
 }

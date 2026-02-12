@@ -15,6 +15,9 @@
 
 \item{...}{Additional arguments passed to as.data.frame}
 }
+\value{
+A \code{data.frame} containing the MCMC iterations from the model.
+}
 \description{
 Convert blimp_obj to data.frame
 }

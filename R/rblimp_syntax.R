@@ -388,6 +388,8 @@ normalize_syntax_value <- function(value) {
 #' Convert `blimp_syntax` to character vector
 #' @param x A `blimp_syntax` object
 #' @param ... Additional arguments (unused)
+#' @return A character string containing the formatted 'Blimp' input syntax
+#'   with a header comment and all commands.
 #' @importFrom utils packageVersion
 #' @export
 as.character.blimp_syntax <- function(x, ...) {
@@ -427,6 +429,8 @@ as.character.blimp_syntax <- function(x, ...) {
 #' Print `blimp_syntax`
 #' @param x A `blimp_syntax` object
 #' @param ... Additional arguments (unused)
+#' @return The `blimp_syntax` object (invisibly). Called for its side effect
+#'   of printing the formatted syntax to the console.
 #' @export
 print.blimp_syntax <- function(x, ...) {
     cat(as.character(x))
