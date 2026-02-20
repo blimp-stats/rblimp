@@ -2,6 +2,9 @@
 
 R interface to Blimp for Bayesian latent variable modeling, missing data analysis, and multiple imputation.
 
+[![R-CMD-check](https://github.com/blimp-stats/rblimp/actions/workflows/check-standard.yaml/badge.svg)](https://github.com/blimp-stats/rblimp/actions/workflows/check-standard.yaml) [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/rblimp)](https://cran.r-project.org/package=rblimp) [![](https://cranlogs.r-pkg.org/badges/rblimp)](https://cran.r-project.org/package=rblimp)
+
+
 ## Overview
 
 `rblimp` provides a seamless interface to integrate [Blimp software](https://www.appliedmissingdata.com/blimp) into R workflows. Blimp offers general-purpose Bayesian estimation for a wide range of single-level and multilevel structural equation models with two or three levels, with or without missing data.
