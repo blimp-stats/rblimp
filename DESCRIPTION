@@ -1,7 +1,7 @@
 Package: rblimp
 Type: Package
 Title: Integration of 'Blimp' Software into R
-Version: 1.0.0
+Version: 1.1.0
 Authors@R: 
     person(given = "Brian T.",
            family = "Keller",
@@ -24,7 +24,8 @@ Imports:
     ggplot2
 Suggests:
     mitml,
-    rstudioapi
+    rstudioapi,
+    posterior
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 URL: https://github.com/blimp-stats/rblimp

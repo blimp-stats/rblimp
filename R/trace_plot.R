@@ -1,6 +1,6 @@
 # Copyright Brian Keller 2025, all rights reserved
 
-#' Internal function to compute psrf
+#' Internal function to compute Rhat
 #' @param x matrix of parameter values by chain
 #' @param split_chain Compute split chain or not
 #' @noRd
@@ -23,23 +23,59 @@ psrf <- function(x, split_chain = TRUE) {
         }
     }, simplify = FALSE))
 
-    # Compute PSR
-    t_j <- colMeans(chaindat)
-    t_bar <- mean(t_j)
+    # Rhat: sqrt((B/W + n - 1) / n)
+    var_between <- n * var(colMeans(chaindat))
+    var_within  <- mean(apply(chaindat, 2, var))
 
-    # Compute between
-    B <- (1 / (m - 1)) * sum((t_j - t_bar)^2)
+    # Return NA for constant draws
+    if (var_within < .Machine$double.eps) return(NA)
 
-    # Compute within
-    W <- sum((sweep(chaindat, 2, t_j)^2) / (n - 1))
-    W <- ((n - 1) / n) * (W / m)
+    return(sqrt((var_between / var_within + n - 1) / n))
+}
 
-    # Compute psr
-    return(sqrt((W + B) / W))
+#' Internal function to rank-normalize and compute Rhat (Vehtari et al., 2021)
+#' @param x matrix of parameter values (rows=iterations, cols=chains)
+#' @noRd
+rhat <- function(x) {
+    x <- as.matrix(x)
+
+    # Split each chain in half
+    n <- floor(NROW(x) / 2)
+    x_split <- do.call("cbind", lapply(seq_len(NCOL(x)), function(i) {
+        cbind(x[1:n, i], x[(n + 1):(2 * n), i])
+    }))
+
+    # Rank-normalize the split chains (Blom transform + inverse normal)
+    S <- length(x_split)
+    r <- rank(as.vector(x_split), ties.method = "average")
+    z_bulk <- matrix(qnorm((r - 3/8) / (S + 1/4)), nrow = n)
+
+    # Fold around median, split, rank-normalize
+    x_fold <- abs(x - median(x))
+    x_fold_split <- do.call("cbind", lapply(seq_len(NCOL(x_fold)), function(i) {
+        cbind(x_fold[1:n, i], x_fold[(n + 1):(2 * n), i])
+    }))
+    r_f <- rank(as.vector(x_fold_split), ties.method = "average")
+    z_tail <- matrix(qnorm((r_f - 3/8) / (S + 1/4)), nrow = n)
+
+    # Compute basic Rhat on each using psrf (already split, so split_chain = FALSE)
+    rhat_bulk <- psrf(z_bulk, split_chain = FALSE)
+    rhat_tail <- psrf(z_tail, split_chain = FALSE)
+
+    if (is.na(rhat_bulk) && is.na(rhat_tail)) return(NA)
+    return(max(rhat_bulk, rhat_tail, na.rm = TRUE))
+}
+
+#' Internal function to compute Rhat based on last half
+#' @param x matrix of parameter values by chain
+#' @noRd
+rhat_lhalf <- function(x) {
+    x <- as.matrix(x)
+    return(rhat(x[(floor(NROW(x) / 2) + 1):NROW(x), , drop = FALSE]))
 }
 
 #' Internal function to compute psrf based on last half
-#' @param x matrix of parametr values by chain
+#' @param x matrix of parameter values by chain
 #' @param split_chain Compute split chain or not
 #' @noRd
 psrf_lhalf <- function(x, split_chain = TRUE) {
@@ -80,9 +116,9 @@ make_traceplot_data <- function(model, parameter) {
             Parameter = x[, param_num + 2]
         ))
 
-    # Calculate psrf
+    # Calculate Rhat
     psrf_val <- plot_data_list |> lapply(\(x) x[, 'Parameter']) |>
-        do.call(cbind, args = _) |> psrf_lhalf()
+        do.call(cbind, args = _) |> rhat_lhalf()
 
     # Create plot data
     plot_data <- do.call(rbind, plot_data_list)
@@ -109,15 +145,17 @@ make_traceplot_data <- function(model, parameter) {
 #' @param psrf_val a vector of psrf values
 #' @importFrom ggplot2 as_labeller
 #' @noRd
-make_labeller_traceplot <- function(pnames, psrf_val) {
+make_labeller_traceplot <- function(pnames, psrf_val, param_nums) {
     force(pnames)
     force(psrf_val)
+    force(param_nums)
     ggplot2::as_labeller(
         function(value) {
             i <- as.integer(value)
+            j <- match(i, param_nums)
             paste0(
                 pnames[i], "\n",
-                sprintf("PSRF = %.3f", psrf_val[i])
+                sprintf("Rhat = %.3f", psrf_val[j])
             )
         }
     )
@@ -227,7 +265,7 @@ trace_plot <- function(
             feature_list <- list(
                 ggplot2::ggtitle(
                     paste0("Trace Plot for ", plot_data$param_nam[1]),
-                    sprintf("PSRF = %.3f", attr(plot_data, 'psrf'))
+                    sprintf("Rhat = %.3f", attr(plot_data, 'psrf'))
                 )
             )
         }
@@ -255,7 +293,8 @@ trace_plot <- function(
         # Build function for facet labels
         make_label <- make_labeller_traceplot(
             rownames(model@estimates),
-            psrf_val
+            psrf_val,
+            selector
         )
         # Create feature list
         if (length(feature_list) == 0) {
