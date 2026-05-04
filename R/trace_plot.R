@@ -98,10 +98,10 @@ make_traceplot_data <- function(model, parameter) {
     param_num <- if (is.numeric(parameter)) {
         parameter
     } else if (is.character(parameter)) {
-        # Check estimate names
-        c(
-            grep(tolower(parameter), tolower(rownames(model@estimates)), fixed = TRUE),
-            grep(tolower(parameter), tolower(names(model@iterations)), fixed = TRUE)
+        sterm <- tolower(trimws(parameter))
+        union(
+            which(tolower(rownames(model@estimates)) == sterm),
+            which(tolower(names(model@iterations)) == sterm)
         )
     } else throw_error("Unable to Determine Parameter for: {parameter}")
 
