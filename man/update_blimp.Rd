@@ -2,22 +2,40 @@
 % Please edit documentation in R/update_blimp.R
 \name{update_blimp}
 \alias{update_blimp}
-\title{Runs the Blimp Updater in order to Update Blimp}
+\title{Update the installed Blimp engine}
 \usage{
 update_blimp()
 }
 \value{
-Logical if the updater was opened or not
+Logical indicating whether an update was started.
 }
 \description{
-Runs the Blimp Updater in order to Update Blimp
+If Blimp was installed via \code{\link{install_blimp}}, the latest version is
+re-downloaded into the managed directory. If Blimp was installed via the
+system installer, the Blimp Updater application is launched (back-compat).
 }
 \details{
-If the session is not an interactive session then it will not open the updater.
+If the session is not interactive, the updater is not opened.
+
+For managed installs, the manifest is checked first and the engine is
+re-downloaded only if a newer version exists.
 }
+\section{Privacy}{
+
+Calling \code{update_blimp()} on a managed install contacts
+\code{updates.blimpstats.com} over HTTPS to check for a newer version of
+Blimp, and downloads from it if one is available. Information may be
+collected as described in the privacy policy.
+
+See privacy policy: \url{https://www.blimpstats.com/privacy}.
+}
+
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
-# Open Blimp Updater
-update_blimp()
+# Update Blimp
+\dontrun{update_blimp()}
 \dontshow{\}) # examplesIf}
+}
+\seealso{
+\code{\link{install_blimp}}
 }

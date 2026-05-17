@@ -5,35 +5,31 @@
 #'
 #' @section Installing Blimp Software:
 #'
-#' Before using rblimp, you must install the Blimp software (freely available):
-#' \enumerate{
-#'   \item Visit \url{https://www.appliedmissingdata.com/blimp}
-#'   \item Download the version for your operating system
-#'   \item Follow the installation instructions
-#' }
+#' rblimp requires the Blimp engine. The simplest way to install it is from R:
 #'
-#' After installation, configure Blimp. The package will look for Blimp in the
-#' following order:
-#' \enumerate{
-#'   \item The \code{R_BLIMP} environment variable
-#'   \item Common installation locations (automatic detection)
-#' }
+#' ```r
+#' install_blimp()
+#' ```
 #'
-#' To configure Blimp:
-#' \preformatted{
-#' # Automatic detection
-#' detect_blimp()
+#' This downloads the latest Blimp engine into a user-writable directory:
 #'
-#' # Or set path manually (for current session)
-#' set_blimp("/path/to/blimp")
+#' - macOS: `~/.blimp/`
+#' - Windows: `%LOCALAPPDATA%/Blimp/`
+#' - Linux: `~/.blimp/`
 #'
-#' # Or set R_BLIMP environment variable (permanent)
-#' # Add to .Renviron file:
-#' # R_BLIMP="/path/to/blimp"
+#' Override the location with the `R_BLIMP_HOME` environment variable.
+#' Use [`uninstall_blimp`] to remove it.
 #'
-#' # Verify installation
-#' has_blimp()
-#' }
+#' If you'd rather use Blimp's standalone system installer (downloaded from
+#' <https://www.appliedmissingdata.com/blimp>), rblimp will auto-detect it and
+#' use it instead.
+#'
+#' If autodetection fails, set the path manually with [`set_blimp`] or the
+#' `R_BLIMP` environment variable.
+#'
+#' **Privacy:** Downloads are recorded for usage statistics.
+#'
+#' See privacy policy: <https://www.blimpstats.com/privacy>.
 #'
 #' @section Automatic Update Checks:
 #'
@@ -41,80 +37,83 @@
 #' This ensures you're using the latest version with bug fixes and improvements.
 #'
 #' To disable automatic update checks:
-#' \preformatted{
+#'
+#' ```r
 #' # Disable for current session
 #' options(check_blimp_update = FALSE)
 #'
 #' # Or add to .Rprofile for permanent setting:
 #' # options(check_blimp_update = FALSE)
-#' }
 #'
-#' You can manually check for updates at any time:
-#' \preformatted{
+#' # Or set environment variable (useful for CI / sysadmin contexts):
+#' # R_BLIMP_NO_UPDATE_CHECK=true
+#' ```
+#'
+#' You can manually update Blimp at any time:
+#'
+#' ```r
 #' update_blimp()
-#' }
+#' ```
+#'
+#' For managed installs, this re-downloads the latest Blimp engine.
+#' For system installs, this launches the Blimp Updater application.
 #'
 #' @section Function Reference:
 #'
 #' **Model Fitting:**
-#' \itemize{
-#'   \item \code{\link{rblimp}} - Fit Bayesian models
-#'   \item \code{\link{rblimp_fcs}} - Fully Conditional Specification imputation
-#'   \item \code{\link{rblimp_syntax}} - Generate Blimp syntax
-#'   \item \code{\link{rblimp_source}} - Run existing Blimp syntax files
-#' }
+#'
+#' - [`rblimp`] - Fit Bayesian models
+#' - [`rblimp_fcs`] - Fully Conditional Specification imputation
+#' - [`rblimp_syntax`] - Generate Blimp syntax
+#' - [`rblimp_source`] - Run existing Blimp syntax files
 #'
 #' **Simulation:**
-#' \itemize{
-#'   \item \code{\link{rblimp_sim}} - Generate simulated datasets
-#'   \item \code{\link{SIMULATE}} - Create simulation specifications
-#' }
+#'
+#' - [`rblimp_sim`] - Generate simulated datasets
+#' - [`SIMULATE`] - Create simulation specifications
 #'
 #' **Output & Analysis:**
-#' \itemize{
-#'   \item \code{\link[=summary,blimp_obj-method]{summary}} - Model summary
-#'   \item \code{\link{estimates}} - Extract parameter estimates
-#'   \item \code{\link{describe}} - Descriptive statistics
-#'   \item \code{\link{psr}} - Potential Scale Reduction values
-#'   \item \code{\link{output}} - Raw Blimp output
-#'   \item \code{\link{standardized}} - Extract standardized parameters only
-#'   \item \code{\link{compare}} - Compare models
-#' }
+#'
+#' - [summary][summary,blimp_obj-method] - Model summary
+#' - [`estimates`] - Extract parameter estimates
+#' - [`describe`] - Descriptive statistics
+#' - [`psr`] - Potential Scale Reduction values
+#' - [`output`] - Raw Blimp output
+#' - [`standardized`] - Extract standardized parameters only
+#' - [`compare`] - Compare models
 #'
 #' **Visualization:**
-#' \itemize{
-#'   \item \code{\link{trace_plot}} - MCMC trace plots
-#'   \item \code{\link{posterior_plot}} - Posterior density plots
-#'   \item \code{\link{residual_plot}} - Residual diagnostics
-#'   \item \code{\link{jn_plot}} - Johnson-Neyman plots
-#'   \item \code{\link{simple_plot}} - Simple slopes plots
-#'   \item \code{\link{model_table}} - Publication tables
-#' }
+#'
+#' - [`trace_plot`] - MCMC trace plots
+#' - [`posterior_plot`] - Posterior density plots
+#' - [`residual_plot`] - Residual diagnostics
+#' - [`jn_plot`] - Johnson-Neyman plots
+#' - [`simple_plot`] - Simple slopes plots
+#' - [`model_table`] - Publication tables
 #'
 #' **Utilities:**
-#' \itemize{
-#'   \item \code{\link{by_group}} - Grouped analysis
-#'   \item \code{\link{as.mitml}} - Convert to mitml format
-#'   \item \code{\link[=names,blimp_obj-method]{names}} - Obtain imputation variable names
-#'   \item \code{\link[=with,blimp_obj-method]{with}} - Evaluate across imputations
-#'   \item \code{\link{write.blimp}} - Write results to files
-#' }
+#'
+#' - [`by_group`] - Grouped analysis
+#' - [`as.mitml`] - Convert to mitml format
+#' - [names][names,blimp_obj-method] - Obtain imputation variable names
+#' - [with][with,blimp_obj-method] - Evaluate across imputations
+#' - [`write.blimp`] - Write results to files
 #'
 #' **Setup & Configuration:**
-#' \itemize{
-#'   \item \code{\link{detect_blimp}} - Detect Blimp installation
-#'   \item \code{\link{set_blimp}} - Set path to Blimp executable
-#'   \item \code{\link{has_blimp}} - Check if Blimp is available
-#'   \item \code{\link{update_blimp}} - Update Blimp installation
-#' }
+#'
+#' - [`install_blimp`] - Install Blimp into a managed directory
+#' - [`uninstall_blimp`] - Remove the managed install
+#' - [`detect_blimp`] - Detect Blimp installation
+#' - [`set_blimp`] - Set path to Blimp executable
+#' - [`has_blimp`] - Check if Blimp is available
+#' - [`update_blimp`] - Update Blimp installation
 #'
 #' @section Additional Resources:
-#' \itemize{
-#'   \item GitHub repository: \url{https://github.com/blimp-stats/rblimp}
-#'   \item Example files: \url{https://github.com/blimp-stats/rblimp-examples}
-#'   \item Blimp User Guide: \url{https://docs.google.com/document/d/1D3MS79CakuX9mVVvGH13B5nRd9XLttp69oGsvrIRK64}
-#'   \item Report issues: \url{https://github.com/blimp-stats/rblimp/issues}
-#' }
+#'
+#' - GitHub repository: <https://github.com/blimp-stats/rblimp>
+#' - Example files: <https://github.com/blimp-stats/rblimp-examples>
+#' - Blimp User Guide: <https://docs.google.com/document/d/1D3MS79CakuX9mVVvGH13B5nRd9XLttp69oGsvrIRK64>
+#' - Report issues: <https://github.com/blimp-stats/rblimp/issues>
 #'
 #' @name rblimp_getting_started
 #' @keywords documentation

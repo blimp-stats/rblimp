@@ -1,14 +1,15 @@
 # General Imports
 
-#' Inform interactive users if Blimp is unavailable
+#' Inform interactive users if Blimp is unavailable.
+#' (No prompt here - the actual install offer happens just-in-time when the
+#'  user calls rblimp(), rblimp_source(), etc. See detect_blimp(prompt = TRUE).)
 #' @noRd
 .onAttach <- function(libname, pkgname) {
     if (interactive() && !has_blimp()) {
-        cli::cli_warn(c(
-            "Unable to automatically detect Blimp installation.",
-            "x" = "This package requires Blimp to be separately installed.",
-            "i" = "You can set Blimp location via `set_blimp()`",
-            "i" = "Or you can set Blimp location via `R_BLIMP` enviornment variable"
-        ))
+        packageStartupMessage(cli::format_message(c(
+            "i" = "rblimp requires Blimp, but no installation was detected.",
+            "i" = "Run {.fn install_blimp} to install Blimp now, or you will be prompted the first time you run a model.",
+            "i" = "Alternatively, set the Blimp location via {.fn set_blimp} or the {.envvar R_BLIMP} environment variable."
+        )))
     }
 }

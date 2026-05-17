@@ -4,7 +4,13 @@
 \alias{detect_blimp}
 \title{Produce Blimp location Conditional on Operating System}
 \usage{
-detect_blimp()
+detect_blimp(prompt = TRUE)
+}
+\arguments{
+\item{prompt}{Logical; when \code{TRUE} (default) and no Blimp is found in an
+interactive session, ask whether to install Blimp via \code{\link{install_blimp}}.
+Set to \code{FALSE} to suppress the prompt and fail with an error instead
+(this is what \code{\link{has_blimp}} does internally).}
 }
 \value{
 A character string of blimp's executable location.
@@ -14,9 +20,17 @@ This function is called when running Blimp and can be used to determine what loc
 \code{\link{rblimp}} uses for the Blimp executable.
 }
 \details{
-\code{\link{rblimp}} will first use any location set with the \code{\link{set_blimp}} function. Next, it will
-check if \code{R_BLIMP} is set in the environment variables. Finally, it will fall back to the default
-Blimp install location based on the operating system.
+\code{\link{rblimp}} resolves Blimp's executable location in this order:
+\enumerate{
+\item Any location previously set via \code{\link{set_blimp}}.
+\item The \code{R_BLIMP} environment variable.
+\item A managed install created by \code{\link{install_blimp}}.
+\item The default operating-system install location of the Blimp system installer.
+}
+
+If none are found and the R session is interactive, \code{\link{detect_blimp}}
+offers to download and install Blimp via \code{\link{install_blimp}} (unless
+\code{prompt = FALSE}).
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
@@ -25,5 +39,6 @@ detect_blimp()
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link{set_blimp}} to set blimp location
+\code{\link{set_blimp}} to set blimp location, \code{\link{install_blimp}}
+to install Blimp into a managed directory.
 }

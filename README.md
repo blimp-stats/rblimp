@@ -22,15 +22,7 @@ R interface to Blimp for Bayesian latent variable modeling, missing data analysi
 
 ## Installation
 
-### Step 1: Install Blimp Software
-
-Before installing `rblimp`, you must download and install Blimp (freely available):
-
-1. Visit <https://www.appliedmissingdata.com/blimp>
-2. Download the version for your operating system
-3. Follow the installation instructions
-
-### Step 2: Install rblimp
+### Step 1: Install rblimp
 
 Install from CRAN:
 
@@ -45,14 +37,31 @@ Or install the development version from GitHub:
 remotes::install_github("blimp-stats/rblimp")
 ```
 
-### Step 3: Configure Blimp
+### Step 2: Install Blimp Software
 
-After installation, configure the path to Blimp:
+`rblimp` requires the Blimp engine. The simplest path is to let rblimp install it for you:
 
 ```r
 library(rblimp)
+install_blimp()
+```
 
-# Automatic detection
+This downloads the latest Blimp engine into a user-writable directory:
+
+- macOS: `~/.blimp/`
+- Windows: `%LOCALAPPDATA%/Blimp/`
+- Linux: `~/.blimp/`
+
+Override the location with the `R_BLIMP_HOME` environment variable. Remove with `uninstall_blimp()`.
+
+If you'd rather use the system installer, visit <https://www.appliedmissingdata.com/blimp> and follow the install instructions there.
+
+### Step 3 (optional): Configure Blimp manually
+
+If you've installed Blimp to a non-standard location:
+
+```r
+# Automatic detection (also offered the first time you run a model)
 detect_blimp()
 
 # Or set manually
@@ -61,6 +70,10 @@ set_blimp("/path/to/blimp")
 # Verify
 has_blimp()
 ```
+
+### Privacy
+
+Downloads are recorded for usage statistics. See privacy policy: <https://www.blimpstats.com/privacy>
 
 ## Getting Started
 

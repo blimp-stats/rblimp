@@ -87,6 +87,16 @@ set_blimp_beta <- function() {
     cli::cli_alert_warning("Setting beta does not persist on exit.")
 }
 
+#' Internal: are automatic update checks enabled?
+#' Disabled when `options(check_blimp_update = FALSE)` or env var
+#' `R_BLIMP_NO_UPDATE_CHECK=true`.
+#' @noRd
+update_check_enabled <- function() {
+    env <- tolower(Sys.getenv("R_BLIMP_NO_UPDATE_CHECK", ""))
+    if (env %in% c("true", "1", "yes")) return(FALSE)
+    isTRUE(getOption("check_blimp_update", default = TRUE))
+}
+
 #' Internal command to check if blimp needs update or not
 #' @importFrom cli cli_alert cli_alert_warning
 #' @noRd
@@ -177,18 +187,29 @@ set_blimp <- function(exec, beta = FALSE) {
 #' @description
 #' This function is called when running Blimp and can be used to determine what location
 #' [`rblimp::rblimp`] uses for the Blimp executable.
+#' @param prompt Logical; when `TRUE` (default) and no Blimp is found in an
+#'   interactive session, ask whether to install Blimp via [`install_blimp`].
+#'   Set to `FALSE` to suppress the prompt and fail with an error instead
+#'   (this is what [`has_blimp`] does internally).
 #' @details
-#' [`rblimp::rblimp`] will first use any location set with the [`rblimp::set_blimp`] function. Next, it will
-#' check if `R_BLIMP` is set in the environment variables. Finally, it will fall back to the default
-#' Blimp install location based on the operating system.
-#' @seealso [`rblimp::set_blimp`] to set blimp location
+#' [`rblimp::rblimp`] resolves Blimp's executable location in this order:
+#' 1. Any location previously set via [`rblimp::set_blimp`].
+#' 2. The `R_BLIMP` environment variable.
+#' 3. A managed install created by [`rblimp::install_blimp`].
+#' 4. The default operating-system install location of the Blimp system installer.
+#'
+#' If none are found and the R session is interactive, [`rblimp::detect_blimp`]
+#' offers to download and install Blimp via [`rblimp::install_blimp`] (unless
+#' `prompt = FALSE`).
+#' @seealso [`rblimp::set_blimp`] to set blimp location, [`rblimp::install_blimp`]
+#' to install Blimp into a managed directory.
 #' @returns
 #' A character string of blimp's executable location.
 #' @examplesIf has_blimp()
 #' # Obtain blimp location
 #' detect_blimp()
 #' @export
-detect_blimp <- function() {
+detect_blimp <- function(prompt = TRUE) {
     # Return any set executable
     if (!is.null(rblimp.env$exec)) {
         return(rblimp.env$exec)
@@ -202,19 +223,35 @@ detect_blimp <- function() {
         }
     }
 
+    ## Managed install (from install_blimp())
+    managed <- detect_managed_blimp()
+    if (!is.null(managed)) return(managed)
+
     # Otherwise try to find
     user_os <- tolower(R.Version()$os)
     exec <- if(rblimp.env$beta) "blimp-beta" else "blimp"
-    if (grepl("darwin", user_os)) {
-        return(detect_blimp_macos(exec))
-    } else if (grepl("linux", user_os)) {
-        return(detect_blimp_linux(exec))
-    } else if (
-        grepl("windows", user_os) || grepl("mingw32", user_os)
-    ) {
-        return(detect_blimp_windows(paste0(exec, ".exe")))
+    system_result <- tryCatch({
+        if (grepl("darwin", user_os)) {
+            detect_blimp_macos(exec)
+        } else if (grepl("linux", user_os)) {
+            detect_blimp_linux(exec)
+        } else if (grepl("windows", user_os) || grepl("mingw32", user_os)) {
+            detect_blimp_windows(paste0(exec, ".exe"))
+        } else {
+            throw_error("Unable to detect Operating System.")
+        }
+    }, error = function(e) e)
+
+    if (is.character(system_result)) return(system_result)
+
+    # No system install either. Offer interactive install if allowed.
+    if (isTRUE(prompt) && confirm_install()) {
+        exec_path <- install_blimp()
+        return(exec_path)
     }
-    throw_error("Unable to detect Operating System.")
+
+    # Re-throw the original detection error if no install was performed.
+    stop(system_result)
 }
 
 
@@ -232,5 +269,5 @@ detect_blimp <- function() {
 #' has_blimp()
 #' @export
 has_blimp <- function() {
-    !is.na(tryCatch(detect_blimp(), error = function(e) NA))
+    !is.na(tryCatch(detect_blimp(prompt = FALSE), error = function(e) NA))
 }

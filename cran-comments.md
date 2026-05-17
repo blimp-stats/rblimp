@@ -29,7 +29,7 @@ feedback from the CRAN review:
   - `with-blimp_obj-method.Rd`
   - `write.blimp.Rd`
 
-## Initial Submission
+## Initial Submission (1.0.0)
 
 * This is a new release.
 * This package provides an R interface to a third party software ('Blimp').

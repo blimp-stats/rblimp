@@ -9,35 +9,31 @@ A guide to installing and configuring Blimp software for use with rblimp.
 \section{Installing Blimp Software}{
 
 
-Before using rblimp, you must install the Blimp software (freely available):
-\enumerate{
-\item Visit \url{https://www.appliedmissingdata.com/blimp}
-\item Download the version for your operating system
-\item Follow the installation instructions
+rblimp requires the Blimp engine. The simplest way to install it is from R:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{install_blimp()
+}\if{html}{\out{</div>}}
+
+This downloads the latest Blimp engine into a user-writable directory:
+\itemize{
+\item macOS: \verb{~/.blimp/}
+\item Windows: \verb{\%LOCALAPPDATA\%/Blimp/}
+\item Linux: \verb{~/.blimp/}
 }
 
-After installation, configure Blimp. The package will look for Blimp in the
-following order:
-\enumerate{
-\item The \code{R_BLIMP} environment variable
-\item Common installation locations (automatic detection)
-}
+Override the location with the \code{R_BLIMP_HOME} environment variable.
+Use \code{\link{uninstall_blimp}} to remove it.
 
-To configure Blimp:
-\preformatted{
-# Automatic detection
-detect_blimp()
+If you'd rather use Blimp's standalone system installer (downloaded from
+\url{https://www.appliedmissingdata.com/blimp}), rblimp will auto-detect it and
+use it instead.
 
-# Or set path manually (for current session)
-set_blimp("/path/to/blimp")
+If autodetection fails, set the path manually with \code{\link{set_blimp}} or the
+\code{R_BLIMP} environment variable.
 
-# Or set R_BLIMP environment variable (permanent)
-# Add to .Renviron file:
-# R_BLIMP="/path/to/blimp"
+\strong{Privacy:} Downloads are recorded for usage statistics.
 
-# Verify installation
-has_blimp()
-}
+See privacy policy: \url{https://www.blimpstats.com/privacy}.
 }
 
 \section{Automatic Update Checks}{
@@ -47,18 +43,24 @@ By default, rblimp automatically checks for Blimp updates when you run models.
 This ensures you're using the latest version with bug fixes and improvements.
 
 To disable automatic update checks:
-\preformatted{
-# Disable for current session
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{# Disable for current session
 options(check_blimp_update = FALSE)
 
 # Or add to .Rprofile for permanent setting:
 # options(check_blimp_update = FALSE)
-}
 
-You can manually check for updates at any time:
-\preformatted{
-update_blimp()
-}
+# Or set environment variable (useful for CI / sysadmin contexts):
+# R_BLIMP_NO_UPDATE_CHECK=true
+}\if{html}{\out{</div>}}
+
+You can manually update Blimp at any time:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{update_blimp()
+}\if{html}{\out{</div>}}
+
+For managed installs, this re-downloads the latest Blimp engine.
+For system installs, this launches the Blimp Updater application.
 }
 
 \section{Function Reference}{
@@ -80,7 +82,7 @@ update_blimp()
 
 \strong{Output & Analysis:}
 \itemize{
-\item \code{\link[=summary,blimp_obj-method]{summary}} - Model summary
+\item \link[=summary,blimp_obj-method]{summary} - Model summary
 \item \code{\link{estimates}} - Extract parameter estimates
 \item \code{\link{describe}} - Descriptive statistics
 \item \code{\link{psr}} - Potential Scale Reduction values
@@ -103,13 +105,15 @@ update_blimp()
 \itemize{
 \item \code{\link{by_group}} - Grouped analysis
 \item \code{\link{as.mitml}} - Convert to mitml format
-\item \code{\link[=names,blimp_obj-method]{names}} - Obtain imputation variable names
-\item \code{\link[=with,blimp_obj-method]{with}} - Evaluate across imputations
+\item \link[=names,blimp_obj-method]{names} - Obtain imputation variable names
+\item \link[=with,blimp_obj-method]{with} - Evaluate across imputations
 \item \code{\link{write.blimp}} - Write results to files
 }
 
 \strong{Setup & Configuration:}
 \itemize{
+\item \code{\link{install_blimp}} - Install Blimp into a managed directory
+\item \code{\link{uninstall_blimp}} - Remove the managed install
 \item \code{\link{detect_blimp}} - Detect Blimp installation
 \item \code{\link{set_blimp}} - Set path to Blimp executable
 \item \code{\link{has_blimp}} - Check if Blimp is available

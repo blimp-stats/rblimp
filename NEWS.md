@@ -1,3 +1,32 @@
+# rblimp 1.2.0
+
+* New `install_blimp()` and `uninstall_blimp()` functions let rblimp
+  download and manage the Blimp engine directly, without going through
+  the system installer. Installs to a user-writable directory
+  (`~/.blimp/` on macOS and Linux, `%LOCALAPPDATA%/Blimp/` on Windows),
+  overridable via the `R_BLIMP_HOME` environment variable.
+* When `rblimp()` / `rblimp_source()` is run in an interactive session
+  and Blimp is not installed, the user is now offered the option to
+  install it via `install_blimp()` on the spot.
+* `detect_blimp()` gained a `prompt =` argument; defaults to `TRUE` for
+  the new interactive install offer.
+* `update_blimp()` now routes based on install type: for managed installs
+  it checks the manifest version first and re-downloads only when a newer
+  version is available; system installs still launch the Blimp Updater
+  application.
+* Update version checks now use a JSON manifest endpoint
+  (`https://updates.blimpstats.com/v1/blimp_base.json`) instead of
+  parsing the plain-text changelog. Manifest URL is overridable via
+  the `R_BLIMP_MANIFEST_URL` environment variable.
+* New `R_BLIMP_NO_UPDATE_CHECK` environment variable disables automatic
+  update checks (alternative to `options(check_blimp_update = FALSE)`).
+* New `R_BLIMP_PREVENT_INSTALL` environment variable blocks
+  `install_blimp()` for locked-down environments.
+
+# rblimp 1.1.1
+
+* Fixed a bug in `trace_plot()` when called with specific parameters.
+
 # rblimp 1.1.0
 
 * Added an `as.array()` method for `blimp_obj` that returns an
