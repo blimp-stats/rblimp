@@ -8,7 +8,8 @@ simple_plot(formula, model, ci = 0.95, xvals, ...)
 }
 \arguments{
 \item{formula}{an object of class \code{\link{formula}} to specify simple effect to plot.
-The formula must have the following form: \code{outcome ~ focal | moderator}. See Details below for nominal moderators.}
+The formula must have the following form: \code{outcome ~ focal | moderator}. See Details below for
+nominal moderators and for SIMPLE statements that include more than one moderator.}
 
 \item{model}{an \code{\link{blimp_obj}}. The model must have a SIMPLE command output saved.}
 
@@ -16,7 +17,7 @@ The formula must have the following form: \code{outcome ~ focal | moderator}. Se
 
 \item{xvals}{a list of values to evaluate for the focal variable. If empty, they will automatically be determined}
 
-\item{...}{arguments passed to the internal \code{\link[ggplot2:geom_path]{ggplot2::geom_line}} call used to generate the median lines.}
+\item{...}{arguments passed to the internal \code{\link[ggplot2:geom_line]{ggplot2::geom_line}} call used to generate the median lines.}
 }
 \value{
 a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
@@ -28,14 +29,24 @@ Generates a conditional effect plots based on the posterior summaries from the o
 To change colors use ggplot2's scale system. Both fill and color are used. See
 \code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for more information about setting a manual set of colors.
 
-For nominal moderators, the variable must include the nominal code used in the dummy codes (e.g., moderator.1, moderator.2, etc).
-When there are multiple dummy codes, then all codes must be listed using a \code{+}.
-For example, after the \code{~} the following statement can be included:
-\deqn{\code{focal | moderator.1 + moderator.2}}
+For nominal moderators, wrap the dummy codes in \code{join(...)} so they are
+treated as a single compound moderator (one set of colored lines instead of
+separate facets):
+\deqn{\code{focal | join(moderator.1, moderator.2)}}
+\code{join()} works for any user-controlled bundling, not just nominal dummies;
+however it is only valid in the first (color/legend) position of the formula.
+
+When the SIMPLE command contains more than one moderator (e.g.,
+\verb{mod1 @ values and mod2 @ value}), the right-hand side of the formula may list the
+moderators that vary using \code{+} (e.g., \code{focal | mod1 + mod2}). Moderators that are
+omitted from the formula are treated as held-constant context: their value must
+be the same across the matched simple effects and is reported in the plot
+subtitle.
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
-# Generate Data
+\dontrun{
+# ---- Basic single-moderator example ----
 mydata <- rblimp_sim(
     c(
         'x ~ normal(0, 1)',
@@ -45,8 +56,6 @@ mydata <- rblimp_sim(
     n = 100,
     seed = 981273
 )
-
-# Run Rblimp
 m1 <- rblimp(
     'y ~ x m x*m',
     mydata,
@@ -56,8 +65,37 @@ m1 <- rblimp(
     burn = 1000,
     iter = 1000
 )
-
-# Generate Plot
 simple_plot(y ~ x | m, m1)
+
+# ---- Two moderators: first colored, second auto-faceted ----
+three_way <- rblimp_sim(
+    c(
+        'x  ~ normal(0, 1)',
+        'm1 ~ normal(0, 1)',
+        'm2 ~ normal(0, 1)',
+        'y  ~ normal(10 + 0.5*x*m1 + 0.3*x*m2 + 0.6*x*m1*m2, 1)'
+    ),
+    n = 500, seed = 2024
+)
+fit <- rblimp(
+    'y ~ x m1 m2 x*m1 x*m2 m1*m2 x*m1*m2',
+    three_way, center = ~ x + m1 + m2,
+    simple = 'x | m1 @ quantile and m2 @ sd',
+    seed = 1071, burn = 1000, iter = 1000
+)
+simple_plot(y ~ x | m1 + m2, fit)
+
+# Pin a moderator to one SIMPLE value via `at()`
+simple_plot(y ~ x | m1 + at(m2 = "0"), fit)
+
+# Restrict to a subset of values
+simple_plot(y ~ x | m1 + at(m2 = c("-1 SD", "+1 SD")), fit)
+
+# Bundle moderators (e.g. nominal dummy codes) via `join()`
+simple_plot(y ~ x | join(m1, m2), fit)
+}
 \dontshow{\}) # examplesIf}
+}
+\seealso{
+\code{\link{jn_plot}}, \code{\link{jn_map}}, \code{\link{at}}, \code{\link{join}}
 }
