@@ -25,7 +25,7 @@ An object of class \link[posterior:draws_array]{posterior::draws_array} (for \co
 \code{as_draws_array}) or \link[posterior:draws_df]{posterior::draws_df} (for \code{as_draws_df}).
 }
 \description{
-S3 methods for the \code{\link[posterior:draws]{posterior::as_draws()}} family of generics, allowing
+S3 methods for the \code{\link[posterior:as_draws]{posterior::as_draws()}} family of generics, allowing
 \code{blimp_obj} to be used anywhere a \link[posterior:draws]{posterior::draws} object is expected.
 This is the gateway to the \strong{posterior} and \strong{bayesplot} ecosystems:
 once converted, the usual \code{summarise_draws()}, \code{mcmc_trace()},

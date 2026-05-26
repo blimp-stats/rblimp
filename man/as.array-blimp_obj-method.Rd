@@ -22,7 +22,7 @@ attribute.
 \description{
 Reshapes the MCMC draws in a \code{blimp_obj} into a 3-D numeric array with
 dimensions \verb{[iteration, chain, parameter]}. This is the format consumed
-directly by \verb{bayesplot::mcmc_*} functions and by \code{\link[posterior:draws_array]{posterior::as_draws_array()}}.
+directly by \verb{bayesplot::mcmc_*} functions and by \code{\link[posterior:as_draws_array]{posterior::as_draws_array()}}.
 }
 \details{
 The \code{warmup} argument controls whether burn-in draws are included:

@@ -65,7 +65,7 @@ and matrix parameters. \code{depth=1} (default) shows only scalar parameters.
 (\code{histospark}) is included in the output. Defaults to \code{TRUE}.}
 }
 \value{
-An object of class \linkS4class{describe}, which is a data frame containing
+An object of class \link[=describe-class]{describe}, which is a data frame containing
 summary statistics and attributes for printing.
 }
 \description{

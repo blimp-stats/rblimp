@@ -18,7 +18,7 @@ or a combination of any of them. If left empty, a plot of all parameters will be
 a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
 }
 \description{
-Generates \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plots using \code{\link[ggplot2:geom_path]{ggplot2::geom_line}} based on the output from \code{\link{rblimp}}
+Generates \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plots using \code{\link[ggplot2:geom_line]{ggplot2::geom_line}} based on the output from \code{\link{rblimp}}
 }
 \details{
 To change colors use ggplot2's scale system. Both fill and color are used. See
