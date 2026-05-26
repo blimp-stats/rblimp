@@ -249,6 +249,8 @@ rblimp <- function(model,
             options <- c(options, "saveresidual")
         }
     }
+    # Ensure variables names always saved
+    options <- c(options, "saveVariableNames")
 
     # Write input file
     imp_file <- rblimp_syntax(
