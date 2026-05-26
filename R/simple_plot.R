@@ -1,4 +1,4 @@
-# Copyright Brian Keller 2025, all rights reserved
+# Copyright Brian Keller 2026, all rights reserved
 
 #' Function to generate conditional regression equation plots (i.e., simple effects) with [`rblimp`] and SIMPLE command
 #' @description
