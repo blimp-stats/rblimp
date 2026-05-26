@@ -16,6 +16,232 @@ is_equal <- function(a, b) {
     tolower(a) == tolower(b)
 }
 
+#' Marker for fixing a moderator at specific SIMPLE evaluated values
+#'
+#' Used inside [`simple_plot`] and [`jn_plot`] formulas to restrict the SIMPLE
+#' rows to those whose moderator was evaluated at the given label(s).
+#'
+#' @param ... named arguments where each name is a moderator in the SIMPLE
+#'   command and each value is a single label or a vector of labels
+#'   (e.g., `"Q25"`, `"+1 SD"`, `"0"`, or a parameter name) to keep.
+#' @returns Calling `at()` outside a formula raises an error; the function only
+#'   has meaning when it appears in a `simple_plot()` or `jn_plot()` formula.
+#' @seealso [`simple_plot`], [`jn_plot`], [`jn_map`], [`join`]
+#' @examples
+#' \dontrun{
+#' # Pin `m2` at the SIMPLE label "0", leaving `m1` to color the lines
+#' simple_plot(y ~ x | m1 + at(m2 = "0"), model)
+#'
+#' # Pin to a subset (vector of labels) -- `m2` still faces over those values
+#' simple_plot(y ~ x | m1 + at(m2 = c("Q25", "Q75")), model)
+#'
+#' # Use inside `jn_plot()` the same way
+#' jn_plot(y ~ x | m1 + at(m2 = "+1 SD"), model)
+#'
+#' # In a 4-way fit, pin one moderator and map the slope surface over the other two
+#' jn_map(y ~ x | m1 + m2 + at(m3 = "0"), four_way_model)
+#' }
+#' @export
+at <- function(...) {
+    throw_error(c(
+        "{.fn at} is only valid inside a formula passed to {.fn simple_plot} or {.fn jn_plot}.",
+        "i" = "Example: {.code simple_plot(y ~ x | m1 + at(m2 = \"0\"), model)}"
+    ))
+}
+
+#' Marker for bundling multiple SIMPLE moderators into one compound moderator
+#'
+#' Used inside [`simple_plot`] and [`jn_plot`] formulas to treat a set of
+#' SIMPLE moderators as a single conceptual moderator. Each row's color/legend
+#' label combines every component's `"name @ value"` so that, e.g., the dummy
+#' codes of a nominal predictor render as one set of colored lines instead of
+#' a sparse facet grid.
+#'
+#' Only the first bare term on the right-hand side of `|` may use `join(...)`
+#' (that is, the color / x-axis position). Facet positions must remain plain
+#' moderator names or `at(...)` calls.
+#'
+#' @param ... bare moderator names (at least two) to bundle together.
+#' @returns Calling `join()` outside a formula raises an error; it only has
+#'   meaning inside `simple_plot()` / `jn_plot()` formulas.
+#' @seealso [`simple_plot`], [`jn_plot`], [`jn_map`], [`at`]
+#' @examples
+#' \dontrun{
+#' # Nominal predictor with dummy codes -- bundle them as one moderator
+#' simple_plot(y ~ x | join(group.1, group.2), model)
+#'
+#' # Combine with `at()` to pin an unrelated moderator
+#' simple_plot(y ~ x | join(group.1, group.2) + at(z = "0"), model)
+#'
+#' # In a 4-way fit, collapse the two facet moderators so the bound
+#' #   annotation goes back into each strip of the JN plot
+#' jn_plot(y ~ x | m1 + join(m2, m3), four_way_model)
+#' }
+#' @export
+join <- function(...) {
+    throw_error(c(
+        "{.fn join} is only valid inside a formula passed to {.fn simple_plot} or {.fn jn_plot}.",
+        "i" = "Example: {.code simple_plot(y ~ x | join(mod.1, mod.2), model)}"
+    ))
+}
+
+#' Numeric sort key for a single SIMPLE moderator value label.
+#'
+#' Maps `"Q25"` -> `0.25`, `"+1 SD"` / `"-1 SD"` -> `+1` / `-1`,
+#' a plain number string -> its numeric value, otherwise `NA_real_`.
+#' Used to lay out factor levels in their natural numeric order rather
+#' than the order Blimp happened to emit them in.
+#' @noRd
+mod_value_sort_key <- function(label) {
+    if (is.na(label) || !nzchar(label)) return(NA_real_)
+    if (grepl("^Q[0-9.]+$", label))
+        return(as.numeric(sub("^Q", "", label)) / 100)
+    if (grepl("\\s*SD\\s*$", label)) {
+        n_sd <- suppressWarnings(as.numeric(sub("\\s*SD\\s*$", "", label)))
+        if (!is.na(n_sd)) return(n_sd)
+    }
+    n <- suppressWarnings(as.numeric(label))
+    if (!is.na(n)) return(n)
+    NA_real_
+}
+
+#' Order a vector of formatted moderator labels by the underlying numeric
+#' value(s). Labels look like `"name @ value"` for plain moderators and
+#' `"name @ value, name @ value"` for compound (`join()`) moderators.
+#'
+#' Strips any trailing bound annotation (after `\n`), splits a compound label
+#' on `", "` so `join()`-style strings are sorted lexicographically across
+#' their components, and falls back to insertion order for labels whose
+#' value can't be parsed as numeric.
+#' @noRd
+order_by_mod_value <- function(labels) {
+    if (length(labels) == 0) return(integer(0))
+    raw_parts <- lapply(labels, function(lbl) {
+        no_bound <- sub("\n.*$", "", as.character(lbl))
+        parts <- strsplit(no_bound, ", ", fixed = TRUE)[[1]]
+        vapply(parts, function(p) sub("^[^@]*@\\s*", "", p), character(1))
+    })
+    keys <- lapply(raw_parts, function(rv)
+        vapply(rv, mod_value_sort_key, double(1)))
+    max_len <- max(vapply(keys, length, integer(1)))
+    if (max_len == 0) return(seq_along(labels))
+    cols <- lapply(seq_len(max_len), function(j)
+        vapply(keys, function(k) if (length(k) >= j) k[j] else NA_real_,
+               double(1)))
+    do.call(order, c(cols, list(na.last = TRUE)))
+}
+
+#' Resolve a formula moderator name against the SIMPLE moderator list.
+#'
+#' If the supplied name appears directly in `simple_mods`, it's returned as-is.
+#' Otherwise, if the name is declared as nominal on the model (`model@syntax$nominal`),
+#' the function looks in `simple_mods` for dummy-code columns of the form
+#' `name.1`, `name.2`, ... and returns those as a character vector so the
+#' caller can treat them as a compound moderator.
+#' @noRd
+resolve_mod_name <- function(name, simple_mods, model) {
+    if (tolower(name) %in% tolower(simple_mods)) return(name)
+    nominal_str <- model@syntax$nominal
+    if (is.null(nominal_str) || !length(nominal_str) || !nzchar(nominal_str))
+        return(name)
+    nominal_vars <- strsplit(nominal_str, "[ ;]+")[[1]]
+    nominal_vars <- nominal_vars[nzchar(nominal_vars)]
+    if (!(tolower(name) %in% tolower(nominal_vars))) return(name)
+    pattern <- paste0("^", tolower(name), "\\.[0-9]+$")
+    matches <- simple_mods[grepl(pattern, tolower(simple_mods))]
+    if (length(matches) > 0) return(matches)
+    name
+}
+
+#' Parse the RHS of a simple_plot / jn_plot formula
+#'
+#' Walks the formula's right-hand side language tree to extract the focal
+#' predictor, the bare moderator symbols (in order), and any held-constant
+#' filter values supplied via `at(...)`. The resulting `bare_mods` are
+#' returned as a character vector; the first is treated as the color/legend
+#' moderator and any extras are facets. `at_filter` is a named list whose
+#' names are moderator names and values are character vectors of allowed
+#' SIMPLE labels.
+#' @noRd
+parse_plot_formula <- function(formula) {
+    if (!inherits(formula, "formula") || length(formula) != 3)
+        throw_error(c(
+            "The {.arg formula} was not correctly specified.",
+            "Must have the form: `outcome ~ focal | moderator`"
+        ))
+
+    out_lang <- formula[[2]]
+    rhs      <- formula[[3]]
+
+    if (!is.call(rhs) || !identical(rhs[[1]], as.name("|")) || length(rhs) != 3)
+        throw_error(c(
+            "The {.arg formula} was not correctly specified.",
+            "Must have the form: `outcome ~ focal | moderator`"
+        ))
+
+    focal_lang <- rhs[[2]]
+    mod_lang   <- rhs[[3]]
+
+    # Walk `+` tree to collect terms
+    walk_plus <- function(e) {
+        if (is.call(e) && length(e) == 3 && identical(e[[1]], as.name("+"))) {
+            c(walk_plus(e[[2]]), walk_plus(e[[3]]))
+        } else list(e)
+    }
+    terms <- walk_plus(mod_lang)
+
+    bare_mods      <- character()       # display names (per logical moderator)
+    mod_components <- list()            # display name -> char vec of SIMPLE mod names
+    at_filter      <- list()
+
+    for (t in terms) {
+        if (is.call(t) && identical(t[[1]], as.name("at"))) {
+            args <- as.list(t)[-1]
+            if (length(args) == 0 || is.null(names(args)) || any(!nzchar(names(args))))
+                throw_error("{.fn at} requires named arguments, e.g. {.code at(m2 = \"0\")}.")
+            for (nm in names(args)) {
+                val <- tryCatch(eval(args[[nm]], envir = baseenv()),
+                                error = function(e) {
+                                    throw_error(c(
+                                        "Could not evaluate the value for {.field {nm}} inside {.fn at}.",
+                                        i = "Values must be literal strings, numbers, or `c(...)` of those."
+                                    ))
+                                })
+                at_filter[[nm]] <- as.character(val)
+            }
+        } else if (is.call(t) && identical(t[[1]], as.name("join"))) {
+            args <- as.list(t)[-1]
+            if (length(args) < 2)
+                throw_error("{.fn join} requires at least 2 moderators.")
+            comps <- vapply(args, function(a) {
+                if (!is.name(a) && !is.character(a))
+                    throw_error("Arguments to {.fn join} must be bare moderator names.")
+                as.character(a)
+            }, character(1))
+            label <- paste(comps, collapse = ", ")
+            bare_mods <- c(bare_mods, label)
+            mod_components[[label]] <- comps
+        } else if (is.name(t) || is.character(t)) {
+            nm <- as.character(t)
+            bare_mods <- c(bare_mods, nm)
+            mod_components[[nm]] <- nm
+        } else {
+            throw_error(c(
+                "Unrecognized term on the right-hand side of {.code |}: {.code {deparse(t)}}",
+                i = "Allowed: bare moderator names, {.fn at} calls, and {.fn join} calls."
+            ))
+        }
+    }
+
+    list(
+        outcome        = as.character(out_lang),
+        focal          = as.character(focal_lang),
+        bare_mods      = bare_mods,
+        mod_components = mod_components,
+        at_filter      = at_filter
+    )
+}
+
 #' Parse CSV header line respecting parentheses and quotes
 #'
 #' @description
