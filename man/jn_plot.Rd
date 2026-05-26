@@ -25,10 +25,21 @@ Generates a Johnson-Neyman Plot based on the posterior summaries from the output
 \details{
 To change colors use ggplot2's scale system. Both fill and color are used. See
 \code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for more information about setting a manual set of colors.
+
+When the model contains a SIMPLE command that evaluates the focal predictor at
+multiple values of the formula moderator (e.g., \code{'x | m @ quantile'}), the
+conditional slope is reconstructed from the SIMPLE slope draws via a
+per-iteration linear fit across the evaluated points. If the same SIMPLE
+command also holds one or two additional moderators at multiple values
+(e.g., \code{'x | m @ quantile and z @ sd'}), the plot is faceted by those
+additional moderators. When SIMPLE has no relevant rows, \code{jn_plot} falls
+back to building the conditional slope directly from the model's fixed-effect
+interaction parameter (the original behavior).
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
-# Generate Data
+\dontrun{
+# ---- Basic single-moderator example ----
 mydata <- rblimp_sim(
     c(
         'x ~ normal(0, 1)',
@@ -38,30 +49,50 @@ mydata <- rblimp_sim(
     n = 100,
     seed = 981273
 )
-
-# Run Rblimp
 m1 <- rblimp(
     'y ~ x m x*m',
-    mydata,
-    center = ~ m,
-    simple = 'x | m',
-    seed = 10972,
-    burn = 1000,
-    iter = 1000
+    mydata, center = ~ m, simple = 'x | m',
+    seed = 10972, burn = 1000, iter = 1000
 )
-
-# Generate Plot
 jn_plot(y ~ x | m, m1)
 
-# Generate Plot with different colors
+# Custom significance-region fill
 (
     jn_plot(y ~ x | m, m1)
     + ggplot2::scale_fill_manual(
         values = c(`FALSE` = '#ca0020', `TRUE` = '#0571b0')
     )
 )
+
+# ---- Two-moderator fit: first mod = x-axis, second auto-faceted ----
+three_way <- rblimp_sim(
+    c(
+        'x  ~ normal(0, 1)',
+        'm1 ~ normal(0, 1)',
+        'm2 ~ normal(0, 1)',
+        'y  ~ normal(10 + 0.5*x*m1 + 0.3*x*m2 + 0.6*x*m1*m2, 1)'
+    ),
+    n = 500, seed = 2024
+)
+fit <- rblimp(
+    'y ~ x m1 m2 x*m1 x*m2 m1*m2 x*m1*m2',
+    three_way, center = ~ x + m1 + m2,
+    simple = 'x | m1 @ quantile and m2 @ sd',
+    seed = 1071, burn = 1000, iter = 1000
+)
+jn_plot(y ~ x | m1 + m2, fit)
+
+# Pin one moderator via `at()`
+jn_plot(y ~ x | m1 + at(m2 = "0"), fit)
+
+# Restrict to a subset of SIMPLE values
+jn_plot(y ~ x | m1 + at(m2 = c("-1 SD", "+1 SD")), fit)
+
+# Per-facet boundary x-values are also exposed as an attribute
+attr(jn_plot(y ~ x | m1 + m2, fit), "bounds")
+}
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=jn_plot_func]{jn_plot_func()}}
+\code{\link{jn_plot_func}}, \code{\link{jn_map}}, \code{\link{simple_plot}}, \code{\link{at}}, \code{\link{join}}
 }

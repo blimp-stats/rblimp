@@ -271,9 +271,20 @@ compute_condeff <- function(value1, value2) {
 #' To change colors use ggplot2's scale system. Both fill and color are used. See
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
 #'
-#' @seealso [jn_plot_func()]
+#' When the model contains a SIMPLE command that evaluates the focal predictor at
+#' multiple values of the formula moderator (e.g., `'x | m @ quantile'`), the
+#' conditional slope is reconstructed from the SIMPLE slope draws via a
+#' per-iteration linear fit across the evaluated points. If the same SIMPLE
+#' command also holds one or two additional moderators at multiple values
+#' (e.g., `'x | m @ quantile and z @ sd'`), the plot is faceted by those
+#' additional moderators. When SIMPLE has no relevant rows, `jn_plot` falls
+#' back to building the conditional slope directly from the model's fixed-effect
+#' interaction parameter (the original behavior).
+#'
+#' @seealso [`jn_plot_func`], [`jn_map`], [`simple_plot`], [`at`], [`join`]
 #' @examplesIf has_blimp()
-#' # Generate Data
+#' \dontrun{
+#' # ---- Basic single-moderator example ----
 #' mydata <- rblimp_sim(
 #'     c(
 #'         'x ~ normal(0, 1)',
@@ -283,152 +294,495 @@ compute_condeff <- function(value1, value2) {
 #'     n = 100,
 #'     seed = 981273
 #' )
-#'
-#' # Run Rblimp
 #' m1 <- rblimp(
 #'     'y ~ x m x*m',
-#'     mydata,
-#'     center = ~ m,
-#'     simple = 'x | m',
-#'     seed = 10972,
-#'     burn = 1000,
-#'     iter = 1000
+#'     mydata, center = ~ m, simple = 'x | m',
+#'     seed = 10972, burn = 1000, iter = 1000
 #' )
-#'
-#' # Generate Plot
 #' jn_plot(y ~ x | m, m1)
 #'
-#' # Generate Plot with different colors
+#' # Custom significance-region fill
 #' (
 #'     jn_plot(y ~ x | m, m1)
 #'     + ggplot2::scale_fill_manual(
 #'         values = c(`FALSE` = '#ca0020', `TRUE` = '#0571b0')
 #'     )
 #' )
+#'
+#' # ---- Two-moderator fit: first mod = x-axis, second auto-faceted ----
+#' three_way <- rblimp_sim(
+#'     c(
+#'         'x  ~ normal(0, 1)',
+#'         'm1 ~ normal(0, 1)',
+#'         'm2 ~ normal(0, 1)',
+#'         'y  ~ normal(10 + 0.5*x*m1 + 0.3*x*m2 + 0.6*x*m1*m2, 1)'
+#'     ),
+#'     n = 500, seed = 2024
+#' )
+#' fit <- rblimp(
+#'     'y ~ x m1 m2 x*m1 x*m2 m1*m2 x*m1*m2',
+#'     three_way, center = ~ x + m1 + m2,
+#'     simple = 'x | m1 @ quantile and m2 @ sd',
+#'     seed = 1071, burn = 1000, iter = 1000
+#' )
+#' jn_plot(y ~ x | m1 + m2, fit)
+#'
+#' # Pin one moderator via `at()`
+#' jn_plot(y ~ x | m1 + at(m2 = "0"), fit)
+#'
+#' # Restrict to a subset of SIMPLE values
+#' jn_plot(y ~ x | m1 + at(m2 = c("-1 SD", "+1 SD")), fit)
+#'
+#' # Per-facet boundary x-values are also exposed as an attribute
+#' attr(jn_plot(y ~ x | m1 + m2, fit), "bounds")
+#' }
 #' @import ggplot2
 #' @importFrom methods is
 #' @export
 jn_plot <- function(formula, model, ci = 0.95, ...) {
 
-    # Extract Characters
-    f <- formula |> as.character() |>
-        gsub('`', '', x = _) |> gsub(' \\+ ', ' ', x = _)
-
     # Check inputs
-    if (length(f) != 3) throw_error(c(
-        "The {.arg formula} was not correctly specified.",
-        "Must have the form: `outcome ~ focal | moderator`"
-    ))
-
+    if (ci >= 1.0 | ci <= 0.0) throw_error(
+        "The {.arg ci} must be between 0 and 1"
+    )
     if (!is(model, 'blimp_obj')) throw_error(
         "{.arg model} is not a `blimp_obj`"
     )
 
-    # Obtain variable names
-    tmp <- strsplit(f[3], ' \\| ')[[1]]
-    if (length(tmp) != 2) throw_error(c(
-        "The {.arg formula} was not correctly specified.",
+    # Parse formula via language tree (handles bare mods, `at(...)`, `join(...)`)
+    pf <- parse_plot_formula(formula)
+    out                <- pf$outcome
+    pre                <- pf$focal
+    formula_mods       <- pf$bare_mods
+    mod_components     <- pf$mod_components
+    at_filter          <- pf$at_filter
+
+    if (length(formula_mods) < 1) throw_error(c(
+        "The {.arg formula} must specify at least one bare moderator after `|`.",
         "Must have the form: `outcome ~ focal | moderator`"
     ))
-    out <- f[2]
-    pre <- tmp[1]
-    mod <- tmp[2]
+    mod <- formula_mods[1]
+    extra_formula_mods <- formula_mods[-1]
 
-    # Check if it is centered
-    pre_is_cent <- if (is.null(model@syntax$center)) FALSE else{
-        (tolower(pre) |> sub("\\s*\\[[^]]*\\]$", "", x = _)) %in% (
-            model@syntax$center |> strsplit(' ') |> unlist() |> tolower() |>
-                gsub(';', '', x = _)
-        )
+    # Centering check
+    centered_vars <- if (is.null(model@syntax$center)) character(0) else {
+        model@syntax$center |> strsplit(' ') |> unlist() |> tolower() |>
+            gsub(';', '', x = _)
     }
-    mod_is_cent <- if (is.null(model@syntax$center)) FALSE else{
-        (tolower(mod) |> sub("\\s*\\[[^]]*\\]$", "", x = _)) %in% (
-            model@syntax$center |> strsplit(' ') |> unlist() |> tolower() |>
-                gsub(';', '', x = _)
-        )
+    var_is_cent <- function(name) {
+        (tolower(name) |> sub("\\s*\\[[^]]*\\]$", "", x = _)) %in% centered_vars
     }
+    pre_is_cent <- var_is_cent(pre)
+    mod_is_cent <- var_is_cent(mod)
 
-    ## Obtain m_range
+    # Moderator range from average_imp; fall back to a default range when
+    # the imputed CSV has no usable column names (e.g. SIMULATE + nominal).
     ind <- (model@average_imp |> names() |> tolower()) == tolower(mod)
-
-    # Check if it is found. If not check latent variables.
     if (sum(ind) != 1) {
         ind <- (model@average_imp |> names() |> tolower()) == tolower(paste0(mod, ".latent"))
     }
-    # If that isn't found crash out
-    if (sum(ind) != 1)  throw_error(
-        "Cannot find moderator in imputed data"
-    )
-    m <- if (mod_is_cent) mean(model@average_imp[,ind]) else 0.0
-    m_range <- (model@average_imp[,ind] - m) |> pretty() |> range()
-
-    ## Find indicators for two slopes
-    # get parameter names and outcome model names
-    pnames <- model@estimates |> row.names() |> tolower()
-    bx_sel <- which(pnames == tolower(paste0(out, " ~ ", pre)))
-    bxm_s1 <- which(pnames == tolower(paste0(out, " ~ ", pre, "*", mod)))
-    bxm_s2 <- which(pnames == tolower(paste0(out, " ~ ", mod, "*", pre)))
-
-    ## Error handling
-    if (length(bx_sel) == 0) {
-        pname <- paste0(out, " ~ ", pre)
-        throw_error(c(
-            x = "Cannot find required parameter `{pname}`",
-            i = "Ensure that it is one of the row names in `summary(model)`"
+    if (sum(ind) != 1) {
+        cli::cli_alert_warning(c(
+            "Cannot locate moderator {.field {mod}} in imputed data; ",
+            "falling back to a default range of (-3, 3)."
         ))
-    }
-    if (length(bxm_s1) == 0 && length(bxm_s2) == 0) {
-        pname <- paste0(out, " ~ ", pre, "*", mod)
-        throw_error(c(
-            x = "Cannot find required parameter `{pname}`",
-            i = "Ensure that it is one of the row names in `summary(model)`"
-        ))
-    }
-    if ((length(bxm_s1) == 1 && length(bxm_s2) == 1) ||
-        length(bxm_s1) > 1 ||  length(bxm_s2) > 1) {
-        throw_error(c(
-            i = "Multiple interactions were found.",
-            x = "Cannot parse model"
-        ))
+        mod_data <- NULL
+        mu <- 0
+        m_range <- c(-3, 3)
+    } else {
+        mod_data <- model@average_imp[, ind]
+        mu <- if (mod_is_cent) mean(mod_data) else 0.0
+        m_range <- (mod_data - mu) |> pretty() |> range()
     }
 
-    ## Obtain iterations
-    iter <- model |> as.matrix()
-
-    # Create plot
-    plt <- jn_plot_func(
-        compute_condeff(
-            iter[, bx_sel],
-            iter[, c(bxm_s1, bxm_s2)]
-        ),
-        xrange = m_range,
-        ci = ci
-    )
-
-    # Get boundaries and create subtitle
-    bounds <- attr(plt, 'boundaries')
-    subt <- if (length(bounds) == 1L) {
-        paste0("\nBound: ",  paste(sprintf("%.3g", bounds), collapse = ", "))
-    } else if (length(bounds) > 1L) {
-        paste0("\nBounds: ",  paste(sprintf("%.3g", bounds), collapse = ", "))
+    # Try SIMPLE-based path: requires SIMPLE rows matching outcome/focal/mod
+    simple_groups <- if (NROW(model@simple) > 0) {
+        parse_simple_groups(model, out, pre, mod, at_filter = at_filter)
     } else NULL
 
-    # Return plot
-    return(
-        structure(
-            # Compute plot based on function
-            plt
-            # Set labels
-            + labs(
-                title = "Johnson-Neyman Plot of Conditional Slope",
-                subtitle = paste0(
-                    "Red area represents 0 within 95% interval",
-                    subt
-                ),
-                y = paste(out, "~", if (pre_is_cent) paste("Centered", pre) else pre),
-                x = if (mod_is_cent) paste("Centered", mod) else mod
-            ),
-            bounds = bounds
+    if (!is.null(simple_groups) && length(extra_formula_mods) > 0) {
+        # Sanity check: any underlying SIMPLE moderator referenced by the
+        # formula's extra terms (including `join(...)` components) must exist
+        # in the SIMPLE output.
+        sim_mods   <- attr(simple_groups, "all_mods")
+        components <- unique(unlist(mod_components[extra_formula_mods]))
+        missing    <- components[!(tolower(components) %in% tolower(sim_mods))]
+        if (length(missing) > 0) throw_error(c(
+            "Moderators listed in the formula are not in the SIMPLE output: {missing}",
+            i = "Available moderators in SIMPLE: {sim_mods}"
+        ))
+    }
+
+    if (!is.null(simple_groups)) {
+        # SIMPLE-based: build a compute_condeff per group via per-draw OLS
+        ce_list <- lapply(simple_groups, function(g) {
+            x_points <- vapply(
+                g$varying_vals, mod_label_to_numeric, double(1),
+                mod_data = mod_data, iterations = model@iterations, mu = mu
+            )
+            if (any(is.na(x_points))) throw_error(c(
+                "Could not interpret SIMPLE moderator values for {.field {mod}}: {g$varying_vals}",
+                i = "Expected quantile (Q25), SD (`+1 SD`), numeric, or a parameter name."
+            ))
+            if (length(unique(x_points)) < 2) throw_error(c(
+                "Need at least 2 distinct {.field {mod}} values in SIMPLE to build a JN plot.",
+                i = "Use {.code @ quantile}, {.code @ sd}, or supply multiple values."
+            ))
+            slope_mat <- as.matrix(g$slope_draws)
+            X    <- cbind(1, x_points)
+            proj <- X %*% solve(crossprod(X))           # K x 2
+            beta <- slope_mat %*% proj                  # T x 2
+            compute_condeff(beta[, 1], beta[, 2])
+        })
+        names(ce_list) <- vapply(simple_groups, `[[`, character(1), "label")
+    } else {
+        # Legacy fallback: build a single compute_condeff from model@estimates
+        pnames <- model@estimates |> row.names() |> tolower()
+        bx_sel <- which(pnames == tolower(paste0(out, " ~ ", pre)))
+        bxm_s1 <- which(pnames == tolower(paste0(out, " ~ ", pre, "*", mod)))
+        bxm_s2 <- which(pnames == tolower(paste0(out, " ~ ", mod, "*", pre)))
+
+        if (length(bx_sel) == 0) {
+            pname <- paste0(out, " ~ ", pre)
+            throw_error(c(
+                x = "Cannot find required parameter `{pname}`",
+                i = "Ensure that it is one of the row names in `summary(model)`"
+            ))
+        }
+        if (length(bxm_s1) == 0 && length(bxm_s2) == 0) {
+            pname <- paste0(out, " ~ ", pre, "*", mod)
+            throw_error(c(
+                x = "Cannot find required parameter `{pname}`",
+                i = "Ensure that it is one of the row names in `summary(model)`"
+            ))
+        }
+        if ((length(bxm_s1) == 1 && length(bxm_s2) == 1) ||
+            length(bxm_s1) > 1 ||  length(bxm_s2) > 1) {
+            throw_error(c(
+                i = "Multiple interactions were found.",
+                x = "Cannot parse model"
+            ))
+        }
+        iter <- model |> as.matrix()
+        ce_list <- list(compute_condeff(iter[, bx_sel], iter[, c(bxm_s1, bxm_s2)]))
+        names(ce_list) <- ""
+    }
+
+    # Probability quantiles
+    ci_p  <- (1 - ci) / 2
+    probs <- c(ci_p, 0.5, 1 - ci_p)
+
+    # Logical facet moderators (one column per logical mod). When the user
+    # listed mods after the varying one in the formula -- including any
+    # `join(...)` compounds -- those drive the facet layout. Otherwise we
+    # fall back to whatever SIMPLE moderators were auto-detected.
+    auto_facet_mods <- if (!is.null(simple_groups)) attr(simple_groups, "facet_mods")
+                       else character(0)
+    if (length(extra_formula_mods) > 0) {
+        facet_mods <- extra_formula_mods
+    } else {
+        facet_mods <- auto_facet_mods
+        for (af in auto_facet_mods) {
+            if (is.null(mod_components[[af]])) mod_components[[af]] <- af
+        }
+    }
+
+    # Build JN data per panel. Each panel gets the formatted "name @ value"
+    # for every logical facet moderator -- compound (`join()`) moderators
+    # combine their components into one column ("m2 @ X, m3 @ Y").
+    m_grid <- seq(m_range[1], m_range[2], length.out = 1000)
+    jn_data <- do.call(rbind, lapply(seq_along(ce_list), function(i) {
+        ce <- ce_list[[i]]
+        q  <- ce(m_grid, quantile, probs = probs)   # 3 x N
+        df <- data.frame(
+            facet  = names(ce_list)[i],
+            m      = m_grid,
+            lower  = q[1, ],
+            median = q[2, ],
+            upper  = q[3, ],
+            sig    = (q[1, ] * q[3, ]) > 0
+        )
+        if (!is.null(simple_groups)) {
+            mv <- simple_groups[[i]]$mod_vals
+            for (lfm in facet_mods) {
+                comps <- mod_components[[lfm]]
+                vals  <- vapply(comps, function(c) paste(c, '@', mv[[c]]),
+                                character(1))
+                df[[lfm]] <- paste(vals, collapse = ", ")
+            }
+        }
+        df
+    }))
+
+    # Run-length grouping per facet for ribbon fill consistency. `set_group()`
+    # (defined at the top of this file) does the rle-based numbering; we run
+    # it within each facet and then prefix with the facet label so the group
+    # ids are unique across facets.
+    jn_data$grp <- unlist(lapply(split(as.integer(jn_data$sig), jn_data$facet),
+                                 set_group))
+    jn_data$grp <- paste(jn_data$facet, jn_data$grp, sep = "/")
+
+    # Boundaries per facet (where sig flips). We carry every facet moderator
+    # column along so `geom_segment` can match segments to panels under
+    # `facet_grid` -- otherwise ggplot can't tell which segment goes where
+    # and renders them in every panel.
+    bounds_df <- do.call(rbind, lapply(unique(jn_data$facet), function(fct) {
+        d <- jn_data[jn_data$facet == fct, ]
+        trans <- which(diff(d$sig) != 0)
+        if (length(trans) == 0) return(NULL)
+        row <- data.frame(
+            facet = fct,
+            x = (d$m[trans] + d$m[trans + 1]) / 2,
+            ymin = (d$lower[trans] + d$lower[trans + 1]) / 2,
+            ymax = (d$upper[trans] + d$upper[trans + 1]) / 2
+        )
+        for (fm in facet_mods) row[[fm]] <- d[[fm]][1]
+        row
+    }))
+
+    bound_text_for_facet <- function(fct) {
+        b <- if (!is.null(bounds_df)) bounds_df$x[bounds_df$facet == fct] else numeric(0)
+        if (length(b) == 0) return("")
+        head_word <- if (length(b) == 1) "Bound: " else "Bounds: "
+        paste0("\n", head_word, paste(sprintf("%.3g", b), collapse = ", "))
+    }
+
+    # When there is exactly one facet moderator, the bound is unambiguous per
+    # panel -- bake it straight into that mod column so any user override of
+    # the facet keeps the bound text in the strip. Mirror the same baking
+    # into `bounds_df` so `geom_segment` still matches the right panel.
+    if (length(facet_mods) == 1) {
+        fm <- facet_mods[1]
+        bnd_text_per_row <- vapply(jn_data$facet, bound_text_for_facet,
+                                   character(1))
+        jn_data[[fm]] <- paste0(jn_data[[fm]], bnd_text_per_row)
+        if (!is.null(bounds_df) && nrow(bounds_df) > 0) {
+            bounds_df[[fm]] <- paste0(bounds_df[[fm]],
+                vapply(bounds_df$facet, bound_text_for_facet, character(1)))
+        }
+    }
+
+    # If you want bounds annotated inside each strip when more than one
+    # moderator drives the facet, wrap them with `join(...)` in the formula
+    # -- e.g. `y ~ x | m1 + join(m2, m3)`. That collapses the two extras
+    # into a single logical facet whose values are unique per panel, which
+    # lets the bound text be baked into the strip just like the 1-facet
+    # case.
+
+    # Order facet panels by the underlying numeric value of each moderator
+    # (so "-1 SD", "0", "+1 SD" appear in that order instead of whatever
+    # order Blimp emitted them in).
+    for (lfm in facet_mods) {
+        if (is.null(jn_data[[lfm]])) next
+        lvls <- unique(jn_data[[lfm]])
+        ord  <- order_by_mod_value(lvls)
+        jn_data[[lfm]] <- factor(jn_data[[lfm]], levels = lvls[ord])
+        if (!is.null(bounds_df) && !is.null(bounds_df[[lfm]])) {
+            bounds_df[[lfm]] <- factor(bounds_df[[lfm]],
+                                       levels = lvls[ord])
+        }
+    }
+
+    # Suppress NSE NOTEs from the column names referenced inside `aes()` below.
+    m <- lower <- upper <- median <- sig <- grp <- x <- ymin <- ymax <- facet <- NULL
+
+    p <- (
+        ggplot(jn_data, aes(x = m))
+        + geom_hline(yintercept = 0)
+        + geom_ribbon(aes(ymin = lower, ymax = upper, fill = sig, group = grp), alpha = 0.25)
+        + geom_line(aes(y = median))
+        + geom_line(aes(y = lower), linetype = 'dashed', color = 'black')
+        + geom_line(aes(y = upper), linetype = 'dashed', color = 'black')
+    )
+    if (!is.null(bounds_df) && nrow(bounds_df) > 0) {
+        p <- p + geom_segment(
+            data = bounds_df,
+            aes(x = x, xend = x, y = ymin, yend = ymax),
+            color = 'black', alpha = 0.5,
+            inherit.aes = FALSE
+        )
+    }
+    # Always default to facet_grid. Layout:
+    #   1 mod  -> .       ~ mod      (row of panels)
+    #   2 mods -> mod1    ~ mod2     (2D grid)
+    #   3+     -> mod1    ~ mod2 + ... (rest grouped on columns)
+    if (length(facet_mods) > 0) {
+        terms <- paste0("`", facet_mods, "`")
+        lhs <- if (length(facet_mods) == 1) "." else terms[1]
+        rhs <- if (length(facet_mods) == 1) terms
+               else paste(terms[-1], collapse = " + ")
+        facet_formula <- stats::as.formula(paste(lhs, "~", rhs))
+        p <- p + facet_grid(facet_formula)
+    }
+
+    # Subtitle: held-constant moderators, plus the boundary values when the
+    # plot has no facet strips (the strips already carry bound text for
+    # multi-panel plots, since each moderator column is pre-baked).
+    base_subtitle <- paste0("Red area represents 0 within ", round(ci * 100), "% interval")
+    held_line <- if (length(ce_list) <= 1) {
+        lbl <- names(ce_list)[1]
+        if (!is.null(lbl) && nzchar(lbl)) paste0("\nHeld constant: ", lbl) else ""
+    } else ""
+
+    # Bounds in subtitle only when there are no facet strips at all.
+    # With 2+ facet moderators the flat list is unhelpful (the user can't
+    # tell which panel each bound belongs to); they should either use the
+    # exposed `panel` column via `+ facet_wrap(~ panel)` to put the bound
+    # in each strip, or read `attr(p, "bounds")` directly.
+    bnd_line <- if (length(facet_mods) == 0 &&
+                    !is.null(bounds_df) && nrow(bounds_df) > 0) {
+        head_word <- if (nrow(bounds_df) == 1) "Bound: " else "Bounds: "
+        paste0("\n", head_word, paste(sprintf("%.3g", bounds_df$x), collapse = ", "))
+    } else ""
+
+    subtitle <- paste0(base_subtitle, held_line, bnd_line)
+
+    p <- (
+        p
+        + xlim(m_range)
+        + guides(fill = "none")
+        + labs(
+            title = "Johnson-Neyman Plot of Conditional Slope",
+            subtitle = subtitle,
+            y = paste(out, "~", if (pre_is_cent) paste("Centered", pre) else pre),
+            x = if (mod_is_cent) paste("Centered", mod) else mod
         )
     )
+
+    bounds_value <- if (!is.null(bounds_df) && nrow(bounds_df) > 0) bounds_df
+                    else data.frame()
+    structure(p, bounds = bounds_value)
+}
+
+#' Internal: parse SIMPLE output and group rows by held-constant moderator values.
+#' If `at_filter` is supplied (a named list of moderator -> allowed value(s)), the
+#' matched SIMPLE rows are restricted to those satisfying every filter entry.
+#' @noRd
+parse_simple_groups <- function(model, out, pre, mod, at_filter = list()) {
+    simple <- model@simple
+    simple_names <- names(simple)
+    if (!all(grepl('(SLOPE|INTER): ', simple_names))) return(NULL)
+    names(simple) <- gsub('(SLOPE|INTER): ', '', simple_names)
+    slope <- simple[, startsWith(simple_names, 'SLOPE:'), drop = FALSE]
+    n <- names(slope)
+
+    mod_pair_re <- "([^\\s,@]+)\\s+@\\s+([^\\s,]+(?:\\s+SD)?)"
+    parsed <- lapply(n, function(col_name) {
+        outcome     <- regmatches(col_name, regexpr('^.+?(?= ~ )', col_name, perl = TRUE))
+        pred        <- regmatches(col_name, regexpr('(?<= ~ ).+?(?= \\|)', col_name, perl = TRUE))
+        mod_section <- regmatches(col_name, regexpr('(?<=\\| ).+', col_name, perl = TRUE))
+        m <- regmatches(mod_section, gregexpr(mod_pair_re, mod_section, perl = TRUE))[[1]]
+        pieces <- regmatches(m, regexec(mod_pair_re, m, perl = TRUE))
+        list(
+            outcome   = outcome,
+            predictor = pred,
+            mods      = vapply(pieces, `[[`, character(1), 2),
+            vals      = vapply(pieces, `[[`, character(1), 3)
+        )
+    })
+
+    keep <- vapply(parsed, function(p) {
+        length(p$outcome) == 1 && length(p$predictor) == 1 &&
+            is_equal(p$outcome, out) && is_equal(p$predictor, pre) &&
+            (tolower(mod) %in% tolower(p$mods))
+    }, logical(1))
+
+    # Apply at() filter: each named moderator must take an allowed value.
+    if (length(at_filter) > 0) {
+        all_simple_mods <- unique(unlist(lapply(parsed, `[[`, "mods")))
+        bad <- setdiff(tolower(names(at_filter)), tolower(all_simple_mods))
+        if (length(bad) > 0) throw_error(c(
+            "Moderators inside {.fn at} are not in the SIMPLE output: {bad}",
+            i = "Available SIMPLE moderators: {all_simple_mods}"
+        ))
+        keep <- keep & vapply(parsed, function(p) {
+            for (nm in names(at_filter)) {
+                idx <- which(tolower(p$mods) == tolower(nm))[1]
+                if (is.na(idx)) return(FALSE)
+                if (!(p$vals[idx] %in% at_filter[[nm]])) return(FALSE)
+            }
+            TRUE
+        }, logical(1))
+    }
+
+    if (!any(keep)) return(NULL)
+
+    sel_cols   <- which(keep)
+    sel_parsed <- parsed[sel_cols]
+
+    # Identify extra (held-constant) moderators
+    first_mods <- sel_parsed[[1]]$mods
+    extra_mods <- first_mods[!(tolower(first_mods) %in% tolower(mod))]
+
+    # Build a key per row based on extra moderator values; group rows by key
+    keys <- vapply(sel_parsed, function(p) {
+        if (length(extra_mods) == 0) return("")
+        vals <- vapply(extra_mods, function(em) {
+            idx <- which(tolower(p$mods) == tolower(em))[1]
+            p$vals[idx]
+        }, character(1))
+        paste(paste(extra_mods, '@', vals), collapse = ", ")
+    }, character(1))
+
+    grouped <- split(seq_along(sel_cols), keys)
+    out_list <- lapply(seq_along(grouped), function(gi) {
+        idx  <- grouped[[gi]]
+        cols <- sel_cols[idx]
+        ps   <- sel_parsed[idx]
+        varying_vals <- vapply(ps, function(p) {
+            i <- which(tolower(p$mods) == tolower(mod))[1]
+            p$vals[i]
+        }, character(1))
+        # Per-extra-moderator value for this panel (constant within the group)
+        mod_vals <- if (length(extra_mods) == 0) {
+            setNames(character(0), character(0))
+        } else {
+            p <- ps[[1]]
+            setNames(vapply(extra_mods, function(em) {
+                i <- which(tolower(p$mods) == tolower(em))[1]
+                p$vals[i]
+            }, character(1)), extra_mods)
+        }
+        list(
+            label        = names(grouped)[gi],
+            varying_vals = varying_vals,
+            mod_vals     = mod_vals,
+            slope_draws  = slope[, cols, drop = FALSE]
+        )
+    })
+    attr(out_list, "all_mods")   <- unique(unlist(lapply(sel_parsed, `[[`, "mods")))
+    attr(out_list, "facet_mods") <- extra_mods
+    out_list
+}
+
+#' Internal: convert a SIMPLE moderator label to a numeric value on the plot axis.
+#' Handles quantile labels (`Q25`), SD labels (`+1 SD`), plain numbers, and parameter names.
+#' @noRd
+mod_label_to_numeric <- function(label, mod_data, iterations, mu = 0) {
+    if (grepl("^Q[0-9.]+$", label)) {
+        q <- as.numeric(sub("^Q", "", label)) / 100
+        return(unname(quantile(mod_data, q, na.rm = TRUE)) - mu)
+    }
+    if (grepl("\\s*SD\\s*$", label)) {
+        n_sd <- suppressWarnings(as.numeric(sub("\\s*SD\\s*$", "", label)))
+        if (!is.na(n_sd)) {
+            # Blimp evaluates `+/-k SD` at `mean(data) + k * sd(data)` in the
+            # raw metric. For centered moderators `mu == mean(data)`, so the
+            # offset cancels and we get `k * sd(data)` (the previous behavior).
+            # For uncentered moderators `mu == 0`, this returns the raw
+            # `mean(data) + k * sd(data)` that Blimp actually used.
+            return(n_sd * sd(mod_data, na.rm = TRUE) +
+                   (mean(mod_data, na.rm = TRUE) - mu))
+        }
+    }
+    nval <- suppressWarnings(as.numeric(label))
+    if (!is.na(nval)) return(nval - mu)
+    if (NROW(iterations) > 0) {
+        cn <- colnames(iterations)
+        if (!is.null(cn)) {
+            ind <- tolower(cn) == tolower(label)
+            if (sum(ind) == 1) return(mean(iterations[, ind]) - mu)
+        }
+    }
+    NA_real_
 }
