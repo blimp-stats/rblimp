@@ -498,12 +498,12 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
         }
     }
 
-    # Drop auto-detected facet mods whose value is constant across every
-    # SIMPLE panel -- a 1-tile strip just repeats info already in the
-    # subtitle's "Held constant" line.
+    # Drop facet mods whose value is constant across every SIMPLE panel --
+    # a 1-tile strip just repeats info already in the subtitle's "Held
+    # constant" line. Applies whether the mod came from the formula or
+    # from auto-detection.
     held_constant_text <- character(0)
-    if (length(facet_mods) > 0 && length(extra_formula_mods) == 0 &&
-        !is.null(simple_groups)) {
+    if (length(facet_mods) > 0 && !is.null(simple_groups)) {
         n_panels <- length(simple_groups)
         per_mod_labels <- lapply(facet_mods, function(lfm) {
             comps <- mod_components[[lfm]]
