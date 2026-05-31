@@ -363,8 +363,14 @@ rblimp <- function(model,
     lab$V2[r2sel] <- paste("R2:", lab$V3[r2sel])
     lab$V3[r2sel] <- ""
     lab$V3 <- gsub("\\|", "dummy code", lab$V3)
+    # Threshold cleanup: unmoderated "Tau N" -> "N";
+    # moderated "REF <m>.1: Tau N" / "DIF <m>.g: Tau N" kept verbatim.
+    thresh_sel <- lab$V2 == "Threshold"
+    mod_thresh <- thresh_sel & (startsWith(lab$V3, "REF ") | startsWith(lab$V3, "DIF "))
+    unmod_thresh <- thresh_sel & !mod_thresh
+    lab$V3[unmod_thresh] <- sub("^Tau\\s+", "", lab$V3[unmod_thresh])
     delete <- c(
-        "Grand Mean", "Variance", "Residual Var.", "Tau", "L2 Intercept (i)",
+        "Grand Mean", "Variance", "Residual Var.", "L2 Intercept (i)",
         "L3 Intercept (i)", "L2 (i),", "L3 (i),", "L2: ", "L3: ", "L2", "L3",
         ", Intercept", "Intercept", "Residual SD"
     )
@@ -475,8 +481,14 @@ rblimp <- function(model,
     lab2$V2[r2sel] <- paste("R2:", lab2$V3[r2sel])
     lab2$V3[r2sel] <- ""
     lab2$V3 <- gsub("\\|", "dummy code", lab2$V3)
+    # Threshold cleanup: unmoderated "Tau N" -> "N";
+    # moderated "REF <m>.1: Tau N" / "DIF <m>.g: Tau N" kept verbatim.
+    thresh_sel2 <- lab2$V2 == "Threshold"
+    mod_thresh2 <- thresh_sel2 & (startsWith(lab2$V3, "REF ") | startsWith(lab2$V3, "DIF "))
+    unmod_thresh2 <- thresh_sel2 & !mod_thresh2
+    lab2$V3[unmod_thresh2] <- sub("^Tau\\s+", "", lab2$V3[unmod_thresh2])
     delete <- c(
-        "Grand Mean", "Variance", "Residual Var.", "Tau", "L2 Intercept (i)",
+        "Grand Mean", "Variance", "Residual Var.", "L2 Intercept (i)",
         "L3 Intercept (i)", "L2 (i),", "L3 (i),", "L2: ", "L3: ",
         "L2", "L3",", Intercept", "Intercept", "Residual SD"
     )

@@ -130,22 +130,8 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     icept <- simple[, startsWith(simple_names, 'INTER:'), drop = FALSE]
 
     # Parse each slope column name into structured pieces.
-    # Blimp may separate moderators with either ", " (when the effect string
-    # gets long) or a single space, and a value may be "Qxx", a number, a
-    # parameter label, or a number with a trailing " SD".
-    mod_pair_re <- "([^\\s,@]+)\\s+@\\s+([^\\s,]+(?:\\s+SD)?)"
     n <- names(slope)
-    parsed <- lapply(n, function(col_name) {
-        outcome <- regmatches(col_name, regexpr('^.+?(?= ~ )', col_name, perl = TRUE))
-        pred    <- regmatches(col_name, regexpr('(?<= ~ ).+?(?= \\|)', col_name, perl = TRUE))
-        mod_section <- regmatches(col_name, regexpr('(?<=\\| ).+', col_name, perl = TRUE))
-        # Find every `<name> @ <value>` token in the moderator section
-        m <- regmatches(mod_section, gregexpr(mod_pair_re, mod_section, perl = TRUE))[[1]]
-        pieces <- regmatches(m, regexec(mod_pair_re, m, perl = TRUE))
-        mods <- vapply(pieces, `[[`, character(1), 2)
-        vals <- vapply(pieces, `[[`, character(1), 3)
-        list(outcome = outcome, predictor = pred, mods = mods, vals = vals)
-    })
+    parsed <- parse_simple_colnames(n)
 
     # Auto-expand any bare moderator that isn't directly in SIMPLE but is
     # declared as `nominal=` on the model -- treat its dummy codes as one

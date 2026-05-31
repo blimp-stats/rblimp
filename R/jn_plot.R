@@ -420,15 +420,26 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
                 g$varying_vals, mod_label_to_numeric, double(1),
                 mod_data = mod_data, iterations = model@iterations, mu = mu
             )
-            if (any(is.na(x_points))) throw_error(c(
-                "Could not interpret SIMPLE moderator values for {.field {mod}}: {g$varying_vals}",
+            keep <- !is.na(x_points)
+            bad  <- g$varying_vals[!keep]
+            # Distinguish expression-valued points (already warned in
+            # mod_label_to_numeric) from genuinely uninterpretable labels.
+            unknown <- bad[!grepl("^\\(.*\\)(?:\\s+sd)?$", trimws(bad), perl = TRUE)]
+            if (length(unknown) > 0) throw_error(c(
+                "Could not interpret SIMPLE moderator values for {.field {mod}}: {unknown}",
                 i = "Expected quantile (Q25), SD (`+1 SD`), numeric, or a parameter name."
+            ))
+            x_points <- x_points[keep]
+            slope_mat <- as.matrix(g$slope_draws)[, keep, drop = FALSE]
+            if (length(x_points) == 0) throw_error(c(
+                "All SIMPLE points for {.field {mod}} were expression-valued ({.code (expr)} / {.code (expr) sd}).",
+                i = "Numeric placement on the JN axis is not yet supported for these.",
+                i = "Re-run SIMPLE with quantile, SD, or numeric anchors to enable {.fn jn_plot}."
             ))
             if (length(unique(x_points)) < 2) throw_error(c(
                 "Need at least 2 distinct {.field {mod}} values in SIMPLE to build a JN plot.",
                 i = "Use {.code @ quantile}, {.code @ sd}, or supply multiple values."
             ))
-            slope_mat <- as.matrix(g$slope_draws)
             X    <- cbind(1, x_points)
             proj <- X %*% solve(crossprod(X))           # K x 2
             beta <- slope_mat %*% proj                  # T x 2
@@ -485,6 +496,29 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
         for (af in auto_facet_mods) {
             if (is.null(mod_components[[af]])) mod_components[[af]] <- af
         }
+    }
+
+    # Drop auto-detected facet mods whose value is constant across every
+    # SIMPLE panel -- a 1-tile strip just repeats info already in the
+    # subtitle's "Held constant" line.
+    held_constant_text <- character(0)
+    if (length(facet_mods) > 0 && length(extra_formula_mods) == 0 &&
+        !is.null(simple_groups)) {
+        n_panels <- length(simple_groups)
+        per_mod_labels <- lapply(facet_mods, function(lfm) {
+            comps <- mod_components[[lfm]]
+            vapply(seq_len(n_panels), function(i) {
+                mv <- simple_groups[[i]]$mod_vals
+                paste(vapply(comps, function(c) paste(c, '@', mv[[c]]),
+                             character(1)), collapse = ", ")
+            }, character(1))
+        })
+        varies <- vapply(per_mod_labels, function(v) length(unique(v)) > 1,
+                         logical(1))
+        held_constant_text <- vapply(which(!varies),
+                                     function(i) per_mod_labels[[i]][1],
+                                     character(1))
+        facet_mods <- facet_mods[varies]
     }
 
     # Build JN data per panel. Each panel gets the formatted "name @ value"
@@ -622,6 +656,8 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
     held_line <- if (length(ce_list) <= 1) {
         lbl <- names(ce_list)[1]
         if (!is.null(lbl) && nzchar(lbl)) paste0("\nHeld constant: ", lbl) else ""
+    } else if (length(held_constant_text) > 0) {
+        paste0("\nHeld constant: ", paste(held_constant_text, collapse = ", "))
     } else ""
 
     # Bounds in subtitle only when there are no facet strips at all.
@@ -666,20 +702,7 @@ parse_simple_groups <- function(model, out, pre, mod, at_filter = list()) {
     slope <- simple[, startsWith(simple_names, 'SLOPE:'), drop = FALSE]
     n <- names(slope)
 
-    mod_pair_re <- "([^\\s,@]+)\\s+@\\s+([^\\s,]+(?:\\s+SD)?)"
-    parsed <- lapply(n, function(col_name) {
-        outcome     <- regmatches(col_name, regexpr('^.+?(?= ~ )', col_name, perl = TRUE))
-        pred        <- regmatches(col_name, regexpr('(?<= ~ ).+?(?= \\|)', col_name, perl = TRUE))
-        mod_section <- regmatches(col_name, regexpr('(?<=\\| ).+', col_name, perl = TRUE))
-        m <- regmatches(mod_section, gregexpr(mod_pair_re, mod_section, perl = TRUE))[[1]]
-        pieces <- regmatches(m, regexec(mod_pair_re, m, perl = TRUE))
-        list(
-            outcome   = outcome,
-            predictor = pred,
-            mods      = vapply(pieces, `[[`, character(1), 2),
-            vals      = vapply(pieces, `[[`, character(1), 3)
-        )
-    })
+    parsed <- parse_simple_colnames(n)
 
     keep <- vapply(parsed, function(p) {
         length(p$outcome) == 1 && length(p$predictor) == 1 &&
@@ -755,34 +778,3 @@ parse_simple_groups <- function(model, out, pre, mod, at_filter = list()) {
     out_list
 }
 
-#' Internal: convert a SIMPLE moderator label to a numeric value on the plot axis.
-#' Handles quantile labels (`Q25`), SD labels (`+1 SD`), plain numbers, and parameter names.
-#' @noRd
-mod_label_to_numeric <- function(label, mod_data, iterations, mu = 0) {
-    if (grepl("^Q[0-9.]+$", label)) {
-        q <- as.numeric(sub("^Q", "", label)) / 100
-        return(unname(quantile(mod_data, q, na.rm = TRUE)) - mu)
-    }
-    if (grepl("\\s*SD\\s*$", label)) {
-        n_sd <- suppressWarnings(as.numeric(sub("\\s*SD\\s*$", "", label)))
-        if (!is.na(n_sd)) {
-            # Blimp evaluates `+/-k SD` at `mean(data) + k * sd(data)` in the
-            # raw metric. For centered moderators `mu == mean(data)`, so the
-            # offset cancels and we get `k * sd(data)` (the previous behavior).
-            # For uncentered moderators `mu == 0`, this returns the raw
-            # `mean(data) + k * sd(data)` that Blimp actually used.
-            return(n_sd * sd(mod_data, na.rm = TRUE) +
-                   (mean(mod_data, na.rm = TRUE) - mu))
-        }
-    }
-    nval <- suppressWarnings(as.numeric(label))
-    if (!is.na(nval)) return(nval - mu)
-    if (NROW(iterations) > 0) {
-        cn <- colnames(iterations)
-        if (!is.null(cn)) {
-            ind <- tolower(cn) == tolower(label)
-            if (sum(ind) == 1) return(mean(iterations[, ind]) - mu)
-        }
-    }
-    NA_real_
-}

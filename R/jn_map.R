@@ -107,20 +107,7 @@ jn_map <- function(formula, model, ci = 0.95, n_grid = 100, ...) {
     names(simple) <- gsub('(SLOPE|INTER): ', '', simple_names)
     slope <- simple[, startsWith(simple_names, 'SLOPE:'), drop = FALSE]
 
-    mod_pair_re <- "([^\\s,@]+)\\s+@\\s+([^\\s,]+(?:\\s+SD)?)"
-    parsed <- lapply(names(slope), function(col_name) {
-        outcome     <- regmatches(col_name, regexpr('^.+?(?= ~ )', col_name, perl = TRUE))
-        pred        <- regmatches(col_name, regexpr('(?<= ~ ).+?(?= \\|)', col_name, perl = TRUE))
-        mod_section <- regmatches(col_name, regexpr('(?<=\\| ).+', col_name, perl = TRUE))
-        m <- regmatches(mod_section, gregexpr(mod_pair_re, mod_section, perl = TRUE))[[1]]
-        pieces <- regmatches(m, regexec(mod_pair_re, m, perl = TRUE))
-        list(
-            outcome   = outcome,
-            predictor = pred,
-            mods      = vapply(pieces, `[[`, character(1), 2),
-            vals      = vapply(pieces, `[[`, character(1), 3)
-        )
-    })
+    parsed <- parse_simple_colnames(names(slope))
 
     keep <- vapply(parsed, function(p) {
         length(p$outcome) == 1 && length(p$predictor) == 1 &&
@@ -197,33 +184,25 @@ jn_map <- function(formula, model, ci = 0.95, n_grid = 100, ...) {
     m2_mu <- if (m2_is_cent && !is.null(m2_data)) mean(m2_data) else 0
 
     label_to_num <- function(label, data, mu) {
-        if (grepl("^Q[0-9.]+$", label)) {
-            q <- as.numeric(sub("^Q", "", label)) / 100
-            if (is.null(data)) return(NA_real_)
-            return(unname(quantile(data, q, na.rm = TRUE)) - mu)
-        }
-        if (grepl("\\s*SD\\s*$", label)) {
-            n_sd <- suppressWarnings(as.numeric(sub("\\s*SD\\s*$", "", label)))
-            if (!is.na(n_sd)) {
-                if (is.null(data)) return(n_sd)
-                # See note in `mod_label_to_numeric`: Blimp evaluates `+/-k SD`
-                # at `mean(data) + k * sd(data)`. With a centered moderator
-                # `mu == mean(data)` so the offset cancels; with an uncentered
-                # moderator `mu == 0` and we return the raw value Blimp used.
-                return(n_sd * sd(data, na.rm = TRUE) +
-                       (mean(data, na.rm = TRUE) - mu))
+        v <- mod_label_to_numeric(label, data, model@iterations, mu)
+        # Legacy jn_map fallback: when `data` is NULL we still want a usable
+        # axis value for `+/-k SD` / `Mean +/- k SD` labels (raw `k` in SD
+        # units) so the slope surface is plottable in SD coordinates.
+        if (is.na(v) && is.null(data)) {
+            lab <- trimws(label)
+            mean_re <- "^Mean\\s*(?:([+-])\\s*([0-9.]+)\\s*SD)?$"
+            if (grepl(mean_re, lab, perl = TRUE)) {
+                parts <- regmatches(lab, regexec(mean_re, lab, perl = TRUE))[[1]]
+                if (nzchar(parts[2]) && nzchar(parts[3]))
+                    return(as.numeric(paste0(parts[2], parts[3])))
+                return(0)
+            }
+            if (grepl("\\s*SD\\s*$", lab)) {
+                n_sd <- suppressWarnings(as.numeric(sub("\\s*SD\\s*$", "", lab)))
+                if (!is.na(n_sd)) return(n_sd)
             }
         }
-        n <- suppressWarnings(as.numeric(label))
-        if (!is.na(n)) return(n - mu)
-        if (NROW(model@iterations) > 0) {
-            cn <- colnames(model@iterations)
-            if (!is.null(cn)) {
-                ind2 <- tolower(cn) == tolower(label)
-                if (sum(ind2) == 1) return(mean(model@iterations[, ind2]) - mu)
-            }
-        }
-        NA_real_
+        v
     }
 
     m1_vals <- vapply(sel_parsed, function(p) {
@@ -235,11 +214,29 @@ jn_map <- function(formula, model, ci = 0.95, n_grid = 100, ...) {
         label_to_num(p$vals[idx], m2_data, m2_mu)
     }, double(1))
 
-    if (any(is.na(m1_vals)) || any(is.na(m2_vals))) throw_error(c(
+    keep <- !is.na(m1_vals) & !is.na(m2_vals)
+    bad_m1 <- vapply(sel_parsed, function(p) {
+        idx <- which(tolower(p$mods) == tolower(mod1))[1]; p$vals[idx]
+    }, character(1))[!keep]
+    bad_m2 <- vapply(sel_parsed, function(p) {
+        idx <- which(tolower(p$mods) == tolower(mod2))[1]; p$vals[idx]
+    }, character(1))[!keep]
+    expr_re <- "^\\(.*\\)(?:\\s+sd)?$"
+    unknown <- c(bad_m1[!grepl(expr_re, trimws(bad_m1), perl = TRUE)],
+                 bad_m2[!grepl(expr_re, trimws(bad_m2), perl = TRUE)])
+    if (length(unknown) > 0) throw_error(c(
         "Could not convert SIMPLE moderator labels to numeric values for both axes.",
         i = "Expected quantile (Q25), SD (`+1 SD`), numeric, or a parameter name."
     ))
-    if (length(unique(cbind(m1_vals, m2_vals))) < 4) throw_error(c(
+    m1_vals  <- m1_vals[keep]
+    m2_vals  <- m2_vals[keep]
+    sel_cols <- sel_cols[keep]
+    if (length(m1_vals) == 0) throw_error(c(
+        "All SIMPLE points were expression-valued ({.code (expr)} / {.code (expr) sd}).",
+        i = "Numeric placement on the JN axis is not yet supported for these.",
+        i = "Re-run SIMPLE with quantile, SD, or numeric anchors to enable {.fn jn_map}."
+    ))
+    if (nrow(unique(cbind(m1_vals, m2_vals))) < 4) throw_error(c(
         "Need at least 4 unique (m1, m2) SIMPLE points to fit the slope surface.",
         i = "Have SIMPLE evaluate both moderators at multiple values, e.g. ",
         i = "{.code 'x | m1 @ quantile and m2 @ sd'}."

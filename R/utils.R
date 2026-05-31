@@ -88,19 +88,30 @@ join <- function(...) {
 #' Numeric sort key for a single SIMPLE moderator value label.
 #'
 #' Maps `"Q25"` -> `0.25`, `"+1 SD"` / `"-1 SD"` -> `+1` / `-1`,
-#' a plain number string -> its numeric value, otherwise `NA_real_`.
-#' Used to lay out factor levels in their natural numeric order rather
-#' than the order Blimp happened to emit them in.
+#' `"Mean"` -> `0`, `"Mean +/- k SD"` -> `+/-k`, a plain number string ->
+#' its numeric value, otherwise `NA_real_`. Used to lay out factor levels
+#' in their natural numeric order rather than the order Blimp happened to
+#' emit them in.
 #' @noRd
 mod_value_sort_key <- function(label) {
     if (is.na(label) || !nzchar(label)) return(NA_real_)
-    if (grepl("^Q[0-9.]+$", label))
-        return(as.numeric(sub("^Q", "", label)) / 100)
-    if (grepl("\\s*SD\\s*$", label)) {
-        n_sd <- suppressWarnings(as.numeric(sub("\\s*SD\\s*$", "", label)))
+    lab <- trimws(label)
+    # Expression values (`(...)` or `(...) sd`) get NA -- sort to end.
+    if (grepl("^\\(.*\\)(?:\\s+sd)?$", lab, perl = TRUE)) return(NA_real_)
+    if (grepl("^Q[0-9.]+$", lab))
+        return(as.numeric(sub("^Q", "", lab)) / 100)
+    mean_re <- "^Mean\\s*(?:([+-])\\s*([0-9.]+)\\s*SD)?$"
+    if (grepl(mean_re, lab, perl = TRUE)) {
+        parts <- regmatches(lab, regexec(mean_re, lab, perl = TRUE))[[1]]
+        if (nzchar(parts[2]) && nzchar(parts[3]))
+            return(as.numeric(paste0(parts[2], parts[3])))
+        return(0)
+    }
+    if (grepl("\\s*SD\\s*$", lab)) {
+        n_sd <- suppressWarnings(as.numeric(sub("\\s*SD\\s*$", "", lab)))
         if (!is.na(n_sd)) return(n_sd)
     }
-    n <- suppressWarnings(as.numeric(label))
+    n <- suppressWarnings(as.numeric(lab))
     if (!is.na(n)) return(n)
     NA_real_
 }
@@ -241,6 +252,142 @@ parse_plot_formula <- function(formula) {
         at_filter      = at_filter
     )
 }
+
+#' Parse a vector of Blimp SIMPLE column names into structured pieces.
+#'
+#' Per the SIMPLE-output spec, each column name (with the `INTER:`/`SLOPE:`
+#' KIND prefix already stripped) has the form
+#'   `"<outcome> ~ <focal> | <m1> @ <v1>{ <continuation> }*"`
+#' where each continuation is `"<m> @ <v>"` separated from the previous clause
+#' by either `", "` (Blimp's soft-wrap, emitted when the label exceeds ~29
+#' chars) or plain whitespace. `<outcome>` may itself contain spaces; we split
+#' on the FIRST `" ~ "`. Values may be multi-token (`"Mean + 1 SD"`, etc.).
+#'
+#' Returns a list with one entry per input column, each a list with fields
+#' `outcome`, `predictor`, `mods` (character vector), `vals` (character vector
+#' aligned with `mods`).
+#' @noRd
+parse_simple_colnames <- function(col_names) {
+    # Boundary between two "<mod> @ <value>" clauses: either ", " or plain
+    # whitespace, with a zero-width lookahead for the next "<name> @ " token.
+    boundary_re <- "(?:,\\s+|\\s+)(?=[^\\s,@]+\\s+@\\s+)"
+    pair_re     <- "^\\s*([^\\s,@]+)\\s+@\\s+(.*?)\\s*$"
+
+    blank_result <- function(outcome = character(0), focal = character(0)) {
+        list(outcome = outcome, predictor = focal,
+             mods = character(0), vals = character(0))
+    }
+
+    lapply(col_names, function(col_name) {
+        tilde_idx <- regexpr(" ~ ", col_name, fixed = TRUE)
+        if (tilde_idx < 0) return(blank_result())
+        outcome <- substr(col_name, 1, tilde_idx - 1)
+        effect  <- substr(col_name, tilde_idx + 3L, nchar(col_name))
+
+        # Effect_label is "<focal> | <mod> @ <value>{ <continuation> }*";
+        # split off the focal at the FIRST " | ".
+        pipe_idx <- regexpr(" | ", effect, fixed = TRUE)
+        if (pipe_idx < 0) return(blank_result(outcome))
+        focal <- trimws(substr(effect, 1, pipe_idx - 1))
+        rest  <- substr(effect, pipe_idx + 3L, nchar(effect))
+
+        clauses <- strsplit(rest, boundary_re, perl = TRUE)[[1]]
+        if (length(clauses) == 0) return(blank_result(outcome, focal))
+
+        mods <- character(length(clauses))
+        vals <- character(length(clauses))
+        for (i in seq_along(clauses)) {
+            p <- regmatches(clauses[i], regexec(pair_re, clauses[i], perl = TRUE))[[1]]
+            if (length(p) == 3) {
+                mods[i] <- p[2]
+                vals[i] <- p[3]
+            }
+        }
+
+        keep <- nzchar(mods)
+        list(outcome = outcome, predictor = focal,
+             mods = mods[keep], vals = vals[keep])
+    })
+}
+
+#' Convert a SIMPLE moderator value label to a numeric point on the
+#' moderator axis (relative to `mu`).
+#'
+#' Per the SIMPLE-output spec value table, recognised forms (precedence-
+#' ordered so later forms cannot collide with earlier ones):
+#'   1. `"(expr)"`, `"(expr) sd"`  -- runtime expression of model parameters;
+#'                                    not yet evaluated. Returns `NA` with a
+#'                                    one-time warning.
+#'   2. `"Q<NN>"`                  -- empirical quantile of `mod_data`.
+#'   3. `"Mean"`, `"Mean +/- k SD"`-- mean (+/- k * sd) of `mod_data`.
+#'   4. `"+k SD"`, `"-k SD"`       -- centered SD offset (equivalent to the
+#'                                    Mean +/- k form above).
+#'   5. Numeric literal            -- taken at face value.
+#'   6. Parameter name             -- posterior mean across `iterations`.
+#'
+#' `mod_data` may be `NULL` when the moderator is not present in
+#' `model@average_imp`; data-dependent branches then return `NA_real_`.
+#' @noRd
+mod_label_to_numeric <- function(label, mod_data, iterations, mu = 0) {
+    lab <- trimws(label)
+    if (grepl("^\\(.*\\)(?:\\s+sd)?$", lab, perl = TRUE)) {
+        warn_expr_simple_value(lab)
+        return(NA_real_)
+    }
+    if (grepl("^Q[0-9.]+$", lab)) {
+        if (is.null(mod_data)) return(NA_real_)
+        q <- as.numeric(sub("^Q", "", lab)) / 100
+        return(unname(quantile(mod_data, q, na.rm = TRUE)) - mu)
+    }
+    mean_re <- "^Mean\\s*(?:([+-])\\s*([0-9.]+)\\s*SD)?$"
+    if (grepl(mean_re, lab, perl = TRUE)) {
+        if (is.null(mod_data)) return(NA_real_)
+        parts <- regmatches(lab, regexec(mean_re, lab, perl = TRUE))[[1]]
+        k <- if (nzchar(parts[2]) && nzchar(parts[3])) {
+            as.numeric(paste0(parts[2], parts[3]))
+        } else 0
+        return(mean(mod_data, na.rm = TRUE) +
+               k * sd(mod_data, na.rm = TRUE) - mu)
+    }
+    if (grepl("\\s*SD\\s*$", lab)) {
+        n_sd <- suppressWarnings(as.numeric(sub("\\s*SD\\s*$", "", lab)))
+        if (!is.na(n_sd)) {
+            if (is.null(mod_data)) return(NA_real_)
+            # Blimp evaluates `+/-k SD` at `mean(data) + k * sd(data)` in the
+            # raw metric. For centered moderators `mu == mean(data)`, so the
+            # offset cancels and we get `k * sd(data)` (the previous behavior).
+            # For uncentered moderators `mu == 0`, this returns the raw
+            # `mean(data) + k * sd(data)` that Blimp actually used.
+            return(n_sd * sd(mod_data, na.rm = TRUE) +
+                   (mean(mod_data, na.rm = TRUE) - mu))
+        }
+    }
+    nval <- suppressWarnings(as.numeric(lab))
+    if (!is.na(nval)) return(nval - mu)
+    if (NROW(iterations) > 0) {
+        cn <- colnames(iterations)
+        if (!is.null(cn)) {
+            ind <- tolower(cn) == tolower(lab)
+            if (sum(ind) == 1) return(mean(iterations[, ind]) - mu)
+        }
+    }
+    NA_real_
+}
+
+#' One-time warning for expression-valued SIMPLE points.
+#' @noRd
+warn_expr_simple_value <- local({
+    seen <- character(0)
+    function(label) {
+        if (label %in% seen) return(invisible())
+        seen <<- c(seen, label)
+        cli::cli_alert_warning(c(
+            "Expression-valued SIMPLE points (e.g. {.code {label}}) cannot ",
+            "yet be placed numerically on a JN axis; affected rows will be ",
+            "dropped from the fit."
+        ))
+    }
+})
 
 #' Parse CSV header line respecting parentheses and quotes
 #'
