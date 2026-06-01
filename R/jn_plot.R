@@ -392,8 +392,12 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
     } else {
         mod_data <- model@average_imp[, ind]
         mu <- if (mod_is_cent) mean(mod_data) else 0.0
-        m_range <- (mod_data - mu) |> pretty() |> range()
+        m_range <- unname(quantile(mod_data - mu, probs = c(0.01, 0.99),
+                                   na.rm = TRUE))
     }
+    # Round outward to a "nice" step (sized to the data magnitude) so the
+    # axis lands on tidy endpoints without `pretty()`-style overshoot.
+    m_range <- nice_outward(m_range)
     # User override via `xrange` in `...` (numeric length-2 vector).
     user_xrange <- list(...)$xrange
     if (!is.null(user_xrange)) {

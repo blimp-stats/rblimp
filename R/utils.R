@@ -85,6 +85,28 @@ join <- function(...) {
     ))
 }
 
+#' Round a numeric range outward to the nearest "nice" step.
+#'
+#' Used by `simple_plot()`, `jn_plot()`, and `jn_map()` to convert a
+#' trimmed (e.g. 1%/99% quantile) data range into tidy axis endpoints
+#' without `pretty()`-style overshoot (`pretty(c(-4.6, 5.2))` returns
+#' `c(-6, -4, ..., 6)`; this helper returns `c(-5, 6)`).
+#'
+#' Step = `10 ^ floor(log10(span / 2))`, so for a span of ~2-20 we round
+#' to whole numbers; for ~0.2-2 we round to 0.1; for ~20-200 we round to
+#' 10; etc. The low end is rounded down, the high end up. Dividing by 2
+#' shifts the boundary so a span of 12 still rounds to integers instead
+#' of jumping to multiples of 10.
+#' @noRd
+nice_outward <- function(r) {
+    if (length(r) != 2 || any(!is.finite(r))) return(r)
+    span <- diff(r)
+    if (span <= 0) return(r)
+    step <- 10 ^ floor(log10(span / 2))
+    c(floor(r[1] / step) * step,
+      ceiling(r[2] / step) * step)
+}
+
 #' Numeric sort key for a single SIMPLE moderator value label.
 #'
 #' Maps `"Q25"` -> `0.25`, `"+1 SD"` / `"-1 SD"` -> `+1` / `-1`,

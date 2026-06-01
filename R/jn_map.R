@@ -250,10 +250,18 @@ jn_map <- function(formula, model, ci = 0.95, n_grid = 100, ...) {
 
     # Grid over m1 / m2 ranges
     if (length(n_grid) == 1) n_grid <- rep(n_grid, 2)
-    m1_range <- if (!is.null(m1_data)) range(pretty((m1_data - m1_mu)))
+    m1_range <- if (!is.null(m1_data))
+                    unname(quantile(m1_data - m1_mu, probs = c(0.01, 0.99),
+                                    na.rm = TRUE))
                 else range(m1_vals)
-    m2_range <- if (!is.null(m2_data)) range(pretty((m2_data - m2_mu)))
+    m2_range <- if (!is.null(m2_data))
+                    unname(quantile(m2_data - m2_mu, probs = c(0.01, 0.99),
+                                    na.rm = TRUE))
                 else range(m2_vals)
+    # Round outward to a "nice" step (sized to the data magnitude) so the
+    # axes land on tidy endpoints without `pretty()`-style overshoot.
+    m1_range <- nice_outward(m1_range)
+    m2_range <- nice_outward(m2_range)
     m1_grid <- seq(m1_range[1], m1_range[2], length.out = n_grid[1])
     m2_grid <- seq(m2_range[1], m2_range[2], length.out = n_grid[2])
     grid    <- expand.grid(m1 = m1_grid, m2 = m2_grid)

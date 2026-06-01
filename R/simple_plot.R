@@ -330,7 +330,11 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
             xvals <- seq(-3, 3, length.out = 100)
         } else {
             mu <- if (pre_is_cent) mean(model@average_imp[, ind]) else 0.0
-            l  <- (model@average_imp[, ind] - mu) |> pretty() |> range()
+            l  <- unname(quantile(model@average_imp[, ind] - mu,
+                                  probs = c(0.01, 0.99), na.rm = TRUE))
+            # Round outward to a "nice" step (sized to the data magnitude)
+            # so the axis lands on tidy endpoints without overshooting.
+            l <- nice_outward(l)
             xvals <- seq(l[1], l[2], length.out = 100)
         }
     } else if (length(xvals) == 2) {
