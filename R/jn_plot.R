@@ -394,6 +394,13 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
         mu <- if (mod_is_cent) mean(mod_data) else 0.0
         m_range <- (mod_data - mu) |> pretty() |> range()
     }
+    # User override via `xrange` in `...` (numeric length-2 vector).
+    user_xrange <- list(...)$xrange
+    if (!is.null(user_xrange)) {
+        if (!is.numeric(user_xrange) || length(user_xrange) != 2)
+            throw_error("{.arg xrange} must be a numeric vector of length 2.")
+        m_range <- range(user_xrange)
+    }
 
     # Try SIMPLE-based path: requires SIMPLE rows matching outcome/focal/mod
     simple_groups <- if (NROW(model@simple) > 0) {
