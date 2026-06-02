@@ -188,6 +188,23 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     }
 
     if (!any(keep)) {
+        # Diagnose the most specific reason nothing matched, so a missing
+        # outcome or focal predictor is reported as such rather than surfacing
+        # as a confusing "moderators" error.
+        avail_out <- unique(unlist(lapply(parsed, function(p)
+            if (length(p$outcome) == 1) p$outcome else NULL)))
+        if (!any(is_equal(out, avail_out))) throw_error(c(
+            "Outcome {.field {out}} is not in the SIMPLE output.",
+            i = "Check the spelling and that {.field {out}} is an outcome in the model with a SIMPLE command.",
+            i = "Outcomes available in SIMPLE: {avail_out}"
+        ))
+        avail_pre <- unique(unlist(lapply(parsed, function(p)
+            if (length(p$outcome) == 1 && is_equal(p$outcome, out) &&
+                length(p$predictor) == 1) p$predictor else NULL)))
+        if (!any(is_equal(pre, avail_pre))) throw_error(c(
+            "Focal predictor {.field {pre}} is not in the SIMPLE output for outcome {.field {out}}.",
+            i = "Focal predictors available for {.field {out}}: {avail_pre}"
+        ))
         mod_list <- unique(vapply(parsed, function(p) paste(p$mods, collapse = ', '), character(1)))
         throw_error(c(
             "Unable to select out conditional effects",

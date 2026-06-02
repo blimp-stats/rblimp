@@ -183,6 +183,18 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
         )
     }
 
+    # Keep ggplot's default fill scale when both significance levels are drawn
+    # (an intentional design choice). When only one level is present the
+    # default discrete scale collapses to its first colour (red) regardless of
+    # meaning, mislabelling an all-significant band as "0 within the interval".
+    # Declaring both categories via `limits` makes ggplot allocate its *own*
+    # default two-colour palette and map by value. `f` returns the same logical
+    # the ribbon fills on, sampled the way `stat_function(n = 1000)` samples it,
+    # so this counts exactly the levels that get drawn.
+    if (length(unique(f(seq(xrange[1], xrange[2], length.out = 1000)))) == 1) {
+        p <- p + scale_fill_discrete(limits = c("FALSE", "TRUE"))
+    }
+
     p <- (
         p
         # Set range
@@ -464,6 +476,17 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
         bxm_s1 <- which(pnames == tolower(paste0(out, " ~ ", pre, "*", mod)))
         bxm_s2 <- which(pnames == tolower(paste0(out, " ~ ", mod, "*", pre)))
 
+        # If the outcome isn't an outcome anywhere in the model, say so plainly
+        # rather than only reporting a missing "outcome ~ focal" effect.
+        reg_rows <- grep(" ~ ", row.names(model@estimates), fixed = TRUE,
+                         value = TRUE)
+        est_out  <- unique(trimws(sub("\\s*~.*$", "", reg_rows)))
+        if (length(est_out) > 0 && !any(is_equal(out, est_out))) throw_error(c(
+            "Outcome {.field {out}} is not in the model.",
+            i = "Check the spelling and that {.field {out}} is an outcome in {.fn rblimp}.",
+            i = "Outcomes available: {est_out}"
+        ))
+
         if (length(bx_sel) == 0) {
             pname <- paste0(out, " ~ ", pre)
             throw_error(c(
@@ -683,6 +706,18 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
     } else ""
 
     subtitle <- paste0(base_subtitle, held_line, bnd_line)
+
+    # Keep ggplot's default fill scale when both significance levels are drawn
+    # (an intentional design choice -- users override colours via their own
+    # scale). When only one level is present the default discrete scale
+    # collapses to its first colour (red) regardless of meaning, which would
+    # mislabel an all-significant band as "0 within the interval". Declaring
+    # both categories via `limits` makes ggplot allocate its *own* default
+    # two-colour palette and map by value, so the one-level case matches the
+    # two-level one without pinning any specific colour.
+    if (length(unique(jn_data$sig)) == 1) {
+        p <- p + scale_fill_discrete(limits = c("FALSE", "TRUE"))
+    }
 
     p <- (
         p

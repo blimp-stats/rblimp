@@ -384,13 +384,19 @@ mod_label_to_numeric <- function(label, mod_data, iterations, mu = 0) {
                    (mean(mod_data, na.rm = TRUE) - mu))
         }
     }
+    # Numeric literals and parameter-name values are already expressed in the
+    # moderator's *model* metric (centered when the moderator is centered, raw
+    # otherwise) -- the same metric as the plot axis -- so they are taken
+    # as-is. This differs from the `Q..`/`SD` branches above, which rebuild a
+    # raw value from `mod_data` and therefore subtract `mu`. (Subtracting `mu`
+    # here double-centered them, e.g. Blimp's "@ 0" landed at `-mean(data)`.)
     nval <- suppressWarnings(as.numeric(lab))
-    if (!is.na(nval)) return(nval - mu)
+    if (!is.na(nval)) return(nval)
     if (NROW(iterations) > 0) {
         cn <- colnames(iterations)
         if (!is.null(cn)) {
             ind <- tolower(cn) == tolower(lab)
-            if (sum(ind) == 1) return(mean(iterations[, ind]) - mu)
+            if (sum(ind) == 1) return(mean(iterations[, ind]))
         }
     }
     NA_real_
