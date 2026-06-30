@@ -22,6 +22,11 @@
   update checks (alternative to `options(check_blimp_update = FALSE)`).
 * New `R_BLIMP_PREVENT_INSTALL` environment variable blocks
   `install_blimp()` for locked-down environments.
+* `standardized()` output now prints rounded to 3 decimals in an
+  aligned table (matching the other estimate tables) via a new
+  `print()` method. The returned object is still a numeric matrix and
+  retains full precision for computation; pass `digits =` to `print()`
+  to change the displayed precision.
 
 # rblimp 1.1.1
 

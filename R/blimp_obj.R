@@ -75,6 +75,22 @@ setMethod(
     }
 )
 
+#' Round and column-format a numeric estimates matrix for aligned display.
+#' @description Shared by the `summary` method and `print.blimp_std` so the two
+#'   stay consistent. `apply(2, format, ...)` aligns decimals within each column.
+#' @param est A numeric estimates matrix.
+#' @param digits Number of decimal places to round to.
+#' @return A character matrix of formatted values with `est`'s dimnames.
+#' @noRd
+format_estimates <- function(est, digits) {
+    vals <- est |>
+        round(digits = digits) |>
+        apply(2, format, width = max(nchar(colnames(est)), 4 + digits))
+    if (is.null(dim(vals))) dim(vals) <- c(1, length(vals))  # 1-row guard
+    dimnames(vals) <- dimnames(est)
+    vals
+}
+
 #' Summary method for blimp_obj
 #'
 #' @description
@@ -331,15 +347,8 @@ setMethod(
             }
         }, USE.NAMES = FALSE)
 
-        # Format values
-        values <- est |>
-            round(digits = digits) |>
-            apply(2, format, width = max(nchar(colnames(est)), 4 + digits))
-
-        # Check if values is one dim
-        if (values |> dim() |> is.null()) {
-            dim(values) <- c(1, length(values))
-        }
+        # Format values (shared recipe; see format_estimates)
+        values <- format_estimates(est, digits)
 
         # Update selector name
         sel_name <- if (selector == '#_parameter') "Parameters" else selector
@@ -612,16 +621,18 @@ estimates <- function(object) {
 #' Extract standardized solutions from Blimp
 #'
 #' @description
-#' Extracts the data information section from Blimp output.
+#' Extracts the standardized parameter estimates (and standardized
+#' correlations) from a fitted Blimp model.
 #'
-#' @param object A `blimp_obj` or `blimp_out` object
-#' @return A [`base::matrix`] with standardized solutions
+#' @param object A `blimp_obj` object
+#' @return A [`base::matrix`] of class `blimp_std` containing the standardized
+#'   solutions. The matrix retains full precision for computation; see
+#'   [print.blimp_std()] for its rounded, aligned display.
+#' @seealso [print.blimp_std()]
 #' @export
 standardized <- function(object) {
-    if (is_blimp_obj(object)) output <- output(object)
-    else if (is_blimp_out(object)) output <- object
-    else throw_error(
-        "Object is not a {.cls blimp_obj} or {.cls blimp_out}."
+    if (!is_blimp_obj(object)) throw_error(
+        "Object is not a {.cls blimp_obj}."
     )
     ptype <- attr(object@iterations, 'parameter_type')
     pname <- rownames(object@estimates)
@@ -629,7 +640,29 @@ standardized <- function(object) {
         which(ptype == 'Standardized'),
         which(ptype == 'Var/Cov/Cor' & startsWith(pname, 'Cor('))
     )
-    return(object@estimates[sel,])
+    m <- object@estimates[sel, , drop = FALSE]
+    class(m) <- c("blimp_std", "matrix", "array")
+    return(m)
+}
+
+#' Print standardized solutions
+#'
+#' @description
+#' Prints the standardized solutions matrix returned by [standardized()] as an
+#' aligned table, rounded for readability. The underlying object retains full
+#' precision; only the displayed values are rounded.
+#'
+#' @param x A `blimp_std` object, as returned by [standardized()].
+#' @param digits Integer specifying the number of decimal places to display.
+#'   Default is 3.
+#' @param ... Additional arguments passed to [print()].
+#' @return The `blimp_std` object `x` (invisibly). Called for its side effect of
+#'   printing the rounded, aligned table to the console.
+#' @export
+print.blimp_std <- function(x, digits = 3, ...) {
+    # right = TRUE so column headers right-align over the right-aligned values
+    print(noquote(format_estimates(unclass(x), digits)), right = TRUE, ...)
+    invisible(x)
 }
 
 #' Residuals scores from `blimp_obj`

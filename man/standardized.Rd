@@ -7,11 +7,17 @@
 standardized(object)
 }
 \arguments{
-\item{object}{A \code{blimp_obj} or \code{blimp_out} object}
+\item{object}{A \code{blimp_obj} object}
 }
 \value{
-A \code{\link[base:matrix]{base::matrix}} with standardized solutions
+A \code{\link[base:matrix]{base::matrix}} of class \code{blimp_std} containing the standardized
+solutions. The matrix retains full precision for computation; see
+\code{\link[=print.blimp_std]{print.blimp_std()}} for its rounded, aligned display.
 }
 \description{
-Extracts the data information section from Blimp output.
+Extracts the standardized parameter estimates (and standardized
+correlations) from a fitted Blimp model.
+}
+\seealso{
+\code{\link[=print.blimp_std]{print.blimp_std()}}
 }
