@@ -36,6 +36,12 @@ separate facets):
 \code{join()} works for any user-controlled bundling, not just nominal dummies;
 however it is only valid in the first (color/legend) position of the formula.
 
+A bare moderator plots every value Blimp emitted for it. To plot only some of
+them, use \code{at()} on its own -- it filters the values and names the moderator
+at the same time:
+\deqn{\code{focal | at(moderator = c("-1 SD", "+1 SD"))}}
+This is equivalent to writing \code{focal | moderator + at(moderator = c(...))}.
+
 When the SIMPLE command contains more than one moderator (e.g.,
 \verb{mod1 @ values and mod2 @ value}), the right-hand side of the formula may list the
 moderators that vary using \code{+} (e.g., \code{focal | mod1 + mod2}). Moderators that are
@@ -90,6 +96,10 @@ simple_plot(y ~ x | m1 + at(m2 = "0"), fit)
 
 # Restrict to a subset of values
 simple_plot(y ~ x | m1 + at(m2 = c("-1 SD", "+1 SD")), fit)
+
+# Plot only some of a single moderator's values -- `at()` alone both
+# filters the values and names the moderator
+simple_plot(y ~ x | at(m1 = c("-1 SD", "+1 SD")), fit)
 
 # Bundle moderators (e.g. nominal dummy codes) via `join()`
 simple_plot(y ~ x | join(m1, m2), fit)

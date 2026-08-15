@@ -8,7 +8,8 @@ jn_plot(formula, model, ci = 0.95, ...)
 }
 \arguments{
 \item{formula}{an object of class \code{\link{formula}} to specify simple effect to plot.
-The formula must have the following form: \code{outcome ~ focal | moderator}. See Details below for nominal moderators.}
+The formula usually has the form \code{outcome ~ focal | moderator}. See Details
+below for nominal moderators and for compound-parameter (\code{PARAM}) effects.}
 
 \item{model}{an \code{\link{blimp_obj}}.}
 
@@ -35,6 +36,27 @@ command also holds one or two additional moderators at multiple values
 additional moderators. When SIMPLE has no relevant rows, \code{jn_plot} falls
 back to building the conditional slope directly from the model's fixed-effect
 interaction parameter (the original behavior).
+\subsection{Compound-parameter (\code{PARAM}) effects}{
+
+A SIMPLE command whose focal is an expression of labeled model parameters
+(e.g. \code{simple = 'b4 + b7*mod | mod'}) produces a \emph{compound-parameter}
+conditional effect: a single generated quantity per moderator value, with no
+intercept. Because these have no conditional regression line, they are shown
+only as a Johnson-Neyman region of significance -- \code{\link{simple_plot}} and
+\code{\link{jn_map}} do not apply.
+
+Reference such an effect by putting its focal-expression label on the
+left-hand side of the formula, with the moderator on the right (no \code{outcome},
+no \code{|}). The label may be written unquoted or quoted:
+\preformatted{jn_plot(b4 + b7*mod ~ mod, model)     # unquoted
+jn_plot("b4 + b7*mod" ~ mod, model)   # quoted (equivalent)}
+The label is matched to the SIMPLE output ignoring whitespace and case, so
+the two forms above are the same. (Absence of \code{|} on the right-hand side is
+what selects this path.) Additional moderators may be pinned with \code{\link{at}},
+exactly as in the standard path. The generated effect is linear in the
+moderator, so its value at each evaluated point is used to reconstruct the
+effect (and its region of significance) exactly.
+}
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
@@ -90,9 +112,20 @@ jn_plot(y ~ x | m1 + at(m2 = c("-1 SD", "+1 SD")), fit)
 
 # Per-facet boundary x-values are also exposed as an attribute
 attr(jn_plot(y ~ x | m1 + m2, fit), "bounds")
+
+# ---- Compound-parameter (PARAM) conditional effect ----
+cp <- rblimp(
+    'y ~ x@b1 m x*m@b2',
+    mydata, center = ~ m,
+    simple = 'b1 + b2*m | m',
+    seed = 10972, burn = 1000, iter = 1000
+)
+# Focal-expression label on the left, moderator on the right, no `|`.
+jn_plot(b1 + b2*m ~ m, cp)          # unquoted
+jn_plot("b1 + b2*m" ~ m, cp)        # or quoted
 }
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link{jn_plot_func}}, \code{\link{jn_map}}, \code{\link{simple_plot}}, \code{\link{at}}, \code{\link{join}}
+\code{\link{jn_plot_func}}, \code{\link{jn_map}}, \code{\link{simple_plot}}, \code{\link{simple_effects}}, \code{\link{at}}, \code{\link{join}}
 }

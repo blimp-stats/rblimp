@@ -22,6 +22,12 @@
 #' `join()` works for any user-controlled bundling, not just nominal dummies;
 #' however it is only valid in the first (color/legend) position of the formula.
 #'
+#' A bare moderator plots every value Blimp emitted for it. To plot only some of
+#' them, use `at()` on its own -- it filters the values and names the moderator
+#' at the same time:
+#'   \deqn{\code{focal | at(moderator = c("-1 SD", "+1 SD"))}}
+#' This is equivalent to writing `focal | moderator + at(moderator = c(...))`.
+#'
 #' When the SIMPLE command contains more than one moderator (e.g.,
 #' `mod1 @ values and mod2 @ value`), the right-hand side of the formula may list the
 #' moderators that vary using `+` (e.g., `focal | mod1 + mod2`). Moderators that are
@@ -76,6 +82,10 @@
 #' # Restrict to a subset of values
 #' simple_plot(y ~ x | m1 + at(m2 = c("-1 SD", "+1 SD")), fit)
 #'
+#' # Plot only some of a single moderator's values -- `at()` alone both
+#' # filters the values and names the moderator
+#' simple_plot(y ~ x | at(m1 = c("-1 SD", "+1 SD")), fit)
+#'
 #' # Bundle moderators (e.g. nominal dummy codes) via `join()`
 #' simple_plot(y ~ x | join(m1, m2), fit)
 #' }
@@ -99,6 +109,11 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     # Parse formula via language tree: extracts outcome, focal, bare moderators
     # (color + facet), held-constant filter (`at`), and compound bundles (`join`).
     pf <- parse_plot_formula(formula)
+    if (isTRUE(pf$is_param)) throw_error(c(
+        "{.fn simple_plot} does not support compound-parameter ({.code PARAM:}) effects.",
+        i = "They have no intercept, so there is no conditional line to draw.",
+        i = "Use {.fn jn_plot} with {.code \"{pf$focal}\" ~ moderator} instead."
+    ))
     out            <- pf$outcome
     pre            <- pf$focal
     formula_mods   <- pf$bare_mods            # logical mod display names
@@ -106,8 +121,9 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     at_filter      <- pf$at_filter
 
     if (length(formula_mods) < 1) throw_error(c(
-        "The {.arg formula} must specify at least one bare moderator after `|`.",
-        "Must have the form: `outcome ~ focal | moderator [+ ...]`"
+        "The {.arg formula} must specify at least one moderator after `|`.",
+        "Must have the form: `outcome ~ focal | moderator [+ ...]`",
+        i = "To plot only some of a moderator's values, use {.fn at} on its own: {.code | at(m = c(\"-1 SD\", \"+1 SD\"))}."
     ))
 
     color_mod  <- formula_mods[1]
@@ -117,8 +133,9 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     simple <- model@simple
     simple_names <- names(simple)
 
-    # Check if blimp is supported
-    if ((grepl('(SLOPE|INTER): ', simple_names) |> all()) == FALSE) throw_error(
+    # Check if blimp is supported. Only `SLOPE:`/`INTER:` columns are used here;
+    # tolerate coexisting `PARAM:` columns rather than rejecting the model.
+    if (!any(startsWith(simple_names, 'SLOPE:'))) throw_error(
         "The Blimp version used is unsupported. Update Blimp!"
     )
 
@@ -421,7 +438,9 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
         ctx <- paste(paste(names(extra_constant), '@', unlist(extra_constant)), collapse = ', ')
         subtitle_parts <- c(subtitle_parts, paste0('Held constant: ', ctx))
     }
-    subtitle <- if (length(subtitle_parts) == 0) deparse(formula) else paste(subtitle_parts, collapse = '\n')
+    # `deparse1` keeps a long formula (e.g. a multi-value `at()`) on one line;
+    # plain `deparse` splits it and ggplot2 draws each fragment separately.
+    subtitle <- if (length(subtitle_parts) == 0) deparse1(formula) else paste(subtitle_parts, collapse = '\n')
 
     # Suppress R CMD check NOTEs about ggplot2 NSE
     focal <- moderator <- h <- outcome <- NULL

@@ -19,6 +19,11 @@ has meaning when it appears in a \code{simple_plot()} or \code{jn_plot()} formul
 Used inside \code{\link{simple_plot}} and \code{\link{jn_plot}} formulas to restrict the SIMPLE
 rows to those whose moderator was evaluated at the given label(s).
 }
+\details{
+If \code{at()} is the only term after \code{|}, the moderators it names are also the
+ones plotted, so \code{y ~ x | at(m = c("-1 SD", "+1 SD"))} shows just those two
+values of \code{m} without having to name \code{m} twice.
+}
 \examples{
 \dontrun{
 # Pin `m2` at the SIMPLE label "0", leaving `m1` to color the lines
@@ -26,6 +31,9 @@ simple_plot(y ~ x | m1 + at(m2 = "0"), model)
 
 # Pin to a subset (vector of labels) -- `m2` still faces over those values
 simple_plot(y ~ x | m1 + at(m2 = c("Q25", "Q75")), model)
+
+# Show only some of a single moderator's values (no bare name needed)
+simple_plot(y ~ x | at(m1 = c("Q25", "Q50", "Q75")), model)
 
 # Use inside `jn_plot()` the same way
 jn_plot(y ~ x | m1 + at(m2 = "+1 SD"), model)

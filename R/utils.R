@@ -21,6 +21,10 @@ is_equal <- function(a, b) {
 #' Used inside [`simple_plot`] and [`jn_plot`] formulas to restrict the SIMPLE
 #' rows to those whose moderator was evaluated at the given label(s).
 #'
+#' If `at()` is the only term after `|`, the moderators it names are also the
+#' ones plotted, so `y ~ x | at(m = c("-1 SD", "+1 SD"))` shows just those two
+#' values of `m` without having to name `m` twice.
+#'
 #' @param ... named arguments where each name is a moderator in the SIMPLE
 #'   command and each value is a single label or a vector of labels
 #'   (e.g., `"Q25"`, `"+1 SD"`, `"0"`, or a parameter name) to keep.
@@ -34,6 +38,9 @@ is_equal <- function(a, b) {
 #'
 #' # Pin to a subset (vector of labels) -- `m2` still faces over those values
 #' simple_plot(y ~ x | m1 + at(m2 = c("Q25", "Q75")), model)
+#'
+#' # Show only some of a single moderator's values (no bare name needed)
+#' simple_plot(y ~ x | at(m1 = c("Q25", "Q50", "Q75")), model)
 #'
 #' # Use inside `jn_plot()` the same way
 #' jn_plot(y ~ x | m1 + at(m2 = "+1 SD"), model)
@@ -206,15 +213,48 @@ parse_plot_formula <- function(formula) {
     out_lang <- formula[[2]]
     rhs      <- formula[[3]]
 
-    if (!is.call(rhs) || !identical(rhs[[1]], as.name("|")) || length(rhs) != 3)
-        throw_error(c(
-            "The {.arg formula} was not correctly specified.",
-            "Must have the form: `outcome ~ focal | moderator`"
+    # The standard `outcome ~ focal | moderator` form always has a top-level `|`
+    # on the RHS. Its absence marks the compound-parameter (PARAM) form, where
+    # the focal is a parameter expression and the whole RHS names the
+    # moderator(s). The focal label may be written unquoted (`b4 + b7*mod ~ mod`)
+    # or quoted (`"b4 + b7*mod" ~ mod`); `deparse` recovers it either way, and
+    # matching is whitespace/case-insensitive downstream.
+    rhs_has_pipe <- is.call(rhs) && identical(rhs[[1]], as.name("|")) &&
+        length(rhs) == 3
+
+    if (!rhs_has_pipe) {
+        label <- if (is.character(out_lang)) out_lang
+                 else paste(deparse(out_lang), collapse = " ")
+        parsed <- parse_mod_terms(rhs)
+        return(list(
+            is_param       = TRUE,
+            outcome        = NA_character_,
+            focal          = trimws(label),
+            bare_mods      = parsed$bare_mods,
+            mod_components = parsed$mod_components,
+            at_filter      = parsed$at_filter
         ))
+    }
 
     focal_lang <- rhs[[2]]
     mod_lang   <- rhs[[3]]
 
+    parsed <- parse_mod_terms(mod_lang)
+    list(
+        is_param       = FALSE,
+        outcome        = as.character(out_lang),
+        focal          = as.character(focal_lang),
+        bare_mods      = parsed$bare_mods,
+        mod_components = parsed$mod_components,
+        at_filter      = parsed$at_filter
+    )
+}
+
+#' Walk the moderator side of a plot formula (the RHS of `|`, or the whole RHS
+#' for a PARAM formula), collecting bare moderators, `join(...)` compounds, and
+#' `at(...)` pins. Shared by both `parse_plot_formula` branches.
+#' @noRd
+parse_mod_terms <- function(mod_lang) {
     # Walk `+` tree to collect terms
     walk_plus <- function(e) {
         if (is.call(e) && length(e) == 3 && identical(e[[1]], as.name("+"))) {
@@ -260,19 +300,56 @@ parse_plot_formula <- function(formula) {
             mod_components[[nm]] <- nm
         } else {
             throw_error(c(
-                "Unrecognized term on the right-hand side of {.code |}: {.code {deparse(t)}}",
+                "Unrecognized moderator term: {.code {deparse(t)}}",
                 i = "Allowed: bare moderator names, {.fn at} calls, and {.fn join} calls."
             ))
         }
     }
 
+    # `at()` only ever filters values. When it is the whole moderator side,
+    # there is no bare name saying which moderator to plot, so take the
+    # filtered ones: `focal | at(m = c(...))` reads as `focal | m + at(m = c(...))`.
+    if (length(bare_mods) == 0 && length(at_filter) > 0) {
+        bare_mods <- names(at_filter)
+        for (nm in bare_mods) mod_components[[nm]] <- nm
+    }
+
     list(
-        outcome        = as.character(out_lang),
-        focal          = as.character(focal_lang),
         bare_mods      = bare_mods,
         mod_components = mod_components,
         at_filter      = at_filter
     )
+}
+
+#' Parse the "<m1> @ <v1>{ <continuation> }*" tail of a SIMPLE effect label
+#' into aligned `mods` / `vals` character vectors.
+#'
+#' Continuations are separated from the previous clause by either `", "`
+#' (Blimp's soft-wrap, emitted when the label exceeds ~29 chars) or plain
+#' whitespace. Values may be multi-token (`"Mean + 1 SD"`, etc.).
+#' @noRd
+parse_effect_clauses <- function(rest) {
+    # Boundary between two "<mod> @ <value>" clauses: either ", " or plain
+    # whitespace, with a zero-width lookahead for the next "<name> @ " token.
+    boundary_re <- "(?:,\\s+|\\s+)(?=[^\\s,@]+\\s+@\\s+)"
+    pair_re     <- "^\\s*([^\\s,@]+)\\s+@\\s+(.*?)\\s*$"
+
+    clauses <- strsplit(rest, boundary_re, perl = TRUE)[[1]]
+    if (length(clauses) == 0)
+        return(list(mods = character(0), vals = character(0)))
+
+    mods <- character(length(clauses))
+    vals <- character(length(clauses))
+    for (i in seq_along(clauses)) {
+        p <- regmatches(clauses[i], regexec(pair_re, clauses[i], perl = TRUE))[[1]]
+        if (length(p) == 3) {
+            mods[i] <- p[2]
+            vals[i] <- p[3]
+        }
+    }
+
+    keep <- nzchar(mods)
+    list(mods = mods[keep], vals = vals[keep])
 }
 
 #' Parse a vector of Blimp SIMPLE column names into structured pieces.
@@ -290,10 +367,6 @@ parse_plot_formula <- function(formula) {
 #' aligned with `mods`).
 #' @noRd
 parse_simple_colnames <- function(col_names) {
-    # Boundary between two "<mod> @ <value>" clauses: either ", " or plain
-    # whitespace, with a zero-width lookahead for the next "<name> @ " token.
-    boundary_re <- "(?:,\\s+|\\s+)(?=[^\\s,@]+\\s+@\\s+)"
-    pair_re     <- "^\\s*([^\\s,@]+)\\s+@\\s+(.*?)\\s*$"
 
     blank_result <- function(outcome = character(0), focal = character(0)) {
         list(outcome = outcome, predictor = focal,
@@ -313,23 +386,41 @@ parse_simple_colnames <- function(col_names) {
         focal <- trimws(substr(effect, 1, pipe_idx - 1))
         rest  <- substr(effect, pipe_idx + 3L, nchar(effect))
 
-        clauses <- strsplit(rest, boundary_re, perl = TRUE)[[1]]
-        if (length(clauses) == 0) return(blank_result(outcome, focal))
-
-        mods <- character(length(clauses))
-        vals <- character(length(clauses))
-        for (i in seq_along(clauses)) {
-            p <- regmatches(clauses[i], regexec(pair_re, clauses[i], perl = TRUE))[[1]]
-            if (length(p) == 3) {
-                mods[i] <- p[2]
-                vals[i] <- p[3]
-            }
-        }
-
-        keep <- nzchar(mods)
+        cl <- parse_effect_clauses(rest)
         list(outcome = outcome, predictor = focal,
-             mods = mods[keep], vals = vals[keep])
+             mods = cl$mods, vals = cl$vals)
     })
+}
+
+#' Parse a vector of Blimp SIMPLE `PARAM:` column names into structured pieces.
+#'
+#' Compound-parameter conditional effects are saved with a different header
+#' shape than `INTER:`/`SLOPE:`: there is no `<outcome> ~` prefix. With the
+#' `PARAM: ` KIND prefix already stripped, each name has the form
+#'   `"<label> | <m1> @ <v1>{ <continuation> }*"`
+#' where `<label>` is the focal expression the user wrote in SIMPLE (e.g.
+#' `"b4 + b7*mod"`). Returns a list with one entry per column, each a list
+#' with fields `label`, `mods` (character vector), and `vals` (aligned with
+#' `mods`).
+#' @noRd
+parse_param_colnames <- function(col_names) {
+    lapply(col_names, function(col_name) {
+        pipe_idx <- regexpr(" | ", col_name, fixed = TRUE)
+        if (pipe_idx < 0)
+            return(list(label = trimws(col_name),
+                        mods = character(0), vals = character(0)))
+        label <- trimws(substr(col_name, 1, pipe_idx - 1))
+        rest  <- substr(col_name, pipe_idx + 3L, nchar(col_name))
+        cl <- parse_effect_clauses(rest)
+        list(label = label, mods = cl$mods, vals = cl$vals)
+    })
+}
+
+#' Normalize a compound-parameter focal label for matching: drop all
+#' whitespace and lowercase, so `"b4 + b7*mod"` and `"b4+b7*mod"` compare equal.
+#' @noRd
+normalize_param_label <- function(x) {
+    tolower(gsub("\\s+", "", x))
 }
 
 #' Convert a SIMPLE moderator value label to a numeric point on the

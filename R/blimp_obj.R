@@ -178,6 +178,15 @@ setMethod(
                 result_list[[i]] <- summary(object, var_name, digits = digits, .header_level = 2, .par_width = max_par_width)
             }
 
+            # Append conditional (simple) effects from the SIMPLE command, if any.
+            if (NROW(object@simple) > 0) {
+                ce <- conditional_effects_table(object, ci = 0.95)
+                if (length(ce) > 0) {
+                    cat("\n")
+                    render_conditional_effects(ce, digits)
+                }
+            }
+
             cli::cli_h1('')
             return(invisible(result_list))
         }

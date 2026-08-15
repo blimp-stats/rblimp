@@ -81,6 +81,10 @@ jn_map <- function(formula, model, ci = 0.95, n_grid = 100, ...) {
     ))
 
     pf <- parse_plot_formula(formula)
+    if (isTRUE(pf$is_param)) throw_error(c(
+        "{.fn jn_map} does not support compound-parameter ({.code PARAM:}) effects.",
+        i = "Use {.fn jn_plot} with {.code \"{pf$focal}\" ~ moderator} for a 1-D region of significance."
+    ))
     out            <- pf$outcome
     pre            <- pf$focal
     formula_mods   <- pf$bare_mods
@@ -98,10 +102,11 @@ jn_map <- function(formula, model, ci = 0.95, n_grid = 100, ...) {
         "{.fn jn_map} does not support {.fn join} moderators."
     )
 
-    # Parse SIMPLE columns
+    # Parse SIMPLE columns. Only `SLOPE:` columns feed the slope surface;
+    # tolerate coexisting `PARAM:` (compound-parameter) columns.
     simple <- model@simple
     simple_names <- names(simple)
-    if (!all(grepl('(SLOPE|INTER): ', simple_names))) throw_error(
+    if (!any(startsWith(simple_names, 'SLOPE:'))) throw_error(
         "The Blimp version used is unsupported. Update Blimp!"
     )
     names(simple) <- gsub('(SLOPE|INTER): ', '', simple_names)

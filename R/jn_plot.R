@@ -274,7 +274,8 @@ compute_condeff <- function(value1, value2) {
 #' @description
 #' Generates a Johnson-Neyman Plot based on the posterior summaries from the output of [`rblimp`].
 #' @param formula an object of class [`formula`] to specify simple effect to plot.
-#' The formula must have the following form: `outcome ~ focal | moderator`. See Details below for nominal moderators.
+#' The formula usually has the form `outcome ~ focal | moderator`. See Details
+#' below for nominal moderators and for compound-parameter (`PARAM`) effects.
 #' @param model an [`blimp_obj`].
 #' @param ci a value between 0 and 1 specifying the credible interval size
 #' @param ... passed bounds search algorithm. See [`jn_plot_func`] for details.
@@ -293,7 +294,28 @@ compute_condeff <- function(value1, value2) {
 #' back to building the conditional slope directly from the model's fixed-effect
 #' interaction parameter (the original behavior).
 #'
-#' @seealso [`jn_plot_func`], [`jn_map`], [`simple_plot`], [`at`], [`join`]
+#' ## Compound-parameter (`PARAM`) effects
+#'
+#' A SIMPLE command whose focal is an expression of labeled model parameters
+#' (e.g. `simple = 'b4 + b7*mod | mod'`) produces a *compound-parameter*
+#' conditional effect: a single generated quantity per moderator value, with no
+#' intercept. Because these have no conditional regression line, they are shown
+#' only as a Johnson-Neyman region of significance -- [`simple_plot`] and
+#' [`jn_map`] do not apply.
+#'
+#' Reference such an effect by putting its focal-expression label on the
+#' left-hand side of the formula, with the moderator on the right (no `outcome`,
+#' no `|`). The label may be written unquoted or quoted:
+#'   \preformatted{jn_plot(b4 + b7*mod ~ mod, model)     # unquoted
+#' jn_plot("b4 + b7*mod" ~ mod, model)   # quoted (equivalent)}
+#' The label is matched to the SIMPLE output ignoring whitespace and case, so
+#' the two forms above are the same. (Absence of `|` on the right-hand side is
+#' what selects this path.) Additional moderators may be pinned with [`at`],
+#' exactly as in the standard path. The generated effect is linear in the
+#' moderator, so its value at each evaluated point is used to reconstruct the
+#' effect (and its region of significance) exactly.
+#'
+#' @seealso [`jn_plot_func`], [`jn_map`], [`simple_plot`], [`simple_effects`], [`at`], [`join`]
 #' @examplesIf has_blimp()
 #' \dontrun{
 #' # ---- Basic single-moderator example ----
@@ -347,6 +369,17 @@ compute_condeff <- function(value1, value2) {
 #'
 #' # Per-facet boundary x-values are also exposed as an attribute
 #' attr(jn_plot(y ~ x | m1 + m2, fit), "bounds")
+#'
+#' # ---- Compound-parameter (PARAM) conditional effect ----
+#' cp <- rblimp(
+#'     'y ~ x@b1 m x*m@b2',
+#'     mydata, center = ~ m,
+#'     simple = 'b1 + b2*m | m',
+#'     seed = 10972, burn = 1000, iter = 1000
+#' )
+#' # Focal-expression label on the left, moderator on the right, no `|`.
+#' jn_plot(b1 + b2*m ~ m, cp)          # unquoted
+#' jn_plot("b1 + b2*m" ~ m, cp)        # or quoted
 #' }
 #' @import ggplot2
 #' @importFrom methods is
@@ -363,6 +396,7 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
 
     # Parse formula via language tree (handles bare mods, `at(...)`, `join(...)`)
     pf <- parse_plot_formula(formula)
+    is_param           <- isTRUE(pf$is_param)
     out                <- pf$outcome
     pre                <- pf$focal
     formula_mods       <- pf$bare_mods
@@ -370,8 +404,9 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
     at_filter          <- pf$at_filter
 
     if (length(formula_mods) < 1) throw_error(c(
-        "The {.arg formula} must specify at least one bare moderator after `|`.",
-        "Must have the form: `outcome ~ focal | moderator`"
+        "The {.arg formula} must specify at least one moderator after `|`.",
+        "Must have the form: `outcome ~ focal | moderator`",
+        i = "To use only some of a moderator's SIMPLE values, use {.fn at} on its own: {.code | at(m = c(\"-1 SD\", \"+1 SD\"))}."
     ))
     mod <- formula_mods[1]
     extra_formula_mods <- formula_mods[-1]
@@ -384,7 +419,8 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
     var_is_cent <- function(name) {
         (tolower(name) |> sub("\\s*\\[[^]]*\\]$", "", x = _)) %in% centered_vars
     }
-    pre_is_cent <- var_is_cent(pre)
+    # A compound-parameter focal is an expression, not a centered variable.
+    pre_is_cent <- if (is_param) FALSE else var_is_cent(pre)
     mod_is_cent <- var_is_cent(mod)
 
     # Moderator range from average_imp; fall back to a default range when
@@ -419,9 +455,30 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
     }
 
     # Try SIMPLE-based path: requires SIMPLE rows matching outcome/focal/mod
-    simple_groups <- if (NROW(model@simple) > 0) {
-        parse_simple_groups(model, out, pre, mod, at_filter = at_filter)
-    } else NULL
+    # (or, for a compound-parameter focal, PARAM rows matching the label/mod).
+    if (is_param) {
+        if (NROW(model@simple) == 0) throw_error(c(
+            "No SIMPLE command was specified.",
+            i = "Specify {.arg simple} with a compound-parameter focal in {.fn rblimp}."
+        ))
+        simple_groups <- parse_param_groups(model, pre, mod, at_filter = at_filter)
+        if (is.null(simple_groups)) {
+            avail <- available_param_labels(model)
+            if (length(avail) == 0) throw_error(c(
+                "No compound-parameter conditional effects ({.code PARAM:}) are in this model's SIMPLE output.",
+                i = "For a standard interaction, use {.code outcome ~ focal | moderator} (note the {.code |}).",
+                i = "For a compound-parameter effect, label the focal in {.fn rblimp}, e.g. {.code simple = 'b4 + b7*mod | mod'}."
+            ))
+            throw_error(c(
+                "No compound-parameter effect matches label {.val {pre}} with moderator {.field {mod}}.",
+                i = "Available effect labels: {avail}"
+            ))
+        }
+    } else {
+        simple_groups <- if (NROW(model@simple) > 0) {
+            parse_simple_groups(model, out, pre, mod, at_filter = at_filter)
+        } else NULL
+    }
 
     if (!is.null(simple_groups) && length(extra_formula_mods) > 0) {
         # Sanity check: any underlying SIMPLE moderator referenced by the
@@ -724,9 +781,11 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
         + xlim(m_range)
         + guides(fill = "none")
         + labs(
-            title = "Johnson-Neyman Plot of Conditional Slope",
+            title = if (is_param) "Johnson-Neyman Plot of Conditional Effect"
+                    else "Johnson-Neyman Plot of Conditional Slope",
             subtitle = subtitle,
-            y = paste(out, "~", if (pre_is_cent) paste("Centered", pre) else pre),
+            y = if (is_param) pre
+                else paste(out, "~", if (pre_is_cent) paste("Centered", pre) else pre),
             x = if (mod_is_cent) paste("Centered", mod) else mod
         )
     )
@@ -743,7 +802,10 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
 parse_simple_groups <- function(model, out, pre, mod, at_filter = list()) {
     simple <- model@simple
     simple_names <- names(simple)
-    if (!all(grepl('(SLOPE|INTER): ', simple_names))) return(NULL)
+    # Only `SLOPE:`/`INTER:` columns feed the conditional-slope JN path. Other
+    # kinds (e.g. compound-parameter `PARAM:` effects) may coexist in the same
+    # `@simple` frame; ignore them here rather than bailing on the whole model.
+    if (!any(startsWith(simple_names, 'SLOPE:'))) return(NULL)
     names(simple) <- gsub('(SLOPE|INTER): ', '', simple_names)
     slope <- simple[, startsWith(simple_names, 'SLOPE:'), drop = FALSE]
     n <- names(slope)
@@ -817,6 +879,105 @@ parse_simple_groups <- function(model, out, pre, mod, at_filter = list()) {
             varying_vals = varying_vals,
             mod_vals     = mod_vals,
             slope_draws  = slope[, cols, drop = FALSE]
+        )
+    })
+    attr(out_list, "all_mods")   <- unique(unlist(lapply(sel_parsed, `[[`, "mods")))
+    attr(out_list, "facet_mods") <- extra_mods
+    out_list
+}
+
+#' Internal: the distinct compound-parameter (`PARAM:`) focal labels present in
+#' a model's SIMPLE output. Used to build a helpful error when a requested
+#' label doesn't match. Returns `character(0)` when there are no PARAM columns.
+#' @noRd
+available_param_labels <- function(model) {
+    sn  <- names(model@simple)
+    isp <- startsWith(sn, 'PARAM:')
+    if (!any(isp)) return(character(0))
+    pl <- parse_param_colnames(sub('^PARAM: ', '', sn[isp]))
+    unique(vapply(pl, `[[`, character(1), "label"))
+}
+
+#' Internal: group compound-parameter (`PARAM:`) conditional-effect columns for
+#' a JN plot. Mirrors `parse_simple_groups()` but matches on the focal
+#' expression `label` (whitespace/case-insensitive) instead of `outcome`/`focal`,
+#' and returns the effect draws in the `slope_draws` slot so the shared
+#' downstream reconstruction (effect ~ mod OLS per draw) applies unchanged.
+#' Returns `NULL` when no PARAM column matches the label + moderator.
+#' @noRd
+parse_param_groups <- function(model, label, mod, at_filter = list()) {
+    simple <- model@simple
+    simple_names <- names(simple)
+    isp <- startsWith(simple_names, 'PARAM:')
+    if (!any(isp)) return(NULL)
+    param  <- simple[, isp, drop = FALSE]
+    parsed <- parse_param_colnames(sub('^PARAM: ', '', simple_names[isp]))
+
+    target <- normalize_param_label(label)
+    keep <- vapply(parsed, function(p) {
+        length(p$label) == 1 &&
+            normalize_param_label(p$label) == target &&
+            (tolower(mod) %in% tolower(p$mods))
+    }, logical(1))
+
+    # Apply at() filter: each named moderator must take an allowed value.
+    if (length(at_filter) > 0) {
+        all_mods <- unique(unlist(lapply(parsed, `[[`, "mods")))
+        bad <- setdiff(tolower(names(at_filter)), tolower(all_mods))
+        if (length(bad) > 0) throw_error(c(
+            "Moderators inside {.fn at} are not in the SIMPLE output: {bad}",
+            i = "Available SIMPLE moderators: {all_mods}"
+        ))
+        keep <- keep & vapply(parsed, function(p) {
+            for (nm in names(at_filter)) {
+                idx <- which(tolower(p$mods) == tolower(nm))[1]
+                if (is.na(idx)) return(FALSE)
+                if (!(p$vals[idx] %in% at_filter[[nm]])) return(FALSE)
+            }
+            TRUE
+        }, logical(1))
+    }
+
+    if (!any(keep)) return(NULL)
+    sel_cols   <- which(keep)
+    sel_parsed <- parsed[sel_cols]
+
+    # Identify extra (held-constant) moderators; group rows by their values.
+    first_mods <- sel_parsed[[1]]$mods
+    extra_mods <- first_mods[!(tolower(first_mods) %in% tolower(mod))]
+
+    keys <- vapply(sel_parsed, function(p) {
+        if (length(extra_mods) == 0) return("")
+        vals <- vapply(extra_mods, function(em) {
+            idx <- which(tolower(p$mods) == tolower(em))[1]
+            p$vals[idx]
+        }, character(1))
+        paste(paste(extra_mods, '@', vals), collapse = ", ")
+    }, character(1))
+
+    grouped <- split(seq_along(sel_cols), keys)
+    out_list <- lapply(seq_along(grouped), function(gi) {
+        idx  <- grouped[[gi]]
+        cols <- sel_cols[idx]
+        ps   <- sel_parsed[idx]
+        varying_vals <- vapply(ps, function(p) {
+            i <- which(tolower(p$mods) == tolower(mod))[1]
+            p$vals[i]
+        }, character(1))
+        mod_vals <- if (length(extra_mods) == 0) {
+            setNames(character(0), character(0))
+        } else {
+            p <- ps[[1]]
+            setNames(vapply(extra_mods, function(em) {
+                i <- which(tolower(p$mods) == tolower(em))[1]
+                p$vals[i]
+            }, character(1)), extra_mods)
+        }
+        list(
+            label        = names(grouped)[gi],
+            varying_vals = varying_vals,
+            mod_vals     = mod_vals,
+            slope_draws  = param[, cols, drop = FALSE]
         )
     })
     attr(out_list, "all_mods")   <- unique(unlist(lapply(sel_parsed, `[[`, "mods")))
