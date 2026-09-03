@@ -483,14 +483,33 @@ mod_label_to_numeric <- function(label, mod_data, iterations, mu = 0) {
     # here double-centered them, e.g. Blimp's "@ 0" landed at `-mean(data)`.)
     nval <- suppressWarnings(as.numeric(lab))
     if (!is.na(nval)) return(nval)
-    if (NROW(iterations) > 0) {
-        cn <- colnames(iterations)
-        if (!is.null(cn)) {
-            ind <- tolower(cn) == tolower(lab)
-            if (sum(ind) == 1) return(mean(iterations[, ind]))
-        }
-    }
+    ind <- param_column_index(lab, iterations)
+    if (length(ind) == 1) return(mean(iterations[[ind]]))
     NA_real_
+}
+
+#' Locate the `iterations` column holding a named model parameter.
+#'
+#' Parameters declared in Blimp's `PARAMETERS:` block are stored with a
+#' `"Parameter:."` tag in `model@iterations` (and `"Parameter: "` in the
+#' estimates row names), so a bare SIMPLE value label such as `"w_low"` never
+#' matches the stored column name directly. Try the name as-is first, then
+#' again with that tag stripped.
+#'
+#' @return The single matching column index, or `integer(0)` when the name is
+#'   unknown or ambiguous.
+#' @noRd
+param_column_index <- function(label, iterations) {
+    if (NROW(iterations) == 0) return(integer(0))
+    cn <- colnames(iterations)
+    if (is.null(cn)) return(integer(0))
+    lab <- tolower(trimws(label))
+    ind <- which(tolower(cn) == lab)
+    if (length(ind) == 1) return(ind)
+    bare <- trimws(sub("^parameter:[.[:space:]]*", "", tolower(cn)))
+    ind <- which(bare == lab)
+    if (length(ind) == 1) return(ind)
+    integer(0)
 }
 
 #' One-time warning for expression-valued SIMPLE points.
