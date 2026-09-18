@@ -130,7 +130,7 @@ trace_plot(model)
 ## Resources
 
 - **Examples**: <https://github.com/blimp-stats/rblimp-examples>
-- **Blimp User Guide**: <https://docs.google.com/document/d/1D3MS79CakuX9mVVvGH13B5nRd9XLttp69oGsvrIRK64>
+- **Blimp User Guide**: <https://docs.blimpstats.com>
 - **Issue Tracker**: <https://github.com/blimp-stats/rblimp/issues>
 
 ## Citation

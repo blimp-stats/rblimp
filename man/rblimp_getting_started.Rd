@@ -126,7 +126,7 @@ For system installs, this launches the Blimp Updater application.
 \itemize{
 \item GitHub repository: \url{https://github.com/blimp-stats/rblimp}
 \item Example files: \url{https://github.com/blimp-stats/rblimp-examples}
-\item Blimp User Guide: \url{https://docs.google.com/document/d/1D3MS79CakuX9mVVvGH13B5nRd9XLttp69oGsvrIRK64}
+\item Blimp User Guide: \url{https://docs.blimpstats.com}
 \item Report issues: \url{https://github.com/blimp-stats/rblimp/issues}
 }
 }

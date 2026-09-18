@@ -46,7 +46,7 @@
 #' @param nopowershell Windows only. Uses cmd.exe with some limited functions (instead of powershell).
 #' @details
 #' The above functions require knowledge of specifying Blimp commands. Blimp's syntax commands are
-#' documented in the \href{https://docs.google.com/document/d/1D3MS79CakuX9mVVvGH13B5nRd9XLttp69oGsvrIRK64/edit?usp=sharing}{Blimp User Manual}
+#' documented in the \href{https://docs.blimpstats.com}{Blimp User Manual}
 #'
 #' By default, these commands can be inputted as character strings that will be used to generate the syntax.
 #' For multiple lined commands, you can wrap multiple strings into a character [`vector`] or a [`list`].
@@ -56,7 +56,7 @@
 #' for the `center` command to specify if you would like centering within a cluster or
 #' grand mean centering. This also works for the `latent` input when requesting latent
 #' variables at a specific cluster identifier.
-#' See the \href{https://docs.google.com/document/d/1D3MS79CakuX9mVVvGH13B5nRd9XLttp69oGsvrIRK64/edit?usp=sharing}{Blimp User Manual}
+#' See the \href{https://docs.blimpstats.com}{Blimp User Manual}
 #' for more details about types of centering and specifying latent variables.
 #'
 #' In addition, R's formula syntax can be used to specify lists of variables
