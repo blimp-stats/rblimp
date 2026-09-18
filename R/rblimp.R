@@ -169,6 +169,8 @@ rblimp <- function(model,
         if (!dir.create(tmpfolder)) throw_error(
             "Was unable to create temporary directory."
         )
+        # Delete temp files on exit
+        on.exit(unlink(tmpfolder, recursive = TRUE), add = TRUE)
     }
 
     # Check if data is a simulation specification or data.frame
@@ -307,7 +309,6 @@ rblimp <- function(model,
     # Check exit code
     if (length(exitcode) == 1) {
         if (exitcode == "1") {
-            if (missing(tmpfolder)) unlink(tmpfolder)
             throw_error("Blimp had an error. Check output.")
         }
     }
@@ -689,9 +690,6 @@ rblimp <- function(model,
     } else {
         output$variance_imp <- data.frame()
     }
-
-    # Delete temp files
-    if (missing(tmpfolder)) unlink(tmpfolder)
 
     # Return output
     return(
