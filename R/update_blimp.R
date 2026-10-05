@@ -43,7 +43,7 @@ parse_version_string <- function(v) {
     suppressWarnings(as.integer(parts))
 }
 
-#' Internal: query installed Blimp's version via --changelog
+#' Internal: query installed Blimp's version via --version
 #' @noRd
 blimp_version <- function() {
     blimp_path <- tryCatch(detect_blimp(prompt = FALSE),
@@ -53,20 +53,18 @@ blimp_version <- function() {
     # Preprocess path for non-unix (assumes windows)
     if (.Platform$OS.type != "unix") blimp_path <- paste0('"', blimp_path, '"')
 
-    v <- suppressWarnings(tryCatch(
-        system(paste(blimp_path, "--changelog"), intern = TRUE)[3],
-        error = \(e) NA_character_
+    out <- suppressWarnings(tryCatch(
+        system(paste(blimp_path, "--version"), intern = TRUE),
+        error = \(e) character(0)
     ))
-
-    if (is.na(v)) return(NA_integer_)
-    parse_version_string(substr(v, 9, nchar(v)))
+    v <- regmatches(out, regexpr("^\\s*[0-9]+\\.[0-9]+\\.[0-9]+", out))
+    if (!length(v)) return(NA_integer_)
+    parse_version_string(trimws(v[1]))
 }
 
 #' Internal: first Blimp version that supports `--influence`
-#' TODO: placeholder until a Blimp release includes `--influence`. While `NA`,
-#' the version check is skipped and an older Blimp will report the error itself.
 #' @noRd
-influence_min_version <- NA_character_
+influence_min_version <- "4.1.0"
 
 #' Internal: error if the installed Blimp is too old for `--influence`
 #' Skips the check if either version is unknown.
