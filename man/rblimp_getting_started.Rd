@@ -96,6 +96,12 @@ For system installs, this launches the Blimp Updater application.
 \item \code{\link{trace_plot}} - MCMC trace plots
 \item \code{\link{posterior_plot}} - Posterior density plots
 \item \code{\link{residual_plot}} - Residual diagnostics
+\item \code{\link{influence_plot}} - Leverage and Cook's distance
+\item \code{\link{probability_plot}} - Predicted category probabilities
+\item \code{\link{distribution_plot}} - Observed and imputed distributions
+\item \code{\link{qq_plot}} - Normal Q-Q plots
+\item \code{\link{diagnostic_plots}} - Every applicable diagnostic plot
+\item \code{\link{distribution_plots}} - Every applicable distribution plot
 \item \code{\link{jn_plot}} - Johnson-Neyman plots
 \item \code{\link{simple_plot}} - Simple slopes plots
 \item \code{\link{model_table}} - Publication tables

@@ -87,6 +87,12 @@
 #' - [`trace_plot`] - MCMC trace plots
 #' - [`posterior_plot`] - Posterior density plots
 #' - [`residual_plot`] - Residual diagnostics
+#' - [`influence_plot`] - Leverage and Cook's distance
+#' - [`probability_plot`] - Predicted category probabilities
+#' - [`distribution_plot`] - Observed and imputed distributions
+#' - [`qq_plot`] - Normal Q-Q plots
+#' - [`diagnostic_plots`] - Every applicable diagnostic plot
+#' - [`distribution_plots`] - Every applicable distribution plot
 #' - [`jn_plot`] - Johnson-Neyman plots
 #' - [`simple_plot`] - Simple slopes plots
 #' - [`model_table`] - Publication tables

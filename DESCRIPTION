@@ -21,11 +21,12 @@ SystemRequirements: Blimp software (<https://www.appliedmissingdata.com/blimp>)
 Imports:
     cli,
     methods,
-    ggplot2
+    ggplot2 (>= 4.0.0)
 Suggests:
     mitml,
     rstudioapi,
-    posterior
+    posterior,
+    ggrepel
 Roxygen: list(markdown = TRUE)
 URL: https://github.com/blimp-stats/rblimp
 BugReports: https://github.com/blimp-stats/rblimp/issues

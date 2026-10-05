@@ -2,47 +2,82 @@
 % Please edit documentation in R/residual_plot.R
 \name{residual_plot}
 \alias{residual_plot}
-\title{Function to generate conditional regression equation plots (i.e., simple effects) with \code{\link{rblimp}} and SIMPLE command}
+\title{Residual diagnostic plots for an outcome in a \code{\link{blimp_obj}}}
 \usage{
 residual_plot(
   model,
   variable,
-  nsigma = 1,
-  point_col = "black",
-  horz_line = "black",
-  col1 = "#0571b0",
-  col2 = "#ca0020",
-  linewidth = 1.1,
-  ...
+  x,
+  se = FALSE,
+  index_thresholds = c(-3, 3),
+  max_labels = 10
 )
 }
 \arguments{
-\item{model}{an \code{\link{blimp_obj}}. The object must have a SIMPLE command output saved.}
+\item{model}{a \code{\link{blimp_obj}} with saved imputations.}
 
-\item{variable}{the name of the outcome for which to create a plot}
+\item{variable}{a character string naming one outcome. This is a level-1 outcome
+(e.g., \code{"y"}; the parent name for a nominal outcome), a level-2 random-intercept
+residual (e.g., \code{"y[school]"}), or a level-2 latent random effect declared on the
+cluster identifier's LATENT line.}
 
-\item{nsigma}{the number of standard deviations to produce credible bounds}
+\item{x}{what to plot the residuals against:
+\itemize{
+\item \code{"predicted"}: the predicted values (the default when the outcome has them).
+\item one or more predictor names: a separate panel for each predictor.
+\item \code{"case"}: the record number (an index plot; the default otherwise).
+\item \code{"cluster"}: clusters ordered by their residual spread (clustered continuous outcomes).
+}}
 
-\item{point_col}{the color of the points in the plot}
+\item{se}{a logical value. If \code{TRUE}, adds 95\% pointwise bands around the loess
+curve. See details.}
 
-\item{horz_line}{the color of the horiztonal zero line}
+\item{index_thresholds}{a numeric vector of reference lines for standardized
+residuals. Cases beyond the largest absolute value are labeled on the index plot.}
 
-\item{col1}{the color of the loess mean line}
-
-\item{col2}{the color of the loess credible bound lines}
-
-\item{linewidth}{the linewidth value for the loess lines and its bounds.}
-
-\item{...}{arguments passed to \code{\link{loess}} call used to loess lines.}
+\item{max_labels}{an integer. The maximum number of cases labeled on an index plot.}
 }
 \value{
 a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
 }
 \description{
-Generates a conditional effect plots based on the posterior summaries from the output of \code{\link{rblimp}}.
+Plots an outcome's residuals against its predicted values, a predictor, the case
+(record) number, or the cluster, using every saved imputation.
 }
 \details{
-All colors are passed into \code{ggplot2}. See \code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for details on changing colors.
+Every quantity is computed within each imputed data set and then pooled; nothing is
+computed on an average of the imputations, because averaging an imputed predictor and
+the residual together induces a spurious association between them. Points stack all
+imputations, and the loess curve is fit within each imputation and the curves averaged.
+
+The residual scale is fixed by the plot, as in \code{\link[stats:plot.lm]{plot.lm}}:
+\itemize{
+\item against predicted values: raw residuals;
+\item against a predictor, the case number, or the cluster: standardized residuals, using
+the pooled residual standard deviation (the per-case model-implied standard deviation
+when a variance model is fit). Reference lines are drawn at \code{index_thresholds}.
+}
+
+What is plotted depends on the outcome:
+\itemize{
+\item \strong{Continuous and ordinal outcomes} (ordinal on the latent scale): residual scatter
+plots with a loess curve, or category means when a predictor is declared discrete or
+has 10 or fewer distinct values.
+\item \strong{Nominal outcomes}: binned residuals on the probability scale (Gelman & Hill, 2007),
+with a panel for each non-reference category. There is no index plot.
+\item \strong{Count outcomes}: Pearson residuals, using the negative binomial dispersion
+parameter. There is no residual-vs-predicted plot.
+\item \strong{Level-2 residuals}: one value per cluster, against level-2 predictors or as an
+index plot. In a clustered model, level-1 plots use within-cluster predictors only, and
+predictors centered at their latent group mean are shown as within-cluster deviations.
+}
+
+With \code{se = TRUE}, each imputation's loess is evaluated with its standard error and the
+curves are pooled with Rubin's rules: \eqn{T = W + B + B/M}, and the band is
+\eqn{\pm 1.96\sqrt{T}}. The bands are drawn only on plots with a loess curve.
+
+Colors come from the plot theme: points use the theme's ink and curves use its accent.
+See \code{\link[ggplot2:element_geom]{ggplot2::element_geom}}.
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
@@ -67,7 +102,16 @@ m1 <- rblimp(
     iter = 1000
 )
 
-# Generate Plot
-residual_plot(m1, 'y') + ggplot2::theme_minimal()
+# Residuals against predicted values
+residual_plot(m1, 'y')
+
+# Against each predictor, with 95\% bands
+residual_plot(m1, 'y', x = c('x', 'm'), se = TRUE)
+
+# Index plot
+residual_plot(m1, 'y', x = 'case') + ggplot2::theme_minimal()
 \dontshow{\}) # examplesIf}
+}
+\seealso{
+\code{\link{diagnostic_plots}}, \code{\link{influence_plot}}, \code{\link{probability_plot}}, \code{\link{distribution_plot}}
 }

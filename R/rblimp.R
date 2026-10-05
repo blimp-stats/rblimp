@@ -81,7 +81,7 @@
 #' @returns [`blimp_obj`]
 #' @importFrom graphics abline axis dotchart hist lines points
 #' @importFrom methods new show
-#' @importFrom stats coef median model.matrix ppoints pt qnorm quantile resid sd start vcov setNames
+#' @importFrom stats coef median model.matrix ppoints pt qnorm quantile resid sd start terms vcov setNames
 #' @importFrom utils read.csv read.table write.csv
 #' @examplesIf has_blimp()
 #' # Generate Data with `rblimp_sim`
