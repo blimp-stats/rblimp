@@ -62,6 +62,28 @@ blimp_version <- function() {
     parse_version_string(substr(v, 9, nchar(v)))
 }
 
+#' Internal: first Blimp version that supports `--influence`
+#' TODO: placeholder until a Blimp release includes `--influence`. While `NA`,
+#' the version check is skipped and an older Blimp will report the error itself.
+#' @noRd
+influence_min_version <- NA_character_
+
+#' Internal: error if the installed Blimp is too old for `--influence`
+#' Skips the check if either version is unknown.
+#' @noRd
+check_influence_support <- function() {
+    if (is.na(influence_min_version)) return(invisible(TRUE))
+    cur <- blimp_version()
+    if (anyNA(cur)) return(invisible(TRUE))
+    if (package_version(paste(cur, collapse = ".")) < package_version(influence_min_version)) {
+        throw_error(c(
+            "{.arg influence} requires Blimp {influence_min_version} or later.",
+            "i" = "Installed version: {paste(cur, collapse = '.')}. Update with {.code update_blimp()}."
+        ))
+    }
+    invisible(TRUE)
+}
+
 #' Internal: latest Blimp version from the manifest
 #' Falls back to NA on any network or parse error.
 #' @noRd

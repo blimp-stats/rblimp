@@ -4,7 +4,13 @@
 \alias{rblimp_source}
 \title{Runs an 'imp' file with Blimp}
 \usage{
-rblimp_source(file, plots = FALSE, output = TRUE, nopowershell = FALSE)
+rblimp_source(
+  file,
+  plots = FALSE,
+  output = TRUE,
+  nopowershell = FALSE,
+  influence = FALSE
+)
 }
 \arguments{
 \item{file}{a character string to the 'imp' file's location}
@@ -16,6 +22,10 @@ rblimp_source(file, plots = FALSE, output = TRUE, nopowershell = FALSE)
 suppresses all output to console, and \code{'all'} prints all output to console.}
 
 \item{nopowershell}{Windows only. Uses cmd.exe with some limited functions (instead of powershell).}
+
+\item{influence}{a logical value. Setting to \code{TRUE} will have Blimp write \code{influence.csv}
+(leverage, Cook's distance, and residual variance) into the folder containing \code{file}.
+Requires a version of Blimp that supports influence output.}
 }
 \value{
 a \code{blimp_out} object

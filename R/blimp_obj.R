@@ -719,6 +719,53 @@ setMethod(
     }
 )
 
+#' Internal function to obtain Blimp's influence values from a `blimp_obj`
+#' @noRd
+get_influence <- function(object) {
+    inf <- attr(object@average_imp, "influence")
+    if (is.null(inf)) throw_error(c(
+        "{.arg model} does not contain influence values.",
+        "i" = "Rerun {.fn rblimp} with {.code influence = TRUE}.",
+        "i" = "Values are only computed for single-level continuous and ordinal probit outcomes."
+    ))
+    inf
+}
+
+#' Influence values from `blimp_obj`
+#' @param model A `blimp_obj` object fit with `influence = TRUE`
+#' @param ... Additional arguments (unused)
+#' @return A data frame with one row per case and three columns per eligible outcome:
+#'   `<dv>.leverage` (posterior-averaged leverage), `<dv>.cooks` (Cook's distance),
+#'   and `<dv>.variance` (posterior-averaged residual variance).
+#' @details
+#' Values are computed by Blimp and averaged over every post burn-in iteration.
+#' Only single-level continuous and ordinal probit outcomes are included.
+#' @importFrom stats influence
+#' @export
+setMethod(
+    "influence", "blimp_obj",
+    function(model, ...) {
+        get_influence(model)
+    }
+)
+
+#' Cook's distance from `blimp_obj`
+#' @param model A `blimp_obj` object fit with `influence = TRUE`
+#' @param ... Additional arguments (unused)
+#' @return A data frame with one row per case and a `<dv>.cooks` column for each eligible outcome.
+#' @details
+#' Values are computed by Blimp and averaged over every post burn-in iteration.
+#' Only single-level continuous and ordinal probit outcomes are included.
+#' @importFrom stats cooks.distance
+#' @export
+setMethod(
+    "cooks.distance", "blimp_obj",
+    function(model, ...) {
+        inf <- get_influence(model)
+        inf[, endsWith(names(inf), ".cooks"), drop = FALSE]
+    }
+)
+
 
 #' Coerces a [`blimp_obj`] or `blimp_bygroup` to a `mitml.list`
 #' @param object [`blimp_obj`] or `blimp_bygroup` object

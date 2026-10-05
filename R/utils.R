@@ -577,6 +577,28 @@ parse_csv_header <- function(header_line) {
     return(fields)
 }
 
+#' Read Blimp's influence output
+#'
+#' @description
+#' Reads the `influence.csv` file Blimp writes with `--influence`. The file has
+#' one row per case and three columns per eligible outcome
+#' (`<dv>.leverage`, `<dv>.cooks`, `<dv>.variance`). Non-finite values are
+#' written as `nan`.
+#'
+#' @param file Path to `influence.csv`
+#' @return A `data.frame`, empty if the file does not exist
+#' @noRd
+read_influence <- function(file) {
+    if (!file.exists(file)) return(data.frame())
+    out <- read.csv(
+        file, skip = 1, header = FALSE,
+        na.strings = c("NA", "nan", "NaN", "-nan")
+    )
+    names(out) <- file |> readLines(1) |> parse_csv_header()
+    out[] <- lapply(out, as.numeric)
+    out
+}
+
 #' Calculate maximum parameter name width across multiple variables for alignment
 #' 
 #' @description
