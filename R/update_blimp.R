@@ -35,15 +35,25 @@ detect_blimp_updater <- function(user_os) {
     }
 }
 
-#' Internal: parse a "X.Y.Z" version string into numeric components
+#' Internal: parse a "X.Y.Z" or "X.Y.Z.bN" version string into numeric components
 #' @noRd
 parse_version_string <- function(v) {
     if (is.null(v) || is.na(v) || !nzchar(v)) return(NA_integer_)
-    parts <- strsplit(v, "\\.")[[1]]
+    parts <- strsplit(sub("\\.b", ".", v), "\\.")[[1]]
     suppressWarnings(as.integer(parts))
 }
 
-#' Internal: query installed Blimp's version via --version
+#' Internal: TRUE if version `a` is lower than version `b`
+#' @noRd
+version_less <- function(a, b) {
+    n <- max(length(a), length(b))
+    a <- c(a, rep(0L, n - length(a)))
+    b <- c(b, rep(0L, n - length(b)))
+    d <- which(a != b)
+    length(d) > 0 && a[d[1]] < b[d[1]]
+}
+
+#' Internal: query installed Blimp's version via --version, falling back to --changelog
 #' @noRd
 blimp_version <- function() {
     blimp_path <- tryCatch(detect_blimp(prompt = FALSE),
@@ -53,11 +63,18 @@ blimp_version <- function() {
     # Preprocess path for non-unix (assumes windows)
     if (.Platform$OS.type != "unix") blimp_path <- paste0('"', blimp_path, '"')
 
-    out <- suppressWarnings(tryCatch(
-        system(paste(blimp_path, "--version"), intern = TRUE, ignore.stderr = TRUE),
+    run_blimp <- function(arg) suppressWarnings(tryCatch(
+        system(paste(blimp_path, arg), intern = TRUE, ignore.stderr = TRUE),
         error = \(e) character(0)
     ))
-    v <- regmatches(out, regexpr("^\\s*[0-9]+\\.[0-9]+\\.[0-9]+", out))
+
+    out <- run_blimp("--version")
+    v <- regmatches(out, regexpr("^\\s*[0-9]+\\.[0-9]+\\.[0-9]+(\\.b[0-9]+)?", out))
+    if (!length(v)) {
+        out <- run_blimp("--changelog")
+        v <- regmatches(out, regexpr("^Version\\s+[0-9]+\\.[0-9]+\\.[0-9]+(\\.b[0-9]+)?", out))
+        v <- sub("^Version\\s+", "", v)
+    }
     if (!length(v)) return(NA_integer_)
     parse_version_string(trimws(v[1]))
 }
@@ -73,7 +90,7 @@ check_influence_support <- function() {
     if (is.na(influence_min_version)) return(invisible(TRUE))
     cur <- blimp_version()
     if (anyNA(cur)) return(invisible(TRUE))
-    if (package_version(paste(cur, collapse = ".")) < package_version(influence_min_version)) {
+    if (version_less(cur, parse_version_string(influence_min_version))) {
         throw_error(c(
             "{.arg influence} requires Blimp {influence_min_version} or later.",
             "i" = "Installed version: {paste(cur, collapse = '.')}. Update with {.code update_blimp()}."
@@ -99,7 +116,7 @@ has_blimp_update <- function() {
     cur <- blimp_version()
     new <- update_version()
     if (anyNA(cur) || anyNA(new)) return(FALSE)
-    any(cur < new)
+    version_less(cur, new)
 }
 
 #' Update the installed Blimp engine
