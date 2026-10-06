@@ -43,6 +43,10 @@ probability_plot <- function(model, variable, x) {
     check_diagnostic_model(model)
     check_variable_arg(variable, "diagnostic_plots")
     outcome <- diag_outcome(model, variable)
+    if (!is.null(outcome$category_of)) {
+        variable <- outcome$category_of
+        outcome <- diag_outcome(model, variable)
+    }
     if (outcome$level != 1L || !outcome$type %in% c("ordinal", "nominal")) throw_error(
         "Predicted probabilities are plotted only for ordinal and nominal outcomes."
     )

@@ -59,8 +59,7 @@ Builds a \code{\link{distribution_plot}} for every plottable variable in a model
 for every continuous one, as a named list of \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plots.
 }
 \details{
-Predicted values are not included by default, nor are the latent responses of categorical
-predictors. Both can be requested with \code{selector}.
+Predicted values are not included by default; request them with \code{selector}.
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}

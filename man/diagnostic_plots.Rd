@@ -49,7 +49,7 @@ The plots for each outcome depend on its type:\tabular{ll}{
    Continuous, ordinal \tab \verb{<dv>.predicted}, \verb{<dv>.<predictor>}, \verb{<dv>.index}, \verb{<dv>.leverage}, \verb{<dv>.cooks} \cr
    Ordinal \tab also \verb{<dv>.<predictor>.probability} \cr
    Continuous, clustered \tab also \verb{<dv>.cluster_variance} \cr
-   Nominal \tab \verb{<dv>.binned}, \verb{<dv>.<predictor>}, \verb{<dv>.<predictor>.probability} \cr
+   Nominal \tab \verb{<dv>.<k>.binned}, \verb{<dv>.<k>.<predictor>} for each non-reference category \code{k}; \verb{<dv>.<predictor>.probability} \cr
    Count \tab \verb{<dv>.index}, \verb{<dv>.<predictor>} (Pearson residuals) \cr
    Level-2 residual or latent \tab \verb{<name>.index}, \verb{<name>.<level-2 predictor>} \cr
 }

@@ -6,9 +6,10 @@
 #' (record) number, or the cluster, using every saved imputation.
 #' @param model a [`blimp_obj`] with saved imputations.
 #' @param variable a character string naming one outcome. This is a level-1 outcome
-#'   (e.g., `"y"`; the parent name for a nominal outcome), a level-2 random-intercept
-#'   residual (e.g., `"y[school]"`), or a level-2 latent random effect declared on the
-#'   cluster identifier's LATENT line.
+#'   (e.g., `"y"`), a level-2 random-intercept residual (e.g., `"y[school]"`), or a level-2
+#'   latent random effect declared on the cluster identifier's LATENT line. For a nominal
+#'   outcome, the parent name (e.g., `"y"`) plots every non-reference category and a
+#'   category name (e.g., `"y.2"`) plots one.
 #' @param x what to plot the residuals against:
 #'   - `"predicted"`: the predicted values (the default when the outcome has them).
 #'   - one or more predictor names: a separate panel for each predictor.
@@ -105,7 +106,7 @@ residual_plot <- function(
 
     # Default x
     if (missing(x)) {
-        x <- if (outcome$level == 1L && outcome$type != "count" && predicted_varies(imp_list, outcome)) "predicted" else "case"
+        x <- if (outcome$level == 1L && outcome$type != "count") "predicted" else "case"
     }
     if (!is.character(x) || !length(x)) throw_error(
         "{.arg x} must be a character vector"
@@ -132,14 +133,6 @@ inform_no_se <- function() {
 
 # Residual vs predicted =======================================================
 
-#' Internal function to check whether an outcome's predicted values vary
-#' They are constant for an outcome with no predictors, such as a latent factor.
-#' @noRd
-predicted_varies <- function(imp_list, outcome) {
-    if (outcome$type == "nominal") return(TRUE)
-    isTRUE(stats::sd(imp_list[[1]][[outcome$predicted]], na.rm = TRUE) > 0)
-}
-
 #' Internal function for raw residuals against predicted values
 #' @noRd
 resid_vs_predicted <- function(imp_list, outcome, se) {
@@ -152,10 +145,6 @@ resid_vs_predicted <- function(imp_list, outcome, se) {
         "i" = "Use {.code x = \"case\"} or a predictor for Pearson residuals."
     ))
     if (outcome$type == "nominal") return(binned_plot(imp_list, outcome, "predicted"))
-    if (!predicted_varies(imp_list, outcome)) throw_error(c(
-        "The predicted values of {.val {outcome$name}} are constant.",
-        "i" = "Use {.code x = \"case\"} for an index plot."
-    ))
 
     xy_list <- lapply(imp_list, \(d) data.frame(x = d[[outcome$predicted]], y = d[[outcome$residual]]))
     panel <- list(name = "Predicted", xy_list = xy_list, discrete = FALSE)
@@ -428,7 +417,7 @@ resid_by_cluster <- function(imp_list, outcome) {
 #' non-reference category. No standard-error bands.
 #' @noRd
 binned_plot <- function(imp_list, outcome, x, discrete_vars = character(0)) {
-    parent <- outcome$name
+    parent <- if (is.null(outcome$category_of)) outcome$name else outcome$category_of
     if (!parent %in% names(imp_list[[1]])) throw_error("Column {.val {parent}} not found in the imputations.")
     rows <- list()
     curves <- list()
@@ -493,7 +482,7 @@ binned_plot <- function(imp_list, outcome, x, discrete_vars = character(0)) {
     }
     by_pred <- identical(x, "predicted")
     p + ggplot2::labs(
-        title = sprintf(if (by_pred) "Binned Residual vs. Predicted: %s" else "Binned Residual vs. Predictor: %s", parent),
+        title = sprintf(if (by_pred) "Binned Residual vs. Predicted: %s" else "Binned Residual vs. Predictor: %s", outcome$name),
         x = if (n_x == 1) bins$predictor[1] else NULL,
         y = "Mean Residual"
     )

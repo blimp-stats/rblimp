@@ -24,7 +24,7 @@
 #' | Continuous, ordinal | `<dv>.predicted`, `<dv>.<predictor>`, `<dv>.index`, `<dv>.leverage`, `<dv>.cooks` |
 #' | Ordinal | also `<dv>.<predictor>.probability` |
 #' | Continuous, clustered | also `<dv>.cluster_variance` |
-#' | Nominal | `<dv>.binned`, `<dv>.<predictor>`, `<dv>.<predictor>.probability` |
+#' | Nominal | `<dv>.<k>.binned`, `<dv>.<k>.<predictor>` for each non-reference category `k`; `<dv>.<predictor>.probability` |
 #' | Count | `<dv>.index`, `<dv>.<predictor>` (Pearson residuals) |
 #' | Level-2 residual or latent | `<name>.index`, `<name>.<level-2 predictor>` |
 #'
@@ -90,6 +90,8 @@ diagnostic_plots <- function(model, selector) {
 
     for (o in outcomes) {
         dv <- o$name
+        # Nominal categories are handled with their parent unless selected on their own
+        if (!is.null(o$category_of) && o$category_of %in% names(outcomes)) next
         if (o$level == 2L) {
             add(paste0(dv, ".index"), residual_plot(model, dv, x = "case"))
             for (col in diag_outcome_predictors(model, o)$level2) {
@@ -100,17 +102,14 @@ diagnostic_plots <- function(model, selector) {
         preds <- diag_outcome_predictors(model, o)
 
         if (o$type %in% c("continuous", "ordinal")) {
-            # An outcome with no predictors (e.g., a latent factor) has constant predicted values
-            if (predicted_varies(model@imputations, o)) {
-                add(paste0(dv, ".predicted"), residual_plot(model, dv, x = "predicted"))
-            }
+            add(paste0(dv, ".predicted"), residual_plot(model, dv, x = "predicted"))
             for (p in names(preds$level1)) add(paste0(dv, ".", p), residual_plot(model, dv, x = p))
             add(paste0(dv, ".index"), residual_plot(model, dv, x = "case"))
             if (o$type == "continuous" && !is.na(o$cluster)) {
                 add(paste0(dv, ".cluster_variance"), residual_plot(model, dv, x = "cluster"))
             }
             if (o$type == "ordinal") {
-                for (p in c(names(preds$level1), names(preds$level2))) {
+                for (p in unique(c(names(preds$level1), names(preds$level2)))) {
                     add(paste0(dv, ".", p, ".probability"), probability_plot(model, dv, p))
                 }
             }
@@ -119,10 +118,17 @@ diagnostic_plots <- function(model, selector) {
                 add(paste0(dv, ".cooks"), influence_plot(model, dv, measure = "cooks"))
             }
         } else if (o$type == "nominal") {
-            add(paste0(dv, ".binned"), residual_plot(model, dv, x = "predicted"))
-            for (p in names(preds$level1)) add(paste0(dv, ".", p), residual_plot(model, dv, x = p))
-            for (p in c(names(preds$level1), names(preds$level2))) {
-                add(paste0(dv, ".", p, ".probability"), probability_plot(model, dv, p))
+            # One set of binned plots per non-reference category
+            cats <- if (is.null(o$category_of)) paste0(dv, ".", o$categories) else dv
+            for (ck in cats) {
+                add(paste0(ck, ".binned"), residual_plot(model, ck, x = "predicted"))
+                for (p in names(diag_outcome_predictors(model, diag_outcome(model, ck))$level1)) {
+                    add(paste0(ck, ".", p), residual_plot(model, ck, x = p))
+                }
+            }
+            parent <- if (is.null(o$category_of)) dv else o$category_of
+            for (p in unique(c(names(preds$level1), names(preds$level2)))) {
+                add(paste0(parent, ".", p, ".probability"), probability_plot(model, parent, p))
             }
         } else if (o$type == "count") {
             add(paste0(dv, ".index"), residual_plot(model, dv, x = "case"))
@@ -159,8 +165,7 @@ diagnostic_plots <- function(model, selector) {
 #'   Q-Q plots named `<var>.qq`. Printing it draws every plot. `+` and `&` add a ggplot2
 #'   component to every plot (the list must be on the left), and `[` keeps the class.
 #' @details
-#' Predicted values are not included by default, nor are the latent responses of categorical
-#' predictors. Both can be requested with `selector`.
+#' Predicted values are not included by default; request them with `selector`.
 #' @seealso [`distribution_plot`], [`qq_plot`], [`diagnostic_plots`]
 #' @examplesIf has_blimp()
 #' # Generate Data
@@ -217,8 +222,7 @@ distribution_plots <- function(model, selector, qq = TRUE, bins = 30, discrete_m
 
 #' Internal function listing the default variables for `distribution_plots()`
 #' Variables in the model's terms and its outcomes, then model-implied quantities,
-#' then level-2 quantities. Predicted values and the latent responses of
-#' categorical predictors are left out.
+#' then level-2 quantities. Predicted values are left out.
 #' @noRd
 distribution_vars <- function(model) {
     cols <- names(model@imputations[[1]])
@@ -232,14 +236,6 @@ distribution_vars <- function(model) {
 
     implied <- grep("\\.(residual|latent|probability|yjt)$", cols, value = TRUE)
     implied <- implied[!grepl("\\[.+\\]$", implied)]
-    categorical <- diag_discrete_vars(model, c("ordinal", "nominal"))
-    is_cat_latent <- vapply(implied, \(v) {
-        if (!endsWith(v, ".latent")) return(FALSE)
-        base <- sub("\\.latent$", "", v)
-        parent <- sub("\\.[0-9]+$", "", base)
-        (base %in% categorical || parent %in% categorical) && !paste0(base, ".residual") %in% cols
-    }, TRUE)
-    implied <- implied[!is_cat_latent]
 
     level2 <- grep("\\[.+\\]$", cols, value = TRUE)
     unique(c(raw, implied, level2))

@@ -17,9 +17,10 @@ residual_plot(
 \item{model}{a \code{\link{blimp_obj}} with saved imputations.}
 
 \item{variable}{a character string naming one outcome. This is a level-1 outcome
-(e.g., \code{"y"}; the parent name for a nominal outcome), a level-2 random-intercept
-residual (e.g., \code{"y[school]"}), or a level-2 latent random effect declared on the
-cluster identifier's LATENT line.}
+(e.g., \code{"y"}), a level-2 random-intercept residual (e.g., \code{"y[school]"}), or a level-2
+latent random effect declared on the cluster identifier's LATENT line. For a nominal
+outcome, the parent name (e.g., \code{"y"}) plots every non-reference category and a
+category name (e.g., \code{"y.2"}) plots one.}
 
 \item{x}{what to plot the residuals against:
 \itemize{

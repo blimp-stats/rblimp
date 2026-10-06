@@ -256,6 +256,13 @@ diag_outcomes <- function(model) {
             name = b, level = 1L, type = "nominal", categories = ks,
             terms = paste0(b, ".", ks)
         )
+        # Each non-reference category is also an outcome, named as Blimp names it
+        for (k in ks) {
+            out[[paste0(b, ".", k)]] <- list(
+                name = paste0(b, ".", k), level = 1L, type = "nominal", categories = k,
+                terms = paste0(b, ".", k), parent = b, category_of = b
+            )
+        }
     }
 
     # Cluster information for level-1 outcomes. A nominal outcome's level-2
@@ -324,7 +331,10 @@ diag_outcome_predictors <- function(model, outcome) {
         return(list(level1 = preds, level2 = character(0)))
     }
     is_l2 <- vapply(preds, \(p) is_cluster_constant(d[[p]], d[[cl]]), TRUE)
-    list(level1 = preds[!is_l2], level2 = preds[is_l2])
+    # Cluster-constant predictors are plotted only against the outcome's level-2
+    # residual when it has one, so they never appear twice
+    drop_l2 <- outcome$level == 1L && length(outcome$level2_residuals) > 0
+    list(level1 = if (drop_l2) preds[!is_l2] else preds, level2 = preds[is_l2])
 }
 
 #' Internal function to check whether a column is constant within every cluster
