@@ -353,7 +353,7 @@ pooled_sigma <- function(imp_list, residual, variance_col = NULL) {
 
 #' Internal function for the point alpha of a stacked cloud of M imputations
 #' @noRd
-pooled_alpha <- function(M) 0.7 / max(M, 1)^(1 / 3)
+pooled_alpha <- function(M) 0.3 / max(M, 1)^(1 / 3)
 
 #' Internal function for a fit-then-pool loess curve
 #' Fits a loess within each imputation, evaluates every fit on one common grid
