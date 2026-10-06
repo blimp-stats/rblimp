@@ -61,7 +61,12 @@ diagnostic_plots <- function(model, selector) {
     check_diagnostic_model(model)
     outcomes <- diag_outcomes(model)
     tt <- diag_term_table(model)
-    outcomes <- Filter(\(o) o$level == 2L || any(o$terms %in% tt$base), outcomes)
+    # Outcomes of the user's model: with fitted terms, latent variables, or level-2 residuals.
+    # This leaves out Blimp's auto-generated models for incomplete predictors.
+    cols <- names(model@imputations[[1]])
+    outcomes <- Filter(\(o) {
+        o$level == 2L || any(o$terms %in% tt$base) || paste0(o$name, ".latent") %in% cols
+    }, outcomes)
     if (!missing(selector)) {
         bad <- setdiff(selector, names(outcomes))
         if (length(bad)) throw_error(c(
@@ -95,11 +100,10 @@ diagnostic_plots <- function(model, selector) {
         preds <- diag_outcome_predictors(model, o)
 
         if (o$type %in% c("continuous", "ordinal")) {
-            if (isTRUE(stats::sd(model@imputations[[1]][[o$predicted]], na.rm = TRUE) == 0)) {
-                skipped <- c(skipped, paste0(dv, ": predicted values are constant"))
-                next
+            # An outcome with no predictors (e.g., a latent factor) has constant predicted values
+            if (predicted_varies(model@imputations, o)) {
+                add(paste0(dv, ".predicted"), residual_plot(model, dv, x = "predicted"))
             }
-            add(paste0(dv, ".predicted"), residual_plot(model, dv, x = "predicted"))
             for (p in names(preds$level1)) add(paste0(dv, ".", p), residual_plot(model, dv, x = p))
             add(paste0(dv, ".index"), residual_plot(model, dv, x = "case"))
             if (o$type == "continuous" && !is.na(o$cluster)) {

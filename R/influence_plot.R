@@ -113,7 +113,7 @@ influence_plot <- function(
         ggplot2::geom_hline(data = refs, ggplot2::aes(yintercept = y), colour = "grey50", linetype = "dashed", linewidth = 0.4) +
         ggplot2::geom_text(
             data = refs, ggplot2::aes(x = -Inf, y = y, label = label),
-            hjust = -0.1, vjust = -0.3, size = 3.5, inherit.aes = FALSE
+            hjust = -0.1, vjust = -0.3, inherit.aes = FALSE
         )
     plt <- if (marked) {
         plt + ggplot2::geom_point(ggplot2::aes(shape = outcome_status)) +

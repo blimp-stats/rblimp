@@ -83,15 +83,22 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
         type = factor(rep(c("Observed", "Imputed"), c(length(vals$observed), length(vals$imputed))),
                       levels = c("Observed", "Imputed"))
     )
-    present <- levels(droplevels(df$type))
-    p <- ggplot2::ggplot(df, ggplot2::aes(x = value)) +
-        ggplot2::geom_histogram(
-            ggplot2::aes(y = ggplot2::after_stat(density), fill = type, colour = type, alpha = type),
-            position = "identity", binwidth = binwidth, boundary = boundary
-        ) +
-        ggplot2::scale_fill_discrete(NULL, drop = FALSE, breaks = present) +
-        ggplot2::scale_colour_discrete(NULL, drop = FALSE, breaks = present) +
-        ggplot2::scale_alpha_manual(NULL, values = c(Observed = 0.4, Imputed = 0), drop = FALSE, breaks = present)
+    # Each bar layer gets its own legend key; palette positions are fixed by both levels
+    lv <- c("Observed", "Imputed")
+    p <- ggplot2::ggplot(df, ggplot2::aes(x = value))
+    if (length(vals$observed)) p <- p + ggplot2::geom_histogram(
+        data = df[df$type == "Observed", , drop = FALSE],
+        ggplot2::aes(y = ggplot2::after_stat(density), fill = type),
+        colour = NA, alpha = 0.3, binwidth = binwidth, boundary = boundary
+    )
+    if (length(vals$imputed)) p <- p + ggplot2::geom_histogram(
+        data = df[df$type == "Imputed", , drop = FALSE],
+        ggplot2::aes(y = ggplot2::after_stat(density), colour = type),
+        fill = NA, binwidth = binwidth, boundary = boundary
+    )
+    p <- p +
+        ggplot2::scale_fill_discrete(NULL, limits = lv, breaks = "Observed") +
+        ggplot2::scale_colour_discrete(NULL, limits = lv, breaks = "Imputed")
 
     # Density curve over all cases; imputed values weighted 1/M
     if (!force_integer && length(all_vals) >= 2) {
@@ -101,16 +108,26 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
             weight = c(rep(1, length(vals$observed)), rep(1 / n_imps, length(vals$imputed)))
         )
         dens$weight <- dens$weight / sum(dens$weight)
-        p <- p + ggplot2::geom_density(
-            data = dens, ggplot2::aes(x = value, weight = weight, colour = ggplot2::from_theme(accent)),
-            bw = stats::bw.nrd0(all_vals), inherit.aes = FALSE, show.legend = FALSE
-        )
+        p <- p +
+            ggplot2::geom_density(
+                data = dens,
+                ggplot2::aes(x = value, weight = weight, colour = ggplot2::from_theme(accent), linetype = "Combined"),
+                bw = stats::bw.nrd0(all_vals), inherit.aes = FALSE, key_glyph = "path",
+                show.legend = c(linetype = TRUE, colour = FALSE, fill = FALSE)
+            ) +
+            ggplot2::scale_linetype_manual(NULL, values = c(Combined = "solid"))
     }
 
-    if (vals$kind != "mixed") p <- p + ggplot2::guides(fill = "none", colour = "none", alpha = "none")
+    p <- p + if (vals$kind == "mixed") {
+        ggplot2::guides(
+            fill = ggplot2::guide_legend(order = 1), colour = ggplot2::guide_legend(order = 2),
+            linetype = ggplot2::guide_legend(order = 3)
+        )
+    } else {
+        ggplot2::guides(fill = "none", colour = "none", linetype = "none")
+    }
     if (force_integer) p <- p + ggplot2::scale_x_continuous(breaks = integer_breaks)
     p +
-        ggplot2::scale_y_continuous(breaks = NULL) +
         ggplot2::labs(title = title, x = title_var, y = "Density")
 }
 
@@ -168,7 +185,7 @@ qq_plot <- function(model, variable, discrete_max_unique = 5L) {
 
     ggplot2::ggplot(df, ggplot2::aes(x = theoretical, y = sample)) +
         ggplot2::geom_abline(slope = 1, intercept = 0, colour = "grey50", linetype = "dashed", linewidth = 0.4) +
-        ggplot2::geom_point(alpha = 0.5) +
+        ggplot2::geom_point(ggplot2::aes(size = ggplot2::from_theme(pointsize * 2 / 3)), alpha = 0.5) +
         ggplot2::coord_fixed(ratio = 1, xlim = c(-lim, lim), ylim = c(-lim, lim)) +
         ggplot2::labs(
             title = sprintf("Normal Q-Q: %s", var_label(variable)),

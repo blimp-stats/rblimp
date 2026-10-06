@@ -38,7 +38,7 @@ utils::globalVariables(c(
     "x", "y", "z", "case", "cluster", "rank", "value", "type", "weight",
     "lower", "upper", "theoretical", "sample", "prob", "category", "predictor",
     "x_mean", "resid_mean", "pred_mean", "measure", "outcome_status", "label",
-    "accent", "density"
+    "accent", "density", "fontsize", "pointsize"
 ))
 
 # Model checks ================================================================
@@ -258,9 +258,11 @@ diag_outcomes <- function(model) {
         )
     }
 
-    # Cluster information for level-1 outcomes
+    # Cluster information for level-1 outcomes. A nominal outcome's level-2
+    # residuals are named by category (`<dv>.<k>[cluster]`).
     for (b in names(out)) {
-        l2 <- grep(paste0("^", gsub(".", "\\.", b, fixed = TRUE), "\\[.+\\]$"), cols, value = TRUE)
+        bases <- gsub(".", "\\.", out[[b]]$terms, fixed = TRUE)
+        l2 <- grep(paste0("^(", paste(bases, collapse = "|"), ")\\[.+\\]$"), cols, value = TRUE)
         out[[b]]$level2_residuals <- l2
         cl <- intersect(c(sub("^.+\\[(.+)\\]$", "\\1", l2), clusterids), cols)
         out[[b]]$cluster <- if (length(cl)) cl[1] else NA_character_
@@ -367,7 +369,7 @@ pooled_loess <- function(xy_list, se = FALSE, span = 0.75, n_grid = 200) {
     fits <- lapply(xy_list, \(d) {
         d <- d[is.finite(d$x) & is.finite(d$y), ]
         if (nrow(d) < 10 || length(unique(d$x)) < 4) return(NULL)
-        fit <- tryCatch(stats::loess(y ~ x, d, span = span), error = \(e) NULL)
+        fit <- tryCatch(suppressWarnings(stats::loess(y ~ x, d, span = span)), error = \(e) NULL)
         if (is.null(fit)) return(NULL)
         suppressWarnings(stats::predict(fit, newdata = data.frame(x = grid), se = se))
     })
@@ -434,14 +436,18 @@ outlier_labels <- function(df, value_col, threshold, max_labels, two_sided = FAL
     if (!nrow(out)) return(list())
     key <- if (two_sided) abs(out[[value_col]]) else out[[value_col]]
     out <- out[order(key, decreasing = TRUE)[seq_len(min(nrow(out), max_labels))], , drop = FALSE]
-    mapping <- ggplot2::aes(x = .data[["case"]], y = .data[[value_col]], label = .data[["label"]])
+    # Text size follows the theme's font size
+    mapping <- ggplot2::aes(
+        x = .data[["case"]], y = .data[[value_col]], label = .data[["label"]],
+        size = ggplot2::from_theme(fontsize * 0.8)
+    )
     if (requireNamespace("ggrepel", quietly = TRUE)) {
         ggrepel::geom_text_repel(
-            data = out, mapping = mapping, size = 3.5, max.overlaps = Inf,
+            data = out, mapping = mapping, max.overlaps = Inf,
             seed = 42, min.segment.length = 0.2, inherit.aes = FALSE
         )
     } else {
-        ggplot2::geom_text(data = out, mapping = mapping, size = 3.5, vjust = -0.7, inherit.aes = FALSE)
+        ggplot2::geom_text(data = out, mapping = mapping, vjust = -0.7, inherit.aes = FALSE)
     }
 }
 

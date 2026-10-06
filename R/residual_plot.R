@@ -105,7 +105,7 @@ residual_plot <- function(
 
     # Default x
     if (missing(x)) {
-        x <- if (outcome$level == 1L && outcome$type != "count") "predicted" else "case"
+        x <- if (outcome$level == 1L && outcome$type != "count" && predicted_varies(imp_list, outcome)) "predicted" else "case"
     }
     if (!is.character(x) || !length(x)) throw_error(
         "{.arg x} must be a character vector"
@@ -132,6 +132,14 @@ inform_no_se <- function() {
 
 # Residual vs predicted =======================================================
 
+#' Internal function to check whether an outcome's predicted values vary
+#' They are constant for an outcome with no predictors, such as a latent factor.
+#' @noRd
+predicted_varies <- function(imp_list, outcome) {
+    if (outcome$type == "nominal") return(TRUE)
+    isTRUE(stats::sd(imp_list[[1]][[outcome$predicted]], na.rm = TRUE) > 0)
+}
+
 #' Internal function for raw residuals against predicted values
 #' @noRd
 resid_vs_predicted <- function(imp_list, outcome, se) {
@@ -144,6 +152,10 @@ resid_vs_predicted <- function(imp_list, outcome, se) {
         "i" = "Use {.code x = \"case\"} or a predictor for Pearson residuals."
     ))
     if (outcome$type == "nominal") return(binned_plot(imp_list, outcome, "predicted"))
+    if (!predicted_varies(imp_list, outcome)) throw_error(c(
+        "The predicted values of {.val {outcome$name}} are constant.",
+        "i" = "Use {.code x = \"case\"} for an index plot."
+    ))
 
     xy_list <- lapply(imp_list, \(d) data.frame(x = d[[outcome$predicted]], y = d[[outcome$residual]]))
     panel <- list(name = "Predicted", xy_list = xy_list, discrete = FALSE)
@@ -201,7 +213,8 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
         name <- names(allowed)[match(col, allowed)]
         is_discrete <- name %in% discrete_vars || sub("\\[.+\\]$", "", name) %in% discrete_vars
         xfun <- \(d) d[[col]]
-        x_label <- var_label(col)
+        # Level-1 predictors are labeled by their model name; level-2 columns describe themselves
+        x_label <- if (outcome$level == 1L) name else var_label(col)
         center_col <- paste0(name, ".mean[", outcome$cluster, "]")
         if (outcome$level == 1L && name %in% groupmean && center_col %in% names(imp_list[[1]])) {
             xfun <- \(d) d[[col]] - d[[center_col]]
@@ -316,8 +329,11 @@ resid_index <- function(model, imp_list, outcome, index_thresholds, max_labels) 
             keep <- !duplicated(d[[cl]])
             data.frame(id = d[[cl]][keep], r = d[[outcome$residual]][keep])
         })
+        # Centered within each imputation, scaled by one pooled SD
         s <- sqrt(mean(vapply(per_imp, \(d) stats::var(d$r, na.rm = TRUE), 0), na.rm = TRUE))
-        df <- do.call(rbind, lapply(per_imp, \(d) data.frame(case = match(d$id, ids), z = d$r / s, label = d$id)))
+        df <- do.call(rbind, lapply(per_imp, \(d) data.frame(
+            case = match(d$id, ids), z = (d$r - mean(d$r, na.rm = TRUE)) / s, label = d$id
+        )))
         title <- sprintf("Standardized Residual Index: %s", var_label(outcome$name))
         x_label <- "Cluster Number"
         y_label <- "Standardized Level-2 Residual"
@@ -393,9 +409,8 @@ resid_by_cluster <- function(imp_list, outcome) {
 
     ggplot2::ggplot(df, ggplot2::aes(x = rank, y = z)) +
         ref_hline(0) +
-        ref_hline(c(-3, -2, -1, 1, 2, 3), dashed = TRUE) +
+        ggplot2::geom_hline(yintercept = c(-3, -2, -1, 1, 2, 3), colour = "grey70", linetype = "dashed", linewidth = 0.3) +
         ggplot2::geom_point(alpha = pooled_alpha(length(imp_list)), size = 1) +
-        ggplot2::scale_x_continuous(breaks = NULL) +
         ggplot2::scale_y_continuous(breaks = \(l) seq(floor(l[1]), ceiling(l[2]))) +
         ggplot2::labs(
             title = sprintf("Within-Cluster Residual Spread: %s", outcome$name),

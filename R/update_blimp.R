@@ -54,7 +54,7 @@ blimp_version <- function() {
     if (.Platform$OS.type != "unix") blimp_path <- paste0('"', blimp_path, '"')
 
     out <- suppressWarnings(tryCatch(
-        system(paste(blimp_path, "--version"), intern = TRUE),
+        system(paste(blimp_path, "--version"), intern = TRUE, ignore.stderr = TRUE),
         error = \(e) character(0)
     ))
     v <- regmatches(out, regexpr("^\\s*[0-9]+\\.[0-9]+\\.[0-9]+", out))
