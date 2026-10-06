@@ -56,7 +56,7 @@ params <- m1 |> as.matrix()
     )
     + ggplot2::labs(
         title = 'Johnson-Neyman Plot for `x1` * `x2` Moderated by `x2`',
-        subtitle = 'Red area represents 0 within 95\% interval',
+        subtitle = 'Shading shows whether 0 is within the 95\% interval',
         y = 'y ~ x1 * x2',
         x = 'm'
     )

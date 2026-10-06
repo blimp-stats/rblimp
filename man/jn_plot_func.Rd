@@ -24,6 +24,8 @@ Generates a Johnson-Neyman Plot using a function to produce the conditional effe
 \details{
 To change colors use ggplot2's scale system. Both fill and color are used. See
 \code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for more information about setting a manual set of colors.
+The shaded regions use the fill values \code{FALSE} (0 is within the interval) and \code{TRUE}
+(0 is outside the interval), e.g., \code{scale_fill_manual(values = c("FALSE" = "grey80", "TRUE" = "grey40"))}.
 
 For \code{...}, the arguments are passed to the internal boundary search algorithm.
 This algorithm uses an initial grid search to locate boundaries based on the range
@@ -81,7 +83,7 @@ params <- m1 |> as.matrix()
     )
     + ggplot2::labs(
         title = 'Johnson-Neyman Plot for `x1` * `x2` Moderated by `x2`',
-        subtitle = 'Red area represents 0 within 95\% interval',
+        subtitle = 'Shading shows whether 0 is within the 95\% interval',
         y = 'y ~ x1 * x2',
         x = 'm'
     )

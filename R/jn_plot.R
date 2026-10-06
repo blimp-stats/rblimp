@@ -20,6 +20,8 @@ set_group <- function(x){ with(rle(x), {
 #' @details
 #' To change colors use ggplot2's scale system. Both fill and color are used. See
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
+#' The shaded regions use the fill values `FALSE` (0 is within the interval) and `TRUE`
+#' (0 is outside the interval), e.g., `scale_fill_manual(values = c("FALSE" = "grey80", "TRUE" = "grey40"))`.
 #'
 #' For `...`, the arguments are passed to the internal boundary search algorithm.
 #' This algorithm uses an initial grid search to locate boundaries based on the range
@@ -75,7 +77,7 @@ set_group <- function(x){ with(rle(x), {
 #'     )
 #'     + ggplot2::labs(
 #'         title = 'Johnson-Neyman Plot for `x1` * `x2` Moderated by `x2`',
-#'         subtitle = 'Red area represents 0 within 95% interval',
+#'         subtitle = 'Shading shows whether 0 is within the 95% interval',
 #'         y = 'y ~ x1 * x2',
 #'         x = 'm'
 #'     )
@@ -255,7 +257,7 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
 #'     )
 #'     + ggplot2::labs(
 #'         title = 'Johnson-Neyman Plot for `x1` * `x2` Moderated by `x2`',
-#'         subtitle = 'Red area represents 0 within 95% interval',
+#'         subtitle = 'Shading shows whether 0 is within the 95% interval',
 #'         y = 'y ~ x1 * x2',
 #'         x = 'm'
 #'     )
@@ -283,6 +285,8 @@ compute_condeff <- function(value1, value2) {
 #' @details
 #' To change colors use ggplot2's scale system. Both fill and color are used. See
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
+#' The shaded regions use the fill values `FALSE` (0 is within the interval) and `TRUE`
+#' (0 is outside the interval), e.g., `scale_fill_manual(values = c("FALSE" = "grey80", "TRUE" = "grey40"))`.
 #'
 #' When the model contains a SIMPLE command that evaluates the focal predictor at
 #' multiple values of the formula moderator (e.g., `'x | m @ quantile'`), the
@@ -743,7 +747,7 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
     # Subtitle: held-constant moderators, plus the boundary values when the
     # plot has no facet strips (the strips already carry bound text for
     # multi-panel plots, since each moderator column is pre-baked).
-    base_subtitle <- paste0("Red area represents 0 within ", round(ci * 100), "% interval")
+    base_subtitle <- paste0("Shading shows whether 0 is within the ", round(ci * 100), "% interval")
     held_line <- if (length(ce_list) <= 1) {
         lbl <- names(ce_list)[1]
         if (!is.null(lbl) && nzchar(lbl)) paste0("\nHeld constant: ", lbl) else ""

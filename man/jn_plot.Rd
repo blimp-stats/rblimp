@@ -26,6 +26,8 @@ Generates a Johnson-Neyman Plot based on the posterior summaries from the output
 \details{
 To change colors use ggplot2's scale system. Both fill and color are used. See
 \code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for more information about setting a manual set of colors.
+The shaded regions use the fill values \code{FALSE} (0 is within the interval) and \code{TRUE}
+(0 is outside the interval), e.g., \code{scale_fill_manual(values = c("FALSE" = "grey80", "TRUE" = "grey40"))}.
 
 When the model contains a SIMPLE command that evaluates the focal predictor at
 multiple values of the formula moderator (e.g., \code{'x | m @ quantile'}), the
