@@ -372,10 +372,11 @@ pearson_sd <- function(imp_list, outcome, est) {
     ))
     alpha <- est[row, "Estimate"]
     n <- nrow(imp_list[[1]])
-    rowMeans(vapply(imp_list, \(d) {
+    # Pool the variances, then take the square root, as for continuous outcomes
+    sqrt(rowMeans(vapply(imp_list, \(d) {
         mu <- d[[outcome$predicted]]
-        sqrt(mu + alpha * mu^2)
-    }, numeric(n)))
+        mu + alpha * mu^2
+    }, numeric(n))))
 }
 
 # Cluster spread ==============================================================
