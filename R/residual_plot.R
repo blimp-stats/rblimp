@@ -40,7 +40,8 @@
 #' - **Nominal outcomes**: binned residuals on the probability scale (Gelman & Hill, 2007),
 #'   with a panel for each non-reference category. There is no index plot.
 #' - **Count outcomes**: Pearson residuals, using the negative binomial dispersion
-#'   parameter. There is no residual-vs-predicted plot.
+#'   parameter. Each imputation uses the dispersion value from the MCMC iteration it was
+#'   saved at. There is no residual-vs-predicted plot.
 #' - **Level-2 residuals**: one value per cluster, against level-2 predictors or as an
 #'   index plot. In a clustered model, level-1 plots use within-cluster predictors only, and
 #'   predictors centered at their latent group mean are shown as within-cluster deviations.
@@ -194,7 +195,7 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
         sigma <- NULL
         cl <- outcome$cluster
     } else if (outcome$type == "count") {
-        sigma <- pearson_sd(imp_list, outcome, model@estimates)
+        sigma <- pearson_sd(imp_list, outcome, model)
     } else {
         sigma <- pooled_sigma(imp_list, outcome$residual, paste0("var.", outcome$name, ".predicted"))
     }
@@ -329,7 +330,7 @@ resid_index <- function(model, imp_list, outcome, index_thresholds, max_labels) 
         x_label <- "Cluster Number"
         y_label <- "Standardized Level-2 Residual"
     } else if (outcome$type == "count") {
-        sbar <- pearson_sd(imp_list, outcome, model@estimates)
+        sbar <- pearson_sd(imp_list, outcome, model)
         df <- do.call(rbind, lapply(imp_list, \(d) data.frame(
             case = seq_len(n), z = (d[[outcome$name]] - d[[outcome$predicted]]) / sbar
         )))
@@ -362,21 +363,55 @@ resid_index <- function(model, imp_list, outcome, index_thresholds, max_labels) 
 }
 
 #' Internal function for the pooled Pearson standard deviation of a count outcome
-#' Var(Y) = mu + alpha * mu^2 under the negative binomial model.
+#' Var(Y) = mu + alpha * mu^2 under the negative binomial model. Each imputation uses
+#' the dispersion draw from the MCMC iteration it was saved at; when those draws cannot
+#' be matched, every imputation uses the posterior median.
 #' @noRd
-pearson_sd <- function(imp_list, outcome, est) {
+pearson_sd <- function(imp_list, outcome, model) {
+    est <- model@estimates
     row <- paste(outcome$name, "Variance Dispersion Parameter")
     if (!row %in% rownames(est) || !"Estimate" %in% colnames(est)) throw_error(c(
         "The dispersion parameter for {.val {outcome$name}} was not found in the estimates.",
         "i" = "Pearson residuals need the {.val {row}} row."
     ))
-    alpha <- est[row, "Estimate"]
+    alpha <- rep(est[row, "Estimate"], length(imp_list))
+    col <- which(tolower(names(model@iterations)) == tolower(paste0(outcome$name, ".variance.Dispersion Parameter")))
+    draws <- imputation_draws(model)
+    if (length(col) == 1 && !is.null(draws) && length(draws) == length(imp_list)) {
+        alpha <- model@iterations[draws, col]
+    }
     n <- nrow(imp_list[[1]])
     # Pool the variances, then take the square root, as for continuous outcomes
-    sqrt(rowMeans(vapply(imp_list, \(d) {
-        mu <- d[[outcome$predicted]]
-        mu + alpha * mu^2
+    sqrt(rowMeans(vapply(seq_along(imp_list), \(m) {
+        mu <- imp_list[[m]][[outcome$predicted]]
+        mu + alpha[m] * mu^2
     }, numeric(n))))
+}
+
+#' Internal function for the MCMC iteration each saved imputation came from
+#' Returns row indices into `model@iterations`, or NULL when the counts do not fit
+#' Blimp's schedule: the post-burn iterations and the imputations are split across
+#' chains (the first chains take any remainder), chain `c` saves its imputations at
+#' iterations `step, 2 * step, ...` with `step = iterations_c %/% imputations_c`, and
+#' imputation `k` comes from chain `(k - 1) %% chains + 1`. `model@iterations` stacks
+#' the chains in order.
+#' @noRd
+imputation_draws <- function(model) {
+    nchain <- length(model@burn)
+    niter <- NROW(model@iterations)
+    nimp <- length(model@imputations)
+    if (nchain < 1 || nimp < 1 || niter < nimp) return(NULL)
+    split <- \(total) total %/% nchain + (seq_len(nchain) <= total %% nchain)
+    iters <- split(niter)
+    imps <- split(nimp)
+    k <- seq_len(nimp)
+    chain <- (k - 1) %% nchain + 1
+    j <- (k - 1) %/% nchain + 1
+    step <- pmax(1, iters %/% pmax(imps, 1))
+    offset <- c(0, cumsum(iters))[chain]
+    rows <- offset + j * step[chain]
+    if (any(j > imps[chain]) || any(rows > offset + iters[chain])) return(NULL)
+    rows
 }
 
 # Cluster spread ==============================================================

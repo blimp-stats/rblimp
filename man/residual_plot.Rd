@@ -67,7 +67,8 @@ has 10 or fewer distinct values.
 \item \strong{Nominal outcomes}: binned residuals on the probability scale (Gelman & Hill, 2007),
 with a panel for each non-reference category. There is no index plot.
 \item \strong{Count outcomes}: Pearson residuals, using the negative binomial dispersion
-parameter. There is no residual-vs-predicted plot.
+parameter. Each imputation uses the dispersion value from the MCMC iteration it was
+saved at. There is no residual-vs-predicted plot.
 \item \strong{Level-2 residuals}: one value per cluster, against level-2 predictors or as an
 index plot. In a clustered model, level-1 plots use within-cluster predictors only, and
 predictors centered at their latent group mean are shown as within-cluster deviations.
