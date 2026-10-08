@@ -8,6 +8,9 @@
 #' @param model a [`blimp_obj`] with saved imputations.
 #' @param selector an optional character vector of outcome names. If missing, every outcome
 #'   with saved residuals is included.
+#' @param discrete_max_unique an integer, passed to [`residual_plot`] and
+#'   [`probability_plot`]. A predictor with this many or fewer distinct values gets category
+#'   means instead of a loess curve.
 #' @param x a `diagnostic_plots` list.
 #' @param e1,e2 a `diagnostic_plots` list (left) and a ggplot2 component such as a theme,
 #'   scale, layer, or labels (right).
@@ -61,10 +64,11 @@
 #' diagnostic_plots(m1) |> subset("index")
 #' @import ggplot2
 #' @export
-diagnostic_plots <- function(model, selector) {
+diagnostic_plots <- function(model, selector, discrete_max_unique = 10L) {
 
     # Check inputs
     check_diagnostic_model(model)
+    check_max_unique(discrete_max_unique)
     outcomes <- diag_outcomes(model)
     tt <- diag_term_table(model)
     # Outcomes of the user's model: with fitted terms, latent variables, or level-2 residuals.
@@ -101,7 +105,7 @@ diagnostic_plots <- function(model, selector) {
         if (o$level == 2L) {
             add(paste0(dv, ".index"), residual_plot(model, dv, x = "case"))
             for (col in diag_outcome_predictors(model, o)$level2) {
-                add(paste0(dv, ".", col), residual_plot(model, dv, x = col))
+                add(paste0(dv, ".", col), residual_plot(model, dv, x = col, discrete_max_unique = discrete_max_unique))
             }
             next
         }
@@ -109,14 +113,16 @@ diagnostic_plots <- function(model, selector) {
 
         if (o$type %in% c("continuous", "ordinal")) {
             add(paste0(dv, ".predicted"), residual_plot(model, dv, x = "predicted"))
-            for (p in names(preds$level1)) add(paste0(dv, ".", p), residual_plot(model, dv, x = p))
+            for (p in names(preds$level1)) {
+                add(paste0(dv, ".", p), residual_plot(model, dv, x = p, discrete_max_unique = discrete_max_unique))
+            }
             add(paste0(dv, ".index"), residual_plot(model, dv, x = "case"))
             if (o$type == "continuous" && !is.na(o$cluster)) {
                 add(paste0(dv, ".cluster_variance"), residual_plot(model, dv, x = "cluster"))
             }
             if (o$type == "ordinal") {
                 for (p in unique(c(names(preds$level1), names(preds$level2)))) {
-                    add(paste0(dv, ".", p, ".probability"), probability_plot(model, dv, p))
+                    add(paste0(dv, ".", p, ".probability"), probability_plot(model, dv, p, discrete_max_unique))
                 }
             }
             if (!is.null(inf) && paste0(dv, ".leverage") %in% names(inf)) {
@@ -129,16 +135,18 @@ diagnostic_plots <- function(model, selector) {
             for (ck in cats) {
                 add(paste0(ck, ".binned"), residual_plot(model, ck, x = "predicted"))
                 for (p in names(diag_outcome_predictors(model, diag_outcome(model, ck))$level1)) {
-                    add(paste0(ck, ".", p), residual_plot(model, ck, x = p))
+                    add(paste0(ck, ".", p), residual_plot(model, ck, x = p, discrete_max_unique = discrete_max_unique))
                 }
             }
             parent <- if (is.null(o$category_of)) dv else o$category_of
             for (p in unique(c(names(preds$level1), names(preds$level2)))) {
-                add(paste0(parent, ".", p, ".probability"), probability_plot(model, parent, p))
+                add(paste0(parent, ".", p, ".probability"), probability_plot(model, parent, p, discrete_max_unique))
             }
         } else if (o$type == "count") {
             add(paste0(dv, ".index"), residual_plot(model, dv, x = "case"))
-            for (p in names(preds$level1)) add(paste0(dv, ".", p), residual_plot(model, dv, x = p))
+            for (p in names(preds$level1)) {
+                add(paste0(dv, ".", p), residual_plot(model, dv, x = p, discrete_max_unique = discrete_max_unique))
+            }
         }
     }
 
@@ -221,7 +229,8 @@ distribution_plots <- function(model, selector, qq = TRUE, bins = 30, discrete_m
         })
         if (is.null(res)) next
         plots[[v]] <- res
-        if (qq && is.null(qq_omitted(model, v)) && !v %in% discrete) {
+        if (qq && is.null(qq_omitted(model, v)) &&
+            !is_discrete(model@imputations[[1]][[v]], v %in% discrete, discrete_max_unique)) {
             q <- tryCatch(qq_plot(model, v, discrete_max_unique), error = \(e) NULL)
             if (!is.null(q)) plots[[paste0(v, ".qq")]] <- q
         }

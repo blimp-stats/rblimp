@@ -9,7 +9,7 @@
 \alias{&.diagnostic_plots}
 \title{Every applicable diagnostic plot for a \code{\link{blimp_obj}}}
 \usage{
-diagnostic_plots(model, selector)
+diagnostic_plots(model, selector, discrete_max_unique = 10L)
 
 \method{print}{diagnostic_plots}(x, ...)
 
@@ -26,6 +26,10 @@ diagnostic_plots(model, selector)
 
 \item{selector}{an optional character vector of outcome names. If missing, every outcome
 with saved residuals is included.}
+
+\item{discrete_max_unique}{an integer, passed to \code{\link{residual_plot}} and
+\code{\link{probability_plot}}. A predictor with this many or fewer distinct values gets category
+means instead of a loess curve.}
 
 \item{x}{a \code{diagnostic_plots} list.}
 

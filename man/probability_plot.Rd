@@ -4,7 +4,7 @@
 \alias{probability_plot}
 \title{Predicted probabilities across a predictor for an outcome in a \code{\link{blimp_obj}}}
 \usage{
-probability_plot(model, variable, x)
+probability_plot(model, variable, x, discrete_max_unique = 10L)
 }
 \arguments{
 \item{model}{a \code{\link{blimp_obj}} with saved imputations.}
@@ -12,6 +12,10 @@ probability_plot(model, variable, x)
 \item{variable}{a character string naming an ordinal or nominal outcome.}
 
 \item{x}{a character string naming one predictor of \code{variable}.}
+
+\item{discrete_max_unique}{an integer. A predictor with this many or fewer distinct values
+in a completed dataset gets category means instead of loess curves, even if it was not
+declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical columns always do.}
 }
 \value{
 a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
@@ -24,8 +28,8 @@ a predictor, using every saved imputation.
 Every saved category probability is plotted: all categories for an ordinal outcome and the
 non-reference categories for a nominal outcome. Points stack all imputations. For a
 continuous predictor, each category gets a loess curve fit within each imputation and
-averaged; for a predictor declared ORDINAL, NOMINAL, or COUNT, each category gets its mean
-probability at each level.
+averaged; for a discrete predictor (see \code{discrete_max_unique}), each category gets its mean
+probability at each level. Factor and character predictors are labeled by category name.
 
 Categories are distinguished by colour, point shape, and line type, so the plot also reads
 in greyscale. These come from the theme's discrete palettes (\code{palette.colour.discrete},

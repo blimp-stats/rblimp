@@ -10,7 +10,8 @@ residual_plot(
   x,
   se = FALSE,
   index_thresholds = c(-3, 3),
-  max_labels = 10
+  max_labels = 10,
+  discrete_max_unique = 10L
 )
 }
 \arguments{
@@ -37,6 +38,10 @@ curve. See details.}
 residuals. Cases beyond the largest absolute value are labeled on the index plot.}
 
 \item{max_labels}{an integer. The maximum number of cases labeled on an index plot.}
+
+\item{discrete_max_unique}{an integer. A predictor with this many or fewer distinct values
+in a completed dataset gets category means instead of a loess curve, even if it was not
+declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical columns always do.}
 }
 \value{
 a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
@@ -62,8 +67,8 @@ when a variance model is fit). Reference lines are drawn at \code{index_threshol
 What is plotted depends on the outcome:
 \itemize{
 \item \strong{Continuous and ordinal outcomes} (ordinal on the latent scale): residual scatter
-plots with a loess curve, or category means when a predictor is declared discrete or
-has 10 or fewer distinct values.
+plots with a loess curve, or category means when a predictor is discrete (see
+\code{discrete_max_unique}). Factor and character predictors are labeled by category name.
 \item \strong{Nominal outcomes}: binned residuals on the probability scale (Gelman & Hill, 2007),
 with a panel for each non-reference category. There is no index plot.
 \item \strong{Count outcomes}: Pearson residuals, using the negative binomial dispersion

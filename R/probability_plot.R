@@ -7,13 +7,16 @@
 #' @param model a [`blimp_obj`] with saved imputations.
 #' @param variable a character string naming an ordinal or nominal outcome.
 #' @param x a character string naming one predictor of `variable`.
+#' @param discrete_max_unique an integer. A predictor with this many or fewer distinct values
+#'   in a completed dataset gets category means instead of loess curves, even if it was not
+#'   declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical columns always do.
 #' @returns a [`ggplot2::ggplot`] plot
 #' @details
 #' Every saved category probability is plotted: all categories for an ordinal outcome and the
 #' non-reference categories for a nominal outcome. Points stack all imputations. For a
 #' continuous predictor, each category gets a loess curve fit within each imputation and
-#' averaged; for a predictor declared ORDINAL, NOMINAL, or COUNT, each category gets its mean
-#' probability at each level.
+#' averaged; for a discrete predictor (see `discrete_max_unique`), each category gets its mean
+#' probability at each level. Factor and character predictors are labeled by category name.
 #'
 #' Categories are distinguished by colour, point shape, and line type, so the plot also reads
 #' in greyscale. These come from the theme's discrete palettes (`palette.colour.discrete`,
@@ -40,11 +43,12 @@
 #' probability_plot(m1, 'y', 'x')
 #' @import ggplot2
 #' @export
-probability_plot <- function(model, variable, x) {
+probability_plot <- function(model, variable, x, discrete_max_unique = 10L) {
 
     # Check inputs
     check_diagnostic_model(model)
     check_variable_arg(variable, "diagnostic_plots")
+    check_max_unique(discrete_max_unique)
     outcome <- diag_outcome(model, variable)
     if (!is.null(outcome$category_of)) {
         variable <- outcome$category_of
@@ -64,8 +68,9 @@ probability_plot <- function(model, variable, x) {
         "{.val {x}} is not a predictor of {.val {variable}}.",
         "i" = "Predictors of {.val {variable}}: {.val {names(allowed)}}."
     ))
-    is_discrete <- names(allowed)[match(col, allowed)] %in% diag_discrete_vars(model)
-    imp_list <- lapply(model@imputations, as.data.frame)
+    raw <- model@imputations[[1]][[col]]
+    discrete <- is_discrete(raw, names(allowed)[match(col, allowed)] %in% diag_discrete_vars(model), discrete_max_unique)
+    imp_list <- imputation_frames(model)
 
     # Category probability columns
     rx <- paste0("^", gsub(".", "\\.", variable, fixed = TRUE), "\\.([0-9]+)\\.probability$")
@@ -90,7 +95,7 @@ probability_plot <- function(model, variable, x) {
         p + geom_point_mi(data = long_df, ggplot2::aes(x = x, y = prob, colour = category, shape = category), n_imps = M)
     }
 
-    if (is_discrete) {
+    if (discrete) {
         # Category means at each level, within each imputation then averaged
         cm <- do.call(rbind, lapply(imp_list, \(d) do.call(rbind, lapply(seq_len(K), \(i) {
             z <- data.frame(x = d[[col]], prob = d[[prob_cols[i]]], category = factor(cats[i], levels = cats))
@@ -107,7 +112,7 @@ probability_plot <- function(model, variable, x) {
                     linewidth = ggplot2::from_theme(linewidth * curve_line_ratio))) +
                 summary_points(ggplot2::geom_point(data = cell, ggplot2::aes(x = x, y = prob, colour = category, shape = category)))
         }
-        p <- p + ggplot2::scale_x_continuous(breaks = integer_breaks)
+        p <- p + discrete_x_scale(column_levels(model, col))
     } else {
         # Fit-then-pool loess for each category
         curves <- do.call(rbind, lapply(seq_len(K), \(i) {

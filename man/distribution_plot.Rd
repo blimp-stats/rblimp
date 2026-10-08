@@ -18,8 +18,9 @@ sets the smoothness of the density curve.
 Integer-valued variables always use a bin width of 1.}
 
 \item{discrete_max_unique}{an integer. A variable with this many or fewer distinct values
-is treated as discrete (no density curve, integer axis ticks) even if it was not declared
-ORDINAL, NOMINAL, or COUNT.}
+in a completed dataset is treated as discrete (no density curve or Q-Q plot, integer
+axis ticks) even if it was not declared ORDINAL, NOMINAL, or COUNT. Declared variables
+and factor, character, and logical columns always are; categories are labeled by name.}
 }
 \value{
 a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot

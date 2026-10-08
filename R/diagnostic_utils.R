@@ -534,11 +534,66 @@ var_label <- function(var) {
     paste(sub("\\.[^.]*$", "", var), suffix_map[[suffix]])
 }
 
-#' Internal function to check whether a numeric column has few distinct values
+#' Internal function to decide whether a variable is discrete
+#' Discrete when `declared` (ORDINAL, NOMINAL, or COUNT in the model), stored as an R
+#' factor, or with `max_unique` or fewer distinct finite values. Pass the values of one
+#' completed dataset, so the count does not grow with the number of imputations.
 #' @noRd
-is_effectively_discrete <- function(x, max_unique = 5L) {
+is_discrete <- function(x, declared = FALSE, max_unique) {
+    if (declared || is.factor(x) || is.character(x) || is.logical(x)) return(TRUE)
+    x <- as_codes(x)
     x <- x[is.finite(x)]
     length(x) > 0L && length(unique(x)) <= max_unique
+}
+
+#' Internal function for the numeric codes of a column
+#' Factors become their level codes, characters their position in `levels`, and
+#' logicals 0/1.
+#' @noRd
+as_codes <- function(x, levels = NULL) {
+    if (is.factor(x)) return(as.numeric(unclass(x)))
+    if (is.character(x)) return(as.numeric(match(x, levels %||% sort(unique(x)))))
+    if (is.logical(x)) return(as.numeric(x))
+    x
+}
+
+#' Internal function for the category labels of a factor or character column (else NULL)
+#' Character values are sorted across every completed dataset, so codes agree between them.
+#' @noRd
+column_levels <- function(model, col) {
+    x <- model@imputations[[1]][[col]]
+    if (is.factor(x)) return(levels(x))
+    if (is.character(x)) return(sort(unique(stats::na.omit(unlist(lapply(model@imputations, \(d) d[[col]]), use.names = FALSE)))))
+    NULL
+}
+
+#' Internal function for the completed datasets as data frames, with categories as codes
+#' @noRd
+imputation_frames <- function(model) {
+    d1 <- model@imputations[[1]]
+    conv <- names(d1)[vapply(d1, \(x) is.factor(x) || is.character(x) || is.logical(x), TRUE)]
+    lv <- lapply(conv, \(col) column_levels(model, col))
+    names(lv) <- conv
+    lapply(model@imputations, \(d) {
+        d <- as.data.frame(d)
+        for (col in conv) d[[col]] <- as_codes(d[[col]], lv[[col]])
+        d
+    })
+}
+
+#' Internal function for the x scale of a discrete axis: factor labels, else integer breaks
+#' @noRd
+discrete_x_scale <- function(levels = NULL) {
+    if (length(levels)) ggplot2::scale_x_continuous(breaks = seq_along(levels), labels = levels)
+    else ggplot2::scale_x_continuous(breaks = integer_breaks)
+}
+
+#' Internal function to check a `discrete_max_unique` argument
+#' @noRd
+check_max_unique <- function(x) {
+    if (!is.numeric(x) || length(x) != 1 || is.na(x) || x < 0) throw_error(
+        "{.arg discrete_max_unique} must be a single non-negative number."
+    )
 }
 
 #' Internal function to warn about a continuous predictor with few values

@@ -20,6 +20,9 @@
 #' @param index_thresholds a numeric vector of reference lines for standardized
 #'   residuals. Cases beyond the largest absolute value are labeled on the index plot.
 #' @param max_labels an integer. The maximum number of cases labeled on an index plot.
+#' @param discrete_max_unique an integer. A predictor with this many or fewer distinct values
+#'   in a completed dataset gets category means instead of a loess curve, even if it was not
+#'   declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical columns always do.
 #' @returns a [`ggplot2::ggplot`] plot
 #' @details
 #' Every quantity is computed within each imputed data set and then pooled; nothing is
@@ -35,8 +38,8 @@
 #'
 #' What is plotted depends on the outcome:
 #' - **Continuous and ordinal outcomes** (ordinal on the latent scale): residual scatter
-#'   plots with a loess curve, or category means when a predictor is declared discrete or
-#'   has 10 or fewer distinct values.
+#'   plots with a loess curve, or category means when a predictor is discrete (see
+#'   `discrete_max_unique`). Factor and character predictors are labeled by category name.
 #' - **Nominal outcomes**: binned residuals on the probability scale (Gelman & Hill, 2007),
 #'   with a panel for each non-reference category. There is no index plot.
 #' - **Count outcomes**: Pearson residuals, using the negative binomial dispersion
@@ -91,7 +94,7 @@
 #' @export
 residual_plot <- function(
         model, variable, x, se = FALSE,
-        index_thresholds = c(-3, 3), max_labels = 10
+        index_thresholds = c(-3, 3), max_labels = 10, discrete_max_unique = 10L
 ) {
 
     # Check inputs
@@ -103,9 +106,10 @@ residual_plot <- function(
     if (!is.numeric(index_thresholds)) throw_error(
         "{.arg index_thresholds} must be numeric"
     )
+    check_max_unique(discrete_max_unique)
 
     outcome <- diag_outcome(model, variable)
-    imp_list <- lapply(model@imputations, as.data.frame)
+    imp_list <- imputation_frames(model)
 
     # Default x
     if (missing(x)) {
@@ -125,7 +129,7 @@ residual_plot <- function(
             cluster = resid_by_cluster(imp_list, outcome)
         ))
     }
-    resid_vs_predictors(model, imp_list, outcome, x, se, index_thresholds)
+    resid_vs_predictors(model, imp_list, outcome, x, se, index_thresholds, discrete_max_unique)
 }
 
 #' Internal function for the message when bands do not apply
@@ -162,7 +166,7 @@ resid_vs_predicted <- function(imp_list, outcome, se) {
 
 #' Internal function for residuals against one or more predictors
 #' @noRd
-resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_thresholds) {
+resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_thresholds, max_unique) {
     preds <- diag_outcome_predictors(model, outcome)
     discrete_vars <- diag_discrete_vars(model)
 
@@ -185,9 +189,15 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
         ))
     }
 
+    declared <- \(name) name %in% discrete_vars || sub("\\[.+\\]$", "", name) %in% discrete_vars
     if (outcome$type == "nominal") {
         if (se) inform_no_se()
-        return(binned_plot(imp_list, outcome, cols, discrete_vars))
+        discrete <- vapply(cols, \(col) {
+            is_discrete(model@imputations[[1]][[col]], declared(names(allowed)[match(col, allowed)]), max_unique)
+        }, TRUE)
+        levels <- lapply(cols, \(col) column_levels(model, col))
+        names(levels) <- cols
+        return(binned_plot(imp_list, outcome, cols, discrete, levels))
     }
 
     # Build one panel per predictor
@@ -203,7 +213,8 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
     panels <- lapply(seq_along(cols), \(i) {
         col <- cols[[i]]
         name <- names(allowed)[match(col, allowed)]
-        is_discrete <- name %in% discrete_vars || sub("\\[.+\\]$", "", name) %in% discrete_vars
+        raw <- model@imputations[[1]][[col]]
+        is_declared <- declared(name) || is.factor(raw) || is.character(raw) || is.logical(raw)
         xfun <- \(d) d[[col]]
         # Level-1 predictors are labeled by their model name; level-2 columns describe themselves
         x_label <- if (outcome$level == 1L) name else var_label(col)
@@ -222,9 +233,14 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
                 data.frame(x = xfun(d), y = d[[outcome$residual]] / sigma)
             }
         })
-        nux <- length(unique(xfun(imp_list[[1]])))
-        if (!is_discrete && nux <= 5) warn_few_values(name, nux)
-        list(name = x_label, xy_list = xy_list, discrete = is_discrete || nux <= 10)
+        x1 <- xfun(imp_list[[1]])
+        nux <- length(unique(x1[is.finite(x1)]))
+        if (!is_declared && nux <= 5) warn_few_values(name, nux)
+        list(
+            name = x_label, xy_list = xy_list,
+            discrete = is_discrete(x1, is_declared, max_unique),
+            levels = if (identical(x_label, name)) column_levels(model, col)
+        )
     })
 
     if (se && all(vapply(panels, \(p) p$discrete, TRUE))) inform_no_se()
@@ -299,7 +315,7 @@ scatter_panels <- function(panels, se, thresholds, title, x_label, y_label) {
     if (length(panels) > 1) {
         p <- p + ggplot2::facet_wrap(~predictor, scales = "free_x")
     } else if (panels[[1]]$discrete) {
-        p <- p + ggplot2::scale_x_continuous(breaks = integer_breaks)
+        p <- p + discrete_x_scale(panels[[1]]$levels)
     }
     p + ggplot2::labs(title = title, x = x_label, y = y_label)
 }
@@ -454,7 +470,7 @@ resid_by_cluster <- function(imp_list, outcome) {
 #' pooled values and the per-imputation bin means are averaged. A panel for each
 #' non-reference category. No standard-error bands.
 #' @noRd
-binned_plot <- function(imp_list, outcome, x, discrete_vars = character(0)) {
+binned_plot <- function(imp_list, outcome, x, discrete = logical(0), levels = list()) {
     parent <- if (is.null(outcome$category_of)) outcome$name else outcome$category_of
     if (!parent %in% names(imp_list[[1]])) throw_error("Column {.val {parent}} not found in the imputations.")
     rows <- list()
@@ -471,8 +487,7 @@ binned_plot <- function(imp_list, outcome, x, discrete_vars = character(0)) {
             if (n_keep < 16) next
             panel_x <- if (by_pred) "Mean Predicted Probability" else var_label(xc)
             panel_k <- sprintf("%s.%d", parent, as.integer(k))
-            discrete <- !by_pred && xc %in% discrete_vars
-            if (discrete) {
+            if (!by_pred && isTRUE(discrete[xc])) {
                 per_imp <- lapply(xy_list, \(d) {
                     rm <- tapply(d$y, d$x, mean)
                     data.frame(x = as.numeric(names(rm)), y = as.numeric(rm))
@@ -519,6 +534,7 @@ binned_plot <- function(imp_list, outcome, x, discrete_vars = character(0)) {
         p <- p + ggplot2::facet_wrap(~predictor, scales = "free_x")
     }
     by_pred <- identical(x, "predicted")
+    if (n_x == 1 && length(x) == 1 && isTRUE(discrete[x])) p <- p + discrete_x_scale(levels[[x]])
     p + ggplot2::labs(
         title = sprintf(if (by_pred) "Binned Residual vs. Predicted: %s" else "Binned Residual vs. Predictor: %s", outcome$name),
         x = if (n_x == 1) bins$predictor[1] else NULL,

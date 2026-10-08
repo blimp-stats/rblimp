@@ -12,8 +12,9 @@
 #'   sets the smoothness of the density curve.
 #'   Integer-valued variables always use a bin width of 1.
 #' @param discrete_max_unique an integer. A variable with this many or fewer distinct values
-#'   is treated as discrete (no density curve, integer axis ticks) even if it was not declared
-#'   ORDINAL, NOMINAL, or COUNT.
+#'   in a completed dataset is treated as discrete (no density curve or Q-Q plot, integer
+#'   axis ticks) even if it was not declared ORDINAL, NOMINAL, or COUNT. Declared variables
+#'   and factor, character, and logical columns always are; categories are labeled by name.
 #' @returns a [`ggplot2::ggplot`] plot
 #' @details
 #' Variables are shown in one of three ways:
@@ -67,9 +68,10 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
     # Check inputs
     check_diagnostic_model(model)
     check_variable_arg(variable, "distribution_plots")
+    check_max_unique(discrete_max_unique)
     vals <- distribution_values(model, variable)
-    force_integer <- variable %in% diag_discrete_vars(model) ||
-        is_effectively_discrete(c(vals$observed, vals$imputed), discrete_max_unique)
+    raw <- model@imputations[[1]][[variable]]
+    force_integer <- is_discrete(raw, variable %in% diag_discrete_vars(model), discrete_max_unique)
 
     # Title
     title_var <- var_label(variable)
@@ -141,7 +143,7 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
     } else {
         ggplot2::guides(fill = "none", colour = "none", linetype = "none")
     }
-    if (force_integer) p <- p + ggplot2::scale_x_continuous(breaks = integer_breaks)
+    if (force_integer) p <- p + discrete_x_scale(column_levels(model, variable))
     # Density values are not read off the plot, so the y axis is not drawn
     p +
         ggplot2::scale_y_continuous(breaks = NULL) +
@@ -188,11 +190,13 @@ qq_plot <- function(model, variable, discrete_max_unique = 5L) {
     # Check inputs
     check_diagnostic_model(model)
     check_variable_arg(variable, "distribution_plots")
+    check_max_unique(discrete_max_unique)
     reason <- qq_omitted(model, variable)
     if (!is.null(reason)) throw_error(c("A normal Q-Q plot is not drawn for {.val {variable}}.", "i" = reason))
     vals <- distribution_values(model, variable)
     v <- c(vals$observed, vals$imputed)
-    if (is_effectively_discrete(v, discrete_max_unique) || variable %in% diag_discrete_vars(model)) throw_error(c(
+    declared <- variable %in% diag_discrete_vars(model)
+    if (is_discrete(model@imputations[[1]][[variable]], declared, discrete_max_unique)) throw_error(c(
         "A normal Q-Q plot is not drawn for {.val {variable}}.",
         "i" = "It is discrete; a normal reference would mislead."
     ))
@@ -245,12 +249,13 @@ distribution_values <- function(model, variable) {
         "{.val {variable}} is not a saved variable.",
         "i" = "Use {.code names(model)} to list the saved variables."
     ))
+    lv <- column_levels(model, variable)
 
     # Level-2 quantities: one value per cluster within each imputation
     if (grepl("\\[.+\\]$", variable)) {
         cl <- sub("^.+\\[(.+)\\]$", "\\1", variable)
         v <- unlist(lapply(model@imputations, \(d) {
-            x <- d[[variable]]
+            x <- as_codes(d[[variable]], lv)
             if (cl %in% names(d)) x[!duplicated(d[[cl]])] else x
         }), use.names = FALSE)
         return(finite_values("implied", numeric(0), v, variable))
@@ -258,7 +263,7 @@ distribution_values <- function(model, variable) {
 
     # Model-implied quantities: every value varies across imputations
     if (grepl("\\.(residual|latent|probability|yjt)$", variable)) {
-        v <- unlist(lapply(model@imputations, \(d) d[[variable]]), use.names = FALSE)
+        v <- unlist(lapply(model@imputations, \(d) as_codes(d[[variable]], lv)), use.names = FALSE)
         return(finite_values("implied", numeric(0), v, variable))
     }
 
@@ -268,8 +273,8 @@ distribution_values <- function(model, variable) {
     )
     vimp <- model@variance_imp[[variable]]
     miss <- is.finite(vimp) & vimp != 0
-    obs <- model@imputations[[1]][[variable]][!miss]
-    imp <- unlist(lapply(model@imputations, \(d) d[[variable]][miss]), use.names = FALSE)
+    obs <- as_codes(model@imputations[[1]][[variable]], lv)[!miss]
+    imp <- unlist(lapply(model@imputations, \(d) as_codes(d[[variable]], lv)[miss]), use.names = FALSE)
     out <- finite_values(if (any(miss)) "mixed" else "observed", obs, imp, variable)
     out$pct_imp <- 100 * mean(miss)
     out
