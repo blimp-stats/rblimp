@@ -195,12 +195,16 @@ rblimp <- function(model,
             data <- as.data.frame(data)
         }
 
-        # Get attributes loop over and convert to numeric
+        # Send non-numeric columns as numeric codes and keep what is needed to restore them:
+        # characters become factors first, so both are sent as level codes; logicals as 0/1
         att_list <- vector('list', NCOL(data))
         for (i in seq_along(att_list)) {
-            if (!is.numeric(data[, i])) {
-                att_list[[i]] <- attributes(data[,i])
-                data[, i] <- as.numeric(data[, i])
+            x <- data[, i]
+            if (!is.numeric(x)) {
+                kind <- if (is.character(x)) "character" else if (is.factor(x)) "factor" else if (is.logical(x)) "logical" else "other"
+                if (kind == "character") x <- factor(x)
+                att_list[[i]] <- list(kind = kind, attributes = attributes(x))
+                data[, i] <- as.numeric(x)
             }
         }
 
@@ -645,16 +649,17 @@ rblimp <- function(model,
         tmp <- read.csv(file.path(tmpfolder, "imps.csv"), skip = 1, header = FALSE)
         file.path(tmpfolder, "imps.csv") |> readLines(1)  |>
             parse_csv_header() -> names(tmp)
-        # Loop over and add attributes back in
+        # Restore non-numeric columns from their codes
+        not_restored <- character(0)
         for (i in seq_along(att_list)) {
-            if (!is.null(att_list[[i]])) {
-                tryCatch(
-                    {attributes(tmp[, i + 1]) <-  att_list[[i]]},
-                    error = function(e) NULL
-                )
-
-            }
+            if (is.null(att_list[[i]])) next
+            v <- restore_column(tmp[, i + 1], att_list[[i]])
+            if (is.null(v)) not_restored <- c(not_restored, names(tmp)[i + 1]) else tmp[[i + 1]] <- v
         }
+        if (length(not_restored)) cli::cli_warn(c(
+            "{.val {not_restored}} {?was/were} imputed as continuous, so {?it is/they are} returned as numeric codes.",
+            "i" = "{cli::qty(length(not_restored))}Declare {?it/them} {.code nominal} or {.code ordinal} to keep the categories."
+        ), call = NULL)
         # Split imputations
         output$imputations <- split(tmp[, -1, drop = FALSE], tmp[, 1])
     } else {
@@ -713,4 +718,23 @@ rblimp <- function(model,
             simple = output$simple, syntax = imp_file, output = result
         )
     )
+}
+
+#' Internal function to restore a non-numeric column from the codes Blimp returned
+#' Factors and characters come back from level codes and logicals from 0/1. Returns NULL
+#' when imputed values are not valid codes (the variable was imputed as continuous).
+#' @noRd
+restore_column <- function(v, info) {
+    if (info$kind %in% c("factor", "character")) {
+        if (!all(is.na(v) | v %in% seq_along(info$attributes$levels))) return(NULL)
+        v <- as.integer(v)
+        attributes(v) <- info$attributes
+        if (info$kind == "character") v <- as.character(v)
+        return(v)
+    }
+    if (info$kind == "logical") {
+        if (!all(is.na(v) | v %in% c(0, 1))) return(NULL)
+        return(as.logical(v))
+    }
+    tryCatch({ attributes(v) <- info$attributes; v }, error = \(e) v)
 }
