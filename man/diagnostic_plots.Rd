@@ -4,6 +4,7 @@
 \alias{diagnostic_plots}
 \alias{print.diagnostic_plots}
 \alias{[.diagnostic_plots}
+\alias{subset.diagnostic_plots}
 \alias{+.diagnostic_plots}
 \alias{&.diagnostic_plots}
 \title{Every applicable diagnostic plot for a \code{\link{blimp_obj}}}
@@ -13,6 +14,8 @@ diagnostic_plots(model, selector)
 \method{print}{diagnostic_plots}(x, ...)
 
 \method{[}{diagnostic_plots}(x, i)
+
+\method{subset}{diagnostic_plots}(x, pattern, ...)
 
 \method{+}{diagnostic_plots}(e1, e2)
 
@@ -26,9 +29,12 @@ with saved residuals is included.}
 
 \item{x}{a \code{diagnostic_plots} list.}
 
-\item{...}{unused.}
+\item{...}{for \code{subset()}, arguments passed to \code{\link{grepl}} (e.g., \code{fixed = TRUE}); otherwise
+unused.}
 
 \item{i}{indices or names of the plots to keep.}
+
+\item{pattern}{a regular expression matched against the plot names.}
 
 \item{e1, e2}{a \code{diagnostic_plots} list (left) and a ggplot2 component such as a theme,
 scale, layer, or labels (right).}
@@ -36,7 +42,8 @@ scale, layer, or labels (right).}
 \value{
 A named list of plots with class \code{diagnostic_plots}. Printing it draws every plot.
 \code{+} and \code{&} add a ggplot2 component to every plot (the list must be on the left), and
-\code{[} keeps the class.
+\code{[} and \code{subset()} keep the class. \code{subset(x, pattern)} keeps the plots whose names
+match \code{pattern}, e.g. \code{subset(plots, "index")} or \code{plots |> subset("x1")}.
 }
 \description{
 Builds every residual and influence plot that applies to each outcome in a model, as a
@@ -81,6 +88,9 @@ m1 <- rblimp('y ~ x m', mydata, nimps = 10, seed = 10972, burn = 1000, iter = 10
 plots <- diagnostic_plots(m1) + ggplot2::theme_minimal()
 names(plots)
 plots$y.index
+
+# Only the index plots
+diagnostic_plots(m1) |> subset("index")
 \dontshow{\}) # examplesIf}
 }
 \seealso{

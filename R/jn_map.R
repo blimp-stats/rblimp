@@ -13,6 +13,10 @@
 #' region where the `ci` posterior credible interval excludes zero -- the 2-D
 #' "region of significance".
 #'
+#' The heatmap uses the theme's continuous fill palette (`palette.fill.continuous`)
+#' with a slope of 0 at the palette's middle color, and otherwise a blue-white-red
+#' scale. The contour's color, transparency, and width are set with [`blimp_style`].
+#'
 #' @param formula an object of class [`formula`] of the form
 #'   `outcome ~ focal | m1 + m2`. Exactly two bare moderators are required;
 #'   additional moderators present in the SIMPLE statement must be pinned via
@@ -26,7 +30,7 @@
 #' @param ... currently unused.
 #' @returns a [`ggplot2::ggplot`] plot. Attribute `"grid"` carries the per-cell
 #'   data frame (with `lower`, `median`, `upper`, `sig` columns).
-#' @seealso [`jn_plot`], [`simple_plot`], [`at`], [`join`]
+#' @seealso [`jn_plot`], [`simple_plot`], [`at`], [`join`], [`blimp_style`]
 #' @examplesIf has_blimp()
 #' \dontrun{
 #' # Generate data with a three-way interaction
@@ -293,7 +297,7 @@ jn_map <- function(formula, model, ci = 0.95, n_grid = 100, ...) {
     }
     subtitle_parts <- c(
         subtitle_parts,
-        paste0("Black contour: edge of ", round(ci * 100),
+        paste0("Contour: edge of ", round(ci * 100),
                "% credible region excluding 0")
     )
     subtitle <- paste(subtitle_parts, collapse = "\n")
@@ -304,15 +308,14 @@ jn_map <- function(formula, model, ci = 0.95, n_grid = 100, ...) {
     p <- (
         ggplot(grid, ggplot2::aes(x = m1, y = m2))
         + geom_raster(ggplot2::aes(fill = median), interpolate = TRUE)
-        + scale_fill_gradient2(
-            low      = "#2c7bb6",
-            mid      = "white",
-            high     = "#d7191c",
-            midpoint = 0,
-            name     = paste0("Slope of\n", out, " on ", pre)
+        # Diverging at 0; the theme's continuous fill palette, or blue-white-red
+        + continuous_scale(
+            "fill", palette = NULL, na.value = "grey50",
+            rescaler = \(x, to = c(0, 1), from = range(x, na.rm = TRUE)) scales::rescale_mid(x, to, from, mid = 0),
+            fallback.palette = scales::pal_div_gradient("#2c7bb6", "white", "#d7191c"),
+            guide = "colourbar", name = paste0("Slope of\n", out, " on ", pre)
         )
-        + geom_contour(ggplot2::aes(z = sig_num), breaks = 0.5,
-                       color = "black", linewidth = 0.6)
+        + boundary_layer(geom_contour(ggplot2::aes(z = sig_num), breaks = 0.5), linewidth = 0.6)
         + labs(
             title    = "Johnson-Neyman Map of Conditional Slope",
             subtitle = subtitle,

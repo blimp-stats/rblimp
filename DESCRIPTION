@@ -20,8 +20,10 @@ Depends:
 SystemRequirements: Blimp software (<https://www.appliedmissingdata.com/blimp>)
 Imports:
     cli,
+    grDevices,
     methods,
-    ggplot2 (>= 4.0.0)
+    ggplot2 (>= 4.0.0),
+    scales
 Suggests:
     mitml,
     rstudioapi,

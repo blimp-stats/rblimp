@@ -102,6 +102,8 @@ For system installs, this launches the Blimp Updater application.
 \item \code{\link{qq_plot}} - Normal Q-Q plots
 \item \code{\link{diagnostic_plots}} - Every applicable diagnostic plot
 \item \code{\link{distribution_plots}} - Every applicable distribution plot
+\item \code{\link{theme_blimp}} - A ready-made theme for rblimp plots
+\item \code{\link{blimp_style}} - Theme settings for rblimp plots
 \item \code{\link{jn_plot}} - Johnson-Neyman plots
 \item \code{\link{simple_plot}} - Simple slopes plots
 \item \code{\link{model_table}} - Publication tables

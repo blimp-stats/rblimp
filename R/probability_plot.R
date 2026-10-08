@@ -16,8 +16,11 @@
 #' probability at each level.
 #'
 #' Categories are distinguished by colour, point shape, and line type, so the plot also reads
-#' in greyscale. Colours come from the theme's discrete colour palette.
-#' @seealso [`residual_plot`], [`diagnostic_plots`]
+#' in greyscale. These come from the theme's discrete palettes (`palette.colour.discrete`,
+#' `palette.shape.discrete`, and `palette.linetype.discrete`); without shape or line type
+#' palettes, a fixed set of seven of each is used. Point transparency and the category-mean
+#' markers are set with [`blimp_style`].
+#' @seealso [`residual_plot`], [`diagnostic_plots`], [`blimp_style`]
 #' @examplesIf has_blimp()
 #' # Generate Data
 #' mydata <- rblimp_sim(
@@ -78,13 +81,13 @@ probability_plot <- function(model, variable, x) {
         z <- data.frame(x = d[[col]], prob = d[[prob_cols[i]]], category = factor(cats[i], levels = cats))
         z[is.finite(z$x) & is.finite(z$prob), , drop = FALSE]
     }))))
-    a <- pooled_alpha(length(imp_list))
+    M <- length(imp_list)
 
     p <- ggplot2::ggplot()
     p <- if (single) {
-        p + ggplot2::geom_point(data = long_df, ggplot2::aes(x = x, y = prob), alpha = a)
+        p + geom_point_mi(data = long_df, ggplot2::aes(x = x, y = prob), n_imps = M)
     } else {
-        p + ggplot2::geom_point(data = long_df, ggplot2::aes(x = x, y = prob, colour = category, shape = category), alpha = a)
+        p + geom_point_mi(data = long_df, ggplot2::aes(x = x, y = prob, colour = category, shape = category), n_imps = M)
     }
 
     if (is_discrete) {
@@ -96,11 +99,13 @@ probability_plot <- function(model, variable, x) {
         }))))
         cell <- stats::aggregate(prob ~ x + category, data = cm, FUN = mean)
         p <- if (single) {
-            p + ggplot2::geom_line(data = cell, ggplot2::aes(x = x, y = prob, colour = ggplot2::from_theme(accent))) +
-                ggplot2::geom_point(data = cell, ggplot2::aes(x = x, y = prob, colour = ggplot2::from_theme(accent)), size = 3.5)
+            p + ggplot2::geom_line(data = cell, ggplot2::aes(x = x, y = prob, colour = ggplot2::from_theme(accent),
+                    linewidth = ggplot2::from_theme(linewidth * curve_line_ratio))) +
+                summary_points(ggplot2::geom_point(data = cell, ggplot2::aes(x = x, y = prob, colour = ggplot2::from_theme(accent))))
         } else {
-            p + ggplot2::geom_line(data = cell, ggplot2::aes(x = x, y = prob, colour = category, linetype = category)) +
-                ggplot2::geom_point(data = cell, ggplot2::aes(x = x, y = prob, colour = category, shape = category), size = 3.5)
+            p + ggplot2::geom_line(data = cell, ggplot2::aes(x = x, y = prob, colour = category, linetype = category,
+                    linewidth = ggplot2::from_theme(linewidth * curve_line_ratio))) +
+                summary_points(ggplot2::geom_point(data = cell, ggplot2::aes(x = x, y = prob, colour = category, shape = category)))
         }
         p <- p + ggplot2::scale_x_continuous(breaks = integer_breaks)
     } else {
@@ -112,9 +117,11 @@ probability_plot <- function(model, variable, x) {
         }))
         if (!is.null(curves) && nrow(curves)) {
             p <- if (single) {
-                p + ggplot2::geom_line(data = curves, ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent)))
+                p + ggplot2::geom_line(data = curves, ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent),
+                        linewidth = ggplot2::from_theme(linewidth * curve_line_ratio)))
             } else {
-                p + ggplot2::geom_line(data = curves, ggplot2::aes(x = x, y = y, colour = category, linetype = category))
+                p + ggplot2::geom_line(data = curves, ggplot2::aes(x = x, y = y, colour = category, linetype = category,
+                        linewidth = ggplot2::from_theme(linewidth * curve_line_ratio)))
             }
         }
     }
@@ -125,8 +132,14 @@ probability_plot <- function(model, variable, x) {
     )
     if (single) return(p)
     legend_title <- paste(variable, "Category")
+    # Shapes and line types: the theme's discrete palettes, or a fixed set of seven
     p +
-        ggplot2::scale_shape_manual(values = c(16, 17, 15, 18, 4, 8, 3)[seq_len(K)]) +
-        ggplot2::scale_linetype_manual(values = c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash", "1F")[seq_len(K)]) +
+        ggplot2::discrete_scale(
+            "shape", palette = NULL, fallback.palette = \(n) c(16, 17, 15, 18, 4, 8, 3)[seq_len(n)]
+        ) +
+        ggplot2::discrete_scale(
+            "linetype", palette = NULL,
+            fallback.palette = \(n) c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash", "1F")[seq_len(n)]
+        ) +
         ggplot2::labs(colour = legend_title, shape = legend_title, linetype = legend_title)
 }

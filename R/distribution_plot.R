@@ -23,11 +23,17 @@
 #'   outlined bars. Level-2 quantities are reduced to one value per cluster first.
 #'
 #' The density curve weights each imputed value by \eqn{1/M} so that cases with missing values
-#' count once. It is omitted for declared or effectively discrete variables.
+#' count once. It is omitted for declared or effectively discrete variables. The vertical
+#' (density) axis is not drawn; add `ggplot2::scale_y_continuous()`,
+#' `ggplot2::guides(y = "axis")`, and `ggplot2::labs(y = "Density")` to show it.
 #'
-#' Colors come from the plot theme: the bars use the discrete fill and colour palettes, and
-#' the density curve uses the theme's accent. See [`ggplot2::element_geom`].
-#' @seealso [`qq_plot`], [`distribution_plots`], [`residual_plot`]
+#' Colors come from the plot theme: the observed-value bars use the theme's geom fill and the
+#' imputed-value bars the `data_color` setting of [`blimp_style`], or the first two colors of
+#' the discrete fill and colour palettes when these are not set; the density curve uses the
+#' theme's accent. See [`ggplot2::element_geom`]. A fill or colour scale added to the plot
+#' (e.g., `scale_fill_manual(values = c(Observed = "grey70"))`) takes precedence. The
+#' transparency of the observed-value bars is set with [`blimp_style`].
+#' @seealso [`qq_plot`], [`distribution_plots`], [`residual_plot`], [`blimp_style`]
 #' @examplesIf has_blimp()
 #' # Generate Data
 #' mydata <- rblimp_sim(
@@ -83,19 +89,23 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
         type = factor(rep(c("Observed", "Imputed"), c(length(vals$observed), length(vals$imputed))),
                       levels = c("Observed", "Imputed"))
     )
-    # Each bar layer gets its own legend key; palette positions are fixed by both levels
+    # Each bar layer gets its own legend key; palette positions are fixed by both levels.
+    # The theme's geom fill (observed) and `blimp.data.color` (imputed) override the palette when set.
     lv <- c("Observed", "Imputed")
     p <- ggplot2::ggplot(df, ggplot2::aes(x = value))
-    if (length(vals$observed)) p <- p + ggplot2::geom_histogram(
-        data = df[df$type == "Observed", , drop = FALSE],
-        ggplot2::aes(y = ggplot2::after_stat(density), fill = type),
-        colour = NA, alpha = 0.3, binwidth = binwidth, boundary = boundary
+    if (length(vals$observed)) p <- p + themed(
+        theme_color_override(ggplot2::geom_histogram(
+            data = df[df$type == "Observed", , drop = FALSE],
+            ggplot2::aes(y = ggplot2::after_stat(density), fill = type),
+            colour = NA, binwidth = binwidth, boundary = boundary
+        ), "fill", \(theme) ggplot2::calc_element("geom", theme)$fill, level = 1),
+        alpha = list(area.alpha = 0.3)
     )
-    if (length(vals$imputed)) p <- p + ggplot2::geom_histogram(
+    if (length(vals$imputed)) p <- p + theme_color_override(ggplot2::geom_histogram(
         data = df[df$type == "Imputed", , drop = FALSE],
         ggplot2::aes(y = ggplot2::after_stat(density), colour = type),
         fill = NA, binwidth = binwidth, boundary = boundary
-    )
+    ), "colour", \(theme) blimp_setting(theme, "data.color"), level = 2)
     p <- p +
         ggplot2::scale_fill_discrete(NULL, limits = lv, breaks = "Observed") +
         ggplot2::scale_colour_discrete(NULL, limits = lv, breaks = "Imputed")
@@ -111,8 +121,9 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
         p <- p +
             ggplot2::geom_density(
                 data = dens,
-                ggplot2::aes(x = value, weight = weight, colour = ggplot2::from_theme(accent), linetype = "Combined"),
-                bw = stats::bw.nrd0(all_vals), inherit.aes = FALSE, key_glyph = "path",
+                ggplot2::aes(x = value, weight = weight, colour = ggplot2::from_theme(accent), linetype = "Combined",
+                             linewidth = ggplot2::from_theme(linewidth * curve_line_ratio)),
+                fill = NA, bw = stats::bw.nrd0(all_vals), inherit.aes = FALSE, key_glyph = "path",
                 show.legend = c(linetype = TRUE, colour = FALSE, fill = FALSE)
             ) +
             ggplot2::scale_linetype_manual(NULL, values = c(Combined = "solid"))
@@ -127,8 +138,11 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
         ggplot2::guides(fill = "none", colour = "none", linetype = "none")
     }
     if (force_integer) p <- p + ggplot2::scale_x_continuous(breaks = integer_breaks)
+    # Density values are not read off the plot, so the y axis is not drawn
     p +
-        ggplot2::labs(title = title, x = title_var, y = "Density")
+        ggplot2::scale_y_continuous(breaks = NULL) +
+        ggplot2::guides(y = "none") +
+        ggplot2::labs(title = title, x = title_var, y = NULL)
 }
 
 #' Normal Q-Q plot of a variable in a [`blimp_obj`]
@@ -144,7 +158,9 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
 #' A Q-Q plot is not drawn for predicted probabilities (bounded in \[0, 1\]), for the residuals
 #' of ordinal, nominal, or count outcomes (latent-response residuals), or for discrete
 #' variables; requesting one gives an error explaining why.
-#' @seealso [`distribution_plot`], [`distribution_plots`]
+#'
+#' Point transparency and the reference line are set with [`blimp_style`].
+#' @seealso [`distribution_plot`], [`distribution_plots`], [`blimp_style`]
 #' @examplesIf has_blimp()
 #' # Generate Data
 #' mydata <- rblimp_sim(
@@ -184,8 +200,15 @@ qq_plot <- function(model, variable, discrete_max_unique = 5L) {
     lim <- max(abs(c(df$theoretical, df$sample)))
 
     ggplot2::ggplot(df, ggplot2::aes(x = theoretical, y = sample)) +
-        ggplot2::geom_abline(slope = 1, intercept = 0, colour = "grey50", linetype = "dashed", linewidth = 0.4) +
-        ggplot2::geom_point(ggplot2::aes(size = ggplot2::from_theme(pointsize * 2 / 3)), alpha = 0.5) +
+        themed(
+            ggplot2::geom_abline(
+                data = data.frame(slope = 1, intercept = 0),
+                ggplot2::aes(slope = slope, intercept = intercept, linewidth = ggplot2::from_theme(linewidth * ref_line_ratio)),
+                linetype = "dashed", inherit.aes = FALSE
+            ),
+            colour = list(reference.color = "grey50")
+        ) +
+        geom_point_mi(n_imps = if (vals$kind == "observed") 1 else length(model@imputations)) +
         ggplot2::coord_fixed(ratio = 1, xlim = c(-lim, lim), ylim = c(-lim, lim)) +
         ggplot2::labs(
             title = sprintf("Normal Q-Q: %s", var_label(variable)),

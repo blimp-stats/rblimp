@@ -31,6 +31,8 @@ per cluster), standardized, and plotted on equal axes with a 45-degree reference
 A Q-Q plot is not drawn for predicted probabilities (bounded in [0, 1]), for the residuals
 of ordinal, nominal, or count outcomes (latent-response residuals), or for discrete
 variables; requesting one gives an error explaining why.
+
+Point transparency and the reference line are set with \code{\link{blimp_style}}.
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
@@ -52,5 +54,5 @@ qq_plot(m1, 'y.residual')
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link{distribution_plot}}, \code{\link{distribution_plots}}
+\code{\link{distribution_plot}}, \code{\link{distribution_plots}}, \code{\link{blimp_style}}
 }

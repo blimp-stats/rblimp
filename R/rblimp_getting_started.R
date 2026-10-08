@@ -93,6 +93,8 @@
 #' - [`qq_plot`] - Normal Q-Q plots
 #' - [`diagnostic_plots`] - Every applicable diagnostic plot
 #' - [`distribution_plots`] - Every applicable distribution plot
+#' - [`theme_blimp`] - A ready-made theme for rblimp plots
+#' - [`blimp_style`] - Theme settings for rblimp plots
 #' - [`jn_plot`] - Johnson-Neyman plots
 #' - [`simple_plot`] - Simple slopes plots
 #' - [`model_table`] - Publication tables

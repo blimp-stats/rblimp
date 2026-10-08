@@ -14,6 +14,7 @@
 #' @details
 #' To change colors use ggplot2's scale system. Both fill and color are used. See
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
+#' The transparency of the credible bands is set with [`blimp_style`].
 #'
 #' For nominal moderators, wrap the dummy codes in `join(...)` so they are
 #' treated as a single compound moderator (one set of colored lines instead of
@@ -34,7 +35,7 @@
 #' omitted from the formula are treated as held-constant context: their value must
 #' be the same across the matched simple effects and is reported in the plot
 #' subtitle.
-#' @seealso [`jn_plot`], [`jn_map`], [`at`], [`join`]
+#' @seealso [`jn_plot`], [`jn_map`], [`at`], [`join`], [`blimp_style`]
 #' @examplesIf has_blimp()
 #' \dontrun{
 #' # ---- Basic single-moderator example ----
@@ -447,7 +448,7 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     ## Make Conditional Effects Plot
     p <- (
         ggplot2::ggplot(rib_data, ggplot2::aes(focal, color = moderator, fill = moderator))
-        + ggplot2::geom_ribbon(ggplot2::aes(ymin = l, ymax = h), color = NA, alpha = 0.2)
+        + themed(ggplot2::geom_ribbon(ggplot2::aes(ymin = l, ymax = h), color = NA), alpha = list(ribbon.alpha = 0.2))
         + ggplot2::geom_line(ggplot2::aes(y = outcome), ...)
         + ggplot2::labs(
             title    = 'Plot of Conditional Regressions',

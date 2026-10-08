@@ -4,6 +4,7 @@
 \alias{distribution_plots}
 \alias{print.distribution_plots}
 \alias{[.distribution_plots}
+\alias{subset.distribution_plots}
 \alias{+.distribution_plots}
 \alias{&.distribution_plots}
 \title{Every applicable distribution plot for a \code{\link{blimp_obj}}}
@@ -19,6 +20,8 @@ distribution_plots(
 \method{print}{distribution_plots}(x, ...)
 
 \method{[}{distribution_plots}(x, i)
+
+\method{subset}{distribution_plots}(x, pattern, ...)
 
 \method{+}{distribution_plots}(e1, e2)
 
@@ -42,9 +45,12 @@ ORDINAL, NOMINAL, or COUNT.}
 
 \item{x}{a \code{distribution_plots} list.}
 
-\item{...}{unused.}
+\item{...}{for \code{subset()}, arguments passed to \code{\link{grepl}} (e.g., \code{fixed = TRUE}); otherwise
+unused.}
 
 \item{i}{indices or names of the plots to keep.}
+
+\item{pattern}{a regular expression matched against the plot names.}
 
 \item{e1, e2}{a \code{distribution_plots} list (left) and a ggplot2 component such as a theme,
 scale, layer, or labels (right).}
@@ -52,7 +58,9 @@ scale, layer, or labels (right).}
 \value{
 A named list of plots with class \code{distribution_plots}, named by variable, with
 Q-Q plots named \verb{<var>.qq}. Printing it draws every plot. \code{+} and \code{&} add a ggplot2
-component to every plot (the list must be on the left), and \code{[} keeps the class.
+component to every plot (the list must be on the left), and \code{[} and \code{subset()} keep the
+class. \code{subset(x, pattern)} keeps the plots whose names match \code{pattern}, e.g.
+\code{plots |> subset("qq")}.
 }
 \description{
 Builds a \code{\link{distribution_plot}} for every plottable variable in a model, and a \code{\link{qq_plot}}

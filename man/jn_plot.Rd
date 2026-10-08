@@ -24,10 +24,11 @@ a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot. The bounding values are sa
 Generates a Johnson-Neyman Plot based on the posterior summaries from the output of \code{\link{rblimp}}.
 }
 \details{
-To change colors use ggplot2's scale system. Both fill and color are used. See
+To change colors use ggplot2's scale system; the shaded regions use the fill scale. See
 \code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for more information about setting a manual set of colors.
 The shaded regions use the fill values \code{FALSE} (0 is within the interval) and \code{TRUE}
 (0 is outside the interval), e.g., \code{scale_fill_manual(values = c("FALSE" = "grey80", "TRUE" = "grey40"))}.
+The band transparency and the boundary lines are set with \code{\link{blimp_style}}.
 
 When the model contains a SIMPLE command that evaluates the focal predictor at
 multiple values of the formula moderator (e.g., \code{'x | m @ quantile'}), the
@@ -129,5 +130,6 @@ jn_plot("b1 + b2*m" ~ m, cp)        # or quoted
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link{jn_plot_func}}, \code{\link{jn_map}}, \code{\link{simple_plot}}, \code{\link{simple_effects}}, \code{\link{at}}, \code{\link{join}}
+\code{\link{jn_plot_func}}, \code{\link{jn_map}}, \code{\link{simple_plot}}, \code{\link{simple_effects}}, \code{\link{at}}, \code{\link{join}},
+\code{\link{blimp_style}}
 }

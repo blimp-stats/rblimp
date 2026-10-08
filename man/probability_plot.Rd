@@ -28,7 +28,10 @@ averaged; for a predictor declared ORDINAL, NOMINAL, or COUNT, each category get
 probability at each level.
 
 Categories are distinguished by colour, point shape, and line type, so the plot also reads
-in greyscale. Colours come from the theme's discrete colour palette.
+in greyscale. These come from the theme's discrete palettes (\code{palette.colour.discrete},
+\code{palette.shape.discrete}, and \code{palette.linetype.discrete}); without shape or line type
+palettes, a fixed set of seven of each is used. Point transparency and the category-mean
+markers are set with \code{\link{blimp_style}}.
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
@@ -51,5 +54,5 @@ probability_plot(m1, 'y', 'x')
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link{residual_plot}}, \code{\link{diagnostic_plots}}
+\code{\link{residual_plot}}, \code{\link{diagnostic_plots}}, \code{\link{blimp_style}}
 }

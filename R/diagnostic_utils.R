@@ -38,8 +38,22 @@ utils::globalVariables(c(
     "x", "y", "z", "case", "cluster", "rank", "value", "type", "weight",
     "lower", "upper", "theoretical", "sample", "prob", "category", "predictor",
     "x_mean", "resid_mean", "pred_mean", "measure", "outcome_status", "label",
-    "accent", "density", "fontsize", "pointsize"
+    "accent", "density", "fontsize", "pointsize", "linewidth", "family", "slope", "intercept",
+    "yintercept"
 ))
+
+# Fixed design constants ======================================================
+
+# Size of the summary markers (category means) drawn over a point cloud
+summary_point_size <- 3
+# Point transparency when the theme does not set `blimp.point.alpha`; a stacked
+# cloud of M imputations is drawn at this value / M^(1/3)
+point_alpha_base <- 0.7
+# Width of dashed reference lines (thresholds, cutoffs, Q-Q diagonal) as a fraction
+# of the theme's line width; zero lines use the full width
+ref_line_ratio <- 0.5
+# Width of smooth curves as a multiple of the theme's line width
+curve_line_ratio <- 2
 
 # Model checks ================================================================
 
@@ -361,9 +375,25 @@ pooled_sigma <- function(imp_list, residual, variance_col = NULL) {
     rep(sqrt(mean(vapply(imp_list, \(d) stats::var(d[[residual]], na.rm = TRUE), 0), na.rm = TRUE)), n)
 }
 
-#' Internal function for the point alpha of a stacked cloud of M imputations
+#' Internal function for a point layer whose transparency follows `blimp.point.alpha`
+#' When the theme does not set it, a stacked cloud of `n_imps` imputations is drawn
+#' at `point_alpha_base` / n_imps^(1/3), and points that are not stacked at
+#' `point_alpha_base`.
 #' @noRd
-pooled_alpha <- function(M) 0.3 / max(M, 1)^(1 / 3)
+geom_point_mi <- function(..., n_imps = 1) {
+    themed(
+        ggplot2::geom_point(...),
+        alpha = list(point.alpha = point_alpha_base / max(n_imps, 1)^(1 / 3)),
+        colour = list(data.color = NULL)
+    )
+}
+
+#' Internal function for summary markers (category means) drawn over a point cloud
+#' `shape` is the default marker shape; NULL keeps the theme's point shape.
+#' @noRd
+summary_points <- function(layer, shape = NULL) {
+    themed(layer, size = list(summary.size = summary_point_size), shape = list(summary.shape = shape))
+}
 
 #' Internal function for a fit-then-pool loess curve
 #' Fits a loess within each imputation, evaluates every fit on one common grid
@@ -403,12 +433,22 @@ pooled_loess <- function(xy_list, se = FALSE, span = 0.75, n_grid = 200) {
 
 # Plot pieces =================================================================
 
-#' Internal function for a neutral reference line
+#' Internal function for a reference line
+#' `yintercept` is a vector, or a data frame with a `yintercept` column and the
+#' facet columns, so each panel gets its own lines. A solid line (the zero line)
+#' uses the theme's line color and width; dashed lines are grey and thinner, and
+#' guide lines lighter still.
 #' @noRd
-ref_hline <- function(yintercept, dashed = FALSE) {
-    ggplot2::geom_hline(
-        yintercept = yintercept, colour = "grey50", linewidth = 0.4,
-        linetype = if (dashed) "dashed" else "solid"
+ref_hline <- function(yintercept, dashed = FALSE, guide = FALSE) {
+    data <- if (is.data.frame(yintercept)) yintercept else data.frame(yintercept = yintercept)
+    ratio <- if (dashed) ref_line_ratio else 1
+    themed(
+        ggplot2::geom_hline(
+            data = data, ggplot2::aes(yintercept = yintercept, linewidth = ggplot2::from_theme(linewidth * ratio)),
+            linetype = if (dashed) "dashed" else "solid", inherit.aes = FALSE
+        ),
+        colour = if (guide) list(guide.color = "grey70")
+                 else list(reference.color = if (dashed) "grey50")
     )
 }
 
@@ -417,12 +457,27 @@ ref_hline <- function(yintercept, dashed = FALSE) {
 curve_layers <- function(curve, se = FALSE) {
     if (!nrow(curve)) return(list())
     layers <- list()
-    if (se) layers <- c(layers, list(ggplot2::geom_ribbon(
-        data = curve, ggplot2::aes(x = x, ymin = lower, ymax = upper, fill = ggplot2::from_theme(accent)),
-        alpha = 0.2, colour = NA, inherit.aes = FALSE
-    )))
+    # The band's edges are dashed lines, as in the Johnson-Neyman plots, so the band
+    # stays visible over a dense point cloud
+    if (se) layers <- c(layers, list(themed(
+        ggplot2::geom_ribbon(
+            data = curve, ggplot2::aes(x = x, ymin = lower, ymax = upper, fill = ggplot2::from_theme(accent)),
+            colour = NA, inherit.aes = FALSE
+        ),
+        alpha = list(ribbon.alpha = 0.2)
+    )), ggplot2::geom_line(
+        data = curve,
+        ggplot2::aes(x = x, y = lower, colour = ggplot2::from_theme(accent), linewidth = ggplot2::from_theme(linewidth)),
+        linetype = "dashed", inherit.aes = FALSE, na.rm = TRUE
+    ), ggplot2::geom_line(
+        data = curve,
+        ggplot2::aes(x = x, y = upper, colour = ggplot2::from_theme(accent), linewidth = ggplot2::from_theme(linewidth)),
+        linetype = "dashed", inherit.aes = FALSE, na.rm = TRUE
+    ))
     c(layers, list(ggplot2::geom_line(
-        data = curve, ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent)),
+        data = curve,
+        ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent),
+                     linewidth = ggplot2::from_theme(linewidth * curve_line_ratio)),
         inherit.aes = FALSE, na.rm = TRUE
     )))
 }
@@ -446,12 +501,12 @@ outlier_labels <- function(df, value_col, threshold, max_labels, two_sided = FAL
     if (!nrow(out)) return(list())
     key <- if (two_sided) abs(out[[value_col]]) else out[[value_col]]
     out <- out[order(key, decreasing = TRUE)[seq_len(min(nrow(out), max_labels))], , drop = FALSE]
-    # Text size follows the theme's font size
+    # Size and font follow the theme
     mapping <- ggplot2::aes(
         x = .data[["case"]], y = .data[[value_col]], label = .data[["label"]],
-        size = ggplot2::from_theme(fontsize * 0.8)
+        size = ggplot2::from_theme(fontsize * 0.8), family = ggplot2::from_theme(family)
     )
-    if (requireNamespace("ggrepel", quietly = TRUE)) {
+    layer <- if (requireNamespace("ggrepel", quietly = TRUE)) {
         ggrepel::geom_text_repel(
             data = out, mapping = mapping, max.overlaps = Inf,
             seed = 42, min.segment.length = 0.2, inherit.aes = FALSE
@@ -459,6 +514,7 @@ outlier_labels <- function(df, value_col, threshold, max_labels, two_sided = FAL
     } else {
         ggplot2::geom_text(data = out, mapping = mapping, vjust = -0.7, inherit.aes = FALSE)
     }
+    themed(layer, colour = list(label.color = "black"))
 }
 
 #' Internal function for reader-friendly variable labels

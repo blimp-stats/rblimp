@@ -28,6 +28,7 @@ Generates a conditional effect plots based on the posterior summaries from the o
 \details{
 To change colors use ggplot2's scale system. Both fill and color are used. See
 \code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for more information about setting a manual set of colors.
+The transparency of the credible bands is set with \code{\link{blimp_style}}.
 
 For nominal moderators, wrap the dummy codes in \code{join(...)} so they are
 treated as a single compound moderator (one set of colored lines instead of
@@ -107,5 +108,5 @@ simple_plot(y ~ x | join(m1, m2), fit)
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link{jn_plot}}, \code{\link{jn_map}}, \code{\link{at}}, \code{\link{join}}
+\code{\link{jn_plot}}, \code{\link{jn_map}}, \code{\link{at}}, \code{\link{join}}, \code{\link{blimp_style}}
 }

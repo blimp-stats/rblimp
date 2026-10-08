@@ -8,6 +8,20 @@ set_group <- function(x){ with(rle(x), {
     unlist(lapply(seq_along(lengths), \(i) rep(i, lengths[i])))
 })}
 
+#' Internal function for a Johnson-Neyman boundary layer
+#' Color, transparency, and line width follow the `blimp.boundary.*` theme
+#' settings; `alpha` and `linewidth` are the defaults when those are unset
+#' (NULL keeps the geom's own).
+#' @noRd
+boundary_layer <- function(layer, alpha = NULL, linewidth = NULL) {
+    themed(
+        layer,
+        colour = list(boundary.color = 'black'),
+        alpha = list(boundary.alpha = alpha),
+        linewidth = list(boundary.linewidth = linewidth)
+    )
+}
+
 
 #' Function to generate a Johnson-Neyman Plot of Conditional Slope based on a function to produce the conditional effect.
 #' @description
@@ -18,10 +32,11 @@ set_group <- function(x){ with(rle(x), {
 #' @param ... values passed to internal boundary search algorithm. See Details below.
 #' @returns a [`ggplot2::ggplot`] plot. The bounding values are saved in the attribute 'bounds'.
 #' @details
-#' To change colors use ggplot2's scale system. Both fill and color are used. See
+#' To change colors use ggplot2's scale system; the shaded regions use the fill scale. See
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
 #' The shaded regions use the fill values `FALSE` (0 is within the interval) and `TRUE`
 #' (0 is outside the interval), e.g., `scale_fill_manual(values = c("FALSE" = "grey80", "TRUE" = "grey40"))`.
+#' The band transparency and the boundary lines are set with [`blimp_style`].
 #'
 #' For `...`, the arguments are passed to the internal boundary search algorithm.
 #' This algorithm uses an initial grid search to locate boundaries based on the range
@@ -83,7 +98,7 @@ set_group <- function(x){ with(rle(x), {
 #'     )
 #'     + ggplot2::theme_minimal()
 #' )
-#' @seealso [compute_condeff()]
+#' @seealso [compute_condeff()], [`blimp_style`]
 #' @import ggplot2
 #' @export
 jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
@@ -134,38 +149,40 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
     p <- (
         ggplot()
         # Set 0 value line
-        + geom_hline(yintercept = 0)
+        + themed(geom_hline(yintercept = 0), colour = list(reference.color = NULL))
         # Create Ribbon
-        + stat_function(
-            fun = f,
-            aes(
-                # Draw ribbon along lower
-                ymin = func(after_stat(x), quantile, probs = probs[1]),
-                # Draw ribbon along upper
-                ymax = func(after_stat(x), quantile, probs = probs[2]),
-                # Set color based on 0 being in the interval
-                fill = after_stat(y), group = set_group(after_stat(y))
+        + themed(
+            stat_function(
+                fun = f,
+                aes(
+                    # Draw ribbon along lower
+                    ymin = func(after_stat(x), quantile, probs = probs[1]),
+                    # Draw ribbon along upper
+                    ymax = func(after_stat(x), quantile, probs = probs[2]),
+                    # Set color based on 0 being in the interval
+                    fill = after_stat(y), group = set_group(after_stat(y))
+                ),
+                geom = 'ribbon', n = 1000, colour = NA
             ),
-            # Draws a ribbon transparency and
-            geom = 'ribbon', alpha = 0.25, n = 1000
+            # Ribbon transparency follows the theme
+            alpha = list(ribbon.alpha = 0.25)
         )
         # Line for 2.5%
         + geom_function(
             fun = func,
             args = list(quantile, probs = probs[1]),
-            color = 'black', linetype = 'dashed'
+            linetype = 'dashed'
         )
         # Line for 97.5%
         + geom_function(
             fun = func,
             args = list(quantile, probs = probs[2]),
-            color = 'black', linetype = 'dashed'
+            linetype = 'dashed'
         )
         # Line for Median
         + geom_function(
             fun = func,
-            args = list(median),
-            color = 'black'
+            args = list(median)
         )
     )
 
@@ -173,15 +190,14 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
         p <- (
             p
             # Add boundary lines
-            + geom_segment(
+            + boundary_layer(geom_segment(
                 aes(
                     x = boundaries,
                     xend = boundaries,
                     y = bound_y[1,],
                     yend = bound_y[2,],
-                ),
-                color = 'black', alpha = 0.50
-            )
+                )
+            ), alpha = 0.5)
         )
     }
 
@@ -283,10 +299,11 @@ compute_condeff <- function(value1, value2) {
 #' @param ... passed bounds search algorithm. See [`jn_plot_func`] for details.
 #' @returns a [`ggplot2::ggplot`] plot. The bounding values are saved in the attribute 'bounds'.
 #' @details
-#' To change colors use ggplot2's scale system. Both fill and color are used. See
+#' To change colors use ggplot2's scale system; the shaded regions use the fill scale. See
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
 #' The shaded regions use the fill values `FALSE` (0 is within the interval) and `TRUE`
 #' (0 is outside the interval), e.g., `scale_fill_manual(values = c("FALSE" = "grey80", "TRUE" = "grey40"))`.
+#' The band transparency and the boundary lines are set with [`blimp_style`].
 #'
 #' When the model contains a SIMPLE command that evaluates the focal predictor at
 #' multiple values of the formula moderator (e.g., `'x | m @ quantile'`), the
@@ -319,7 +336,8 @@ compute_condeff <- function(value1, value2) {
 #' moderator, so its value at each evaluated point is used to reconstruct the
 #' effect (and its region of significance) exactly.
 #'
-#' @seealso [`jn_plot_func`], [`jn_map`], [`simple_plot`], [`simple_effects`], [`at`], [`join`]
+#' @seealso [`jn_plot_func`], [`jn_map`], [`simple_plot`], [`simple_effects`], [`at`], [`join`],
+#'   [`blimp_style`]
 #' @examplesIf has_blimp()
 #' \dontrun{
 #' # ---- Basic single-moderator example ----
@@ -717,19 +735,18 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
 
     p <- (
         ggplot(jn_data, aes(x = m))
-        + geom_hline(yintercept = 0)
-        + geom_ribbon(aes(ymin = lower, ymax = upper, fill = sig, group = grp), alpha = 0.25)
+        + themed(geom_hline(yintercept = 0), colour = list(reference.color = NULL))
+        + themed(geom_ribbon(aes(ymin = lower, ymax = upper, fill = sig, group = grp), colour = NA), alpha = list(ribbon.alpha = 0.25))
         + geom_line(aes(y = median))
-        + geom_line(aes(y = lower), linetype = 'dashed', color = 'black')
-        + geom_line(aes(y = upper), linetype = 'dashed', color = 'black')
+        + geom_line(aes(y = lower), linetype = 'dashed')
+        + geom_line(aes(y = upper), linetype = 'dashed')
     )
     if (!is.null(bounds_df) && nrow(bounds_df) > 0) {
-        p <- p + geom_segment(
+        p <- p + boundary_layer(geom_segment(
             data = bounds_df,
             aes(x = x, xend = x, y = ymin, yend = ymax),
-            color = 'black', alpha = 0.5,
             inherit.aes = FALSE
-        )
+        ), alpha = 0.5)
     }
     # Always default to facet_grid. Layout:
     #   1 mod  -> .       ~ mod      (row of panels)

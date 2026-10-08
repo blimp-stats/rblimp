@@ -49,9 +49,11 @@
 #' curves are pooled with Rubin's rules: \eqn{T = W + B + B/M}, and the band is
 #' \eqn{\pm 1.96\sqrt{T}}. The bands are drawn only on plots with a loess curve.
 #'
-#' Colors come from the plot theme: points use the theme's ink and curves use its accent.
-#' See [`ggplot2::element_geom`].
-#' @seealso [`diagnostic_plots`], [`influence_plot`], [`probability_plot`], [`distribution_plot`]
+#' Colors come from the plot theme: points use the theme's geom color (or `data_color` in
+#' [`blimp_style`]) and curves use its accent. See [`ggplot2::element_geom`]. Point transparency, reference lines, labels, and the
+#' category-mean markers are set with [`blimp_style`].
+#' @seealso [`diagnostic_plots`], [`influence_plot`], [`probability_plot`], [`distribution_plot`],
+#'   [`blimp_style`]
 #' @examplesIf has_blimp()
 #' # Generate Data
 #' mydata <- rblimp_sim(
@@ -274,7 +276,7 @@ scatter_panels <- function(panels, se, thresholds, title, x_label, y_label) {
 
     p <- ggplot2::ggplot(pts, ggplot2::aes(x = x, y = y)) + ref_hline(0)
     if (length(thresholds)) p <- p + ref_hline(thresholds, dashed = TRUE)
-    p <- p + ggplot2::geom_point(alpha = pooled_alpha(M))
+    p <- p + geom_point_mi(n_imps = M)
 
     for (panel in panels) {
         if (panel$discrete) {
@@ -282,9 +284,9 @@ scatter_panels <- function(panels, se, thresholds, title, x_label, y_label) {
             df <- df[is.finite(df$x) & is.finite(df$y), , drop = FALSE]
             md <- stats::aggregate(y ~ x, data = transform(df, x = round(x)), FUN = mean)
             md$predictor <- factor(panel$name, levels = levels_order)
-            p <- p + ggplot2::geom_point(
-                data = md, ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent)),
-                size = 3, shape = 18
+            p <- p + summary_points(
+                ggplot2::geom_point(data = md, ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent))),
+                shape = 18
             )
         } else {
             curve <- pooled_loess(panel$xy_list, se = se)
@@ -347,7 +349,7 @@ resid_index <- function(model, imp_list, outcome, index_thresholds, max_labels) 
 
     p <- ggplot2::ggplot(df, ggplot2::aes(x = case, y = z)) + ref_hline(0)
     if (length(index_thresholds)) p <- p + ref_hline(index_thresholds, dashed = TRUE)
-    p <- p + ggplot2::geom_point(alpha = pooled_alpha(length(imp_list)))
+    p <- p + geom_point_mi(n_imps = length(imp_list))
 
     # Label cases whose mean standardized residual exceeds the largest threshold
     if (length(index_thresholds)) {
@@ -398,8 +400,8 @@ resid_by_cluster <- function(imp_list, outcome) {
 
     ggplot2::ggplot(df, ggplot2::aes(x = rank, y = z)) +
         ref_hline(0) +
-        ggplot2::geom_hline(yintercept = c(-3, -2, -1, 1, 2, 3), colour = "grey70", linetype = "dashed", linewidth = 0.3) +
-        ggplot2::geom_point(alpha = pooled_alpha(length(imp_list)), size = 1) +
+        ref_hline(c(-3, -2, -1, 1, 2, 3), dashed = TRUE, guide = TRUE) +
+        geom_point_mi(n_imps = length(imp_list)) +
         ggplot2::scale_y_continuous(breaks = \(l) seq(floor(l[1]), ceiling(l[2]))) +
         ggplot2::labs(
             title = sprintf("Within-Cluster Residual Spread: %s", outcome$name),
@@ -469,7 +471,7 @@ binned_plot <- function(imp_list, outcome, x, discrete_vars = character(0)) {
 
     p <- ggplot2::ggplot(bins, ggplot2::aes(x = x, y = y)) +
         ref_hline(0) +
-        ggplot2::geom_point(size = 2.5)
+        geom_point_mi()
     if (nrow(curve)) p <- p + curve_layers(curve)
     n_k <- length(unique(bins$category))
     n_x <- length(unique(bins$predictor))

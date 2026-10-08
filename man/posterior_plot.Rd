@@ -23,6 +23,9 @@ Generates \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plots using \code{\link[
 \details{
 To change colors use ggplot2's scale system. Both fill and color are used. See
 \code{\link[ggplot2:aes_colour_fill_alpha]{ggplot2::aes_colour_fill_alpha}} for more information about setting a manual set of colors.
+The fill transparency is set with \code{\link{blimp_style}}. The vertical (density) axis is not drawn;
+add \code{ggplot2::scale_y_continuous()}, \code{ggplot2::guides(y = "axis")}, and
+\code{ggplot2::labs(y = "Density")} to show it.
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}

@@ -64,6 +64,9 @@ make_labeller <- function(pnames, quants) {
 #' @details
 #' To change colors use ggplot2's scale system. Both fill and color are used. See
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
+#' The fill transparency is set with [`blimp_style`]. The vertical (density) axis is not drawn;
+#' add `ggplot2::scale_y_continuous()`, `ggplot2::guides(y = "axis")`, and
+#' `ggplot2::labs(y = "Density")` to show it.
 #'
 #' @examplesIf has_blimp()
 #' # Generate Data
@@ -209,14 +212,18 @@ posterior_plot <- function(
     # Return Plot information
     return(
         ggplot2::ggplot(plot_data, ggplot2::aes(Parameter))
-        + ggplot2::geom_density(
-            ggplot2::aes(color = `Parameter Type`, fill = `Parameter Type`), alpha = .25
+        + themed(
+            ggplot2::geom_density(ggplot2::aes(color = `Parameter Type`, fill = `Parameter Type`)),
+            alpha = list(area.alpha = 0.25)
         )
         + ggplot2::stat_summary(
             ggplot2::aes(xintercept = ggplot2::after_stat(x), y = 0), fun = quantile, geom = "vline",
             fun.args = list(probs = c(0.025, 0.500, 0.975)),
             orientation = "y"
         )
-        + ylab('Density') + feature_list
+        # Density values are not read off the plot, so the y axis is not drawn
+        + ggplot2::scale_y_continuous(breaks = NULL)
+        + ggplot2::guides(y = "none")
+        + ylab(NULL) + feature_list
     )
 }

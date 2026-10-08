@@ -47,6 +47,8 @@ distance. Cases above \eqn{3p/n} or \eqn{4/n} are labeled.
 
 For a case whose outcome was imputed, Cook's distance reflects the uncertainty in its
 imputed value: it is the case's expected influence given its leverage.
+
+Point transparency, reference lines, and labels are set with \code{\link{blimp_style}}.
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
@@ -82,5 +84,6 @@ influence_plot(m1, 'y', measure = 'cooks')
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link{residual_plot}}, \code{\link{diagnostic_plots}}, \code{\link[=influence,blimp_obj-method]{influence}}
+\code{\link{residual_plot}}, \code{\link{diagnostic_plots}}, \code{\link[=influence,blimp_obj-method]{influence}},
+\code{\link{blimp_style}}
 }

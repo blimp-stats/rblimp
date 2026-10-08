@@ -37,6 +37,10 @@ SIMPLE-evaluated points, evaluates them on a dense grid, and renders the
 posterior median as a heatmap. A contour line marks the boundary of the
 region where the \code{ci} posterior credible interval excludes zero -- the 2-D
 "region of significance".
+
+The heatmap uses the theme's continuous fill palette (\code{palette.fill.continuous})
+with a slope of 0 at the palette's middle color, and otherwise a blue-white-red
+scale. The contour's color, transparency, and width are set with \code{\link{blimp_style}}.
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
@@ -78,5 +82,5 @@ head(attr(jn_map(y ~ x | m1 + m2, fit), 'grid'))
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link{jn_plot}}, \code{\link{simple_plot}}, \code{\link{at}}, \code{\link{join}}
+\code{\link{jn_plot}}, \code{\link{simple_plot}}, \code{\link{at}}, \code{\link{join}}, \code{\link{blimp_style}}
 }

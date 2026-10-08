@@ -38,10 +38,16 @@ outlined bars. Level-2 quantities are reduced to one value per cluster first.
 }
 
 The density curve weights each imputed value by \eqn{1/M} so that cases with missing values
-count once. It is omitted for declared or effectively discrete variables.
+count once. It is omitted for declared or effectively discrete variables. The vertical
+(density) axis is not drawn; add \code{ggplot2::scale_y_continuous()},
+\code{ggplot2::guides(y = "axis")}, and \code{ggplot2::labs(y = "Density")} to show it.
 
-Colors come from the plot theme: the bars use the discrete fill and colour palettes, and
-the density curve uses the theme's accent. See \code{\link[ggplot2:element_geom]{ggplot2::element_geom}}.
+Colors come from the plot theme: the observed-value bars use the theme's geom fill and the
+imputed-value bars the \code{data_color} setting of \code{\link{blimp_style}}, or the first two colors of
+the discrete fill and colour palettes when these are not set; the density curve uses the
+theme's accent. See \code{\link[ggplot2:element_geom]{ggplot2::element_geom}}. A fill or colour scale added to the plot
+(e.g., \code{scale_fill_manual(values = c(Observed = "grey70"))}) takes precedence. The
+transparency of the observed-value bars is set with \code{\link{blimp_style}}.
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
@@ -70,5 +76,5 @@ distribution_plot(m1, 'y.residual') + ggplot2::theme_minimal()
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link{qq_plot}}, \code{\link{distribution_plots}}, \code{\link{residual_plot}}
+\code{\link{qq_plot}}, \code{\link{distribution_plots}}, \code{\link{residual_plot}}, \code{\link{blimp_style}}
 }

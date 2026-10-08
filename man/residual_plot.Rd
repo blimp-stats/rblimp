@@ -77,8 +77,9 @@ With \code{se = TRUE}, each imputation's loess is evaluated with its standard er
 curves are pooled with Rubin's rules: \eqn{T = W + B + B/M}, and the band is
 \eqn{\pm 1.96\sqrt{T}}. The bands are drawn only on plots with a loess curve.
 
-Colors come from the plot theme: points use the theme's ink and curves use its accent.
-See \code{\link[ggplot2:element_geom]{ggplot2::element_geom}}.
+Colors come from the plot theme: points use the theme's geom color (or \code{data_color} in
+\code{\link{blimp_style}}) and curves use its accent. See \code{\link[ggplot2:element_geom]{ggplot2::element_geom}}. Point transparency, reference lines, labels, and the
+category-mean markers are set with \code{\link{blimp_style}}.
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
@@ -114,5 +115,6 @@ residual_plot(m1, 'y', x = 'case') + ggplot2::theme_minimal()
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link{diagnostic_plots}}, \code{\link{influence_plot}}, \code{\link{probability_plot}}, \code{\link{distribution_plot}}
+\code{\link{diagnostic_plots}}, \code{\link{influence_plot}}, \code{\link{probability_plot}}, \code{\link{distribution_plot}},
+\code{\link{blimp_style}}
 }

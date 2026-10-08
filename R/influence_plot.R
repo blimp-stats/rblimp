@@ -27,7 +27,10 @@
 #'
 #' For a case whose outcome was imputed, Cook's distance reflects the uncertainty in its
 #' imputed value: it is the case's expected influence given its leverage.
-#' @seealso [`residual_plot`], [`diagnostic_plots`], [`influence`][influence,blimp_obj-method]
+#'
+#' Point transparency, reference lines, and labels are set with [`blimp_style`].
+#' @seealso [`residual_plot`], [`diagnostic_plots`], [`influence`][influence,blimp_obj-method],
+#'   [`blimp_style`]
 #' @examplesIf has_blimp()
 #' # Generate Data
 #' mydata <- rblimp_sim(
@@ -103,23 +106,26 @@ influence_plot <- function(
 
     # Reference lines
     refs <- rbind(
-        data.frame(measure = "Leverage", y = c(2, 3) * p / n, label = c("2p/n", "3p/n")),
-        data.frame(measure = "Cook's D", y = 4 / n, label = "4/n")
+        data.frame(measure = "Leverage", yintercept = c(2, 3) * p / n, label = c("2p/n", "3p/n")),
+        data.frame(measure = "Cook's D", yintercept = 4 / n, label = "4/n")
     )
     refs <- refs[refs$measure %in% labels[measure], , drop = FALSE]
     refs$measure <- factor(refs$measure, levels = labels[measure])
 
     plt <- ggplot2::ggplot(df, ggplot2::aes(x = case, y = value)) +
-        ggplot2::geom_hline(data = refs, ggplot2::aes(yintercept = y), colour = "grey50", linetype = "dashed", linewidth = 0.4) +
-        ggplot2::geom_text(
-            data = refs, ggplot2::aes(x = -Inf, y = y, label = label),
-            hjust = -0.1, vjust = -0.3, inherit.aes = FALSE
+        ref_hline(refs, dashed = TRUE) +
+        themed(
+            ggplot2::geom_text(
+                data = refs, ggplot2::aes(x = -Inf, y = yintercept, label = label),
+                hjust = -0.1, vjust = -0.3, inherit.aes = FALSE
+            ),
+            colour = list(label.color = "black")
         )
     plt <- if (marked) {
-        plt + ggplot2::geom_point(ggplot2::aes(shape = outcome_status)) +
+        plt + geom_point_mi(ggplot2::aes(shape = outcome_status)) +
             ggplot2::labs(shape = "Outcome")
     } else {
-        plt + ggplot2::geom_point()
+        plt + geom_point_mi()
     }
 
     # Label the most extreme cases in each panel

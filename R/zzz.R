@@ -13,3 +13,9 @@
         )))
     }
 }
+
+#' Register rblimp's `blimp.*` theme settings (see `blimp_style()`)
+#' @noRd
+.onLoad <- function(libname, pkgname) {
+    register_blimp_settings()
+}

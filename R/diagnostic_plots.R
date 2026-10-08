@@ -12,10 +12,13 @@
 #' @param e1,e2 a `diagnostic_plots` list (left) and a ggplot2 component such as a theme,
 #'   scale, layer, or labels (right).
 #' @param i indices or names of the plots to keep.
-#' @param ... unused.
+#' @param pattern a regular expression matched against the plot names.
+#' @param ... for `subset()`, arguments passed to [`grepl`] (e.g., `fixed = TRUE`); otherwise
+#'   unused.
 #' @returns A named list of plots with class `diagnostic_plots`. Printing it draws every plot.
 #'   `+` and `&` add a ggplot2 component to every plot (the list must be on the left), and
-#'   `[` keeps the class.
+#'   `[` and `subset()` keep the class. `subset(x, pattern)` keeps the plots whose names
+#'   match `pattern`, e.g. `subset(plots, "index")` or `plots |> subset("x1")`.
 #' @details
 #' The plots for each outcome depend on its type:
 #'
@@ -53,6 +56,9 @@
 #' plots <- diagnostic_plots(m1) + ggplot2::theme_minimal()
 #' names(plots)
 #' plots$y.index
+#'
+#' # Only the index plots
+#' diagnostic_plots(m1) |> subset("index")
 #' @import ggplot2
 #' @export
 diagnostic_plots <- function(model, selector) {
@@ -160,10 +166,14 @@ diagnostic_plots <- function(model, selector) {
 #' @param e1,e2 a `distribution_plots` list (left) and a ggplot2 component such as a theme,
 #'   scale, layer, or labels (right).
 #' @param i indices or names of the plots to keep.
-#' @param ... unused.
+#' @param pattern a regular expression matched against the plot names.
+#' @param ... for `subset()`, arguments passed to [`grepl`] (e.g., `fixed = TRUE`); otherwise
+#'   unused.
 #' @returns A named list of plots with class `distribution_plots`, named by variable, with
 #'   Q-Q plots named `<var>.qq`. Printing it draws every plot. `+` and `&` add a ggplot2
-#'   component to every plot (the list must be on the left), and `[` keeps the class.
+#'   component to every plot (the list must be on the left), and `[` and `subset()` keep the
+#'   class. `subset(x, pattern)` keeps the plots whose names match `pattern`, e.g.
+#'   `plots |> subset("qq")`.
 #' @details
 #' Predicted values are not included by default; request them with `selector`.
 #' @seealso [`distribution_plot`], [`qq_plot`], [`diagnostic_plots`]
@@ -243,6 +253,17 @@ distribution_vars <- function(model) {
 
 # Methods for plot lists =====================================================
 
+#' Internal function keeping the plots in a list whose names match a pattern
+#' @noRd
+subset_plots <- function(x, pattern, ...) {
+    if (!is.character(pattern) || length(pattern) != 1 || is.na(pattern)) throw_error(
+        "{.arg pattern} must be a single character string."
+    )
+    keep <- grepl(pattern, names(x), ...)
+    if (!any(keep)) cli::cli_warn("No plot names match {.val {pattern}}.", call = NULL)
+    x[keep]
+}
+
 #' Internal function adding a ggplot2 component to every plot in a list
 #' @noRd
 add_to_plots <- function(e1, e2) {
@@ -269,6 +290,10 @@ print.diagnostic_plots <- function(x, ...) {
 
 #' @rdname diagnostic_plots
 #' @export
+subset.diagnostic_plots <- function(x, pattern, ...) subset_plots(x, pattern, ...)
+
+#' @rdname diagnostic_plots
+#' @export
 `+.diagnostic_plots` <- function(e1, e2) add_to_plots(e1, e2)
 
 #' @rdname diagnostic_plots
@@ -287,6 +312,10 @@ print.distribution_plots <- function(x, ...) {
 `[.distribution_plots` <- function(x, i) {
     structure(unclass(x)[i], class = class(x))
 }
+
+#' @rdname distribution_plots
+#' @export
+subset.distribution_plots <- function(x, pattern, ...) subset_plots(x, pattern, ...)
 
 #' @rdname distribution_plots
 #' @export
