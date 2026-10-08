@@ -25,11 +25,13 @@ category name (e.g., \code{"y.2"}) plots one.}
 
 \item{x}{what to plot the residuals against:
 \itemize{
-\item \code{"predicted"}: the predicted values (the default when the outcome has them).
+\item \code{"#predicted"}: the predicted values (the default when the outcome has them).
 \item one or more predictor names: a separate panel for each predictor.
-\item \code{"case"}: the record number (an index plot; the default otherwise).
-\item \code{"cluster"}: clusters ordered by their residual spread (clustered continuous outcomes).
-}}
+\item \code{"#case"}: the record number (an index plot; the default otherwise).
+\item \code{"#cluster"}: clusters ordered by their residual spread (clustered continuous outcomes).
+}
+
+The special values start with \verb{#} so they cannot clash with a variable name.}
 
 \item{se}{a logical value. If \code{TRUE}, adds 95\% pointwise bands around the loess
 curve. See details.}
@@ -117,7 +119,7 @@ residual_plot(m1, 'y')
 residual_plot(m1, 'y', x = c('x', 'm'), se = TRUE)
 
 # Index plot
-residual_plot(m1, 'y', x = 'case') + ggplot2::theme_minimal()
+residual_plot(m1, 'y', x = '#case') + ggplot2::theme_minimal()
 \dontshow{\}) # examplesIf}
 }
 \seealso{

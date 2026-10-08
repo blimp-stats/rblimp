@@ -103,7 +103,7 @@ diagnostic_plots <- function(model, selector, discrete_max_unique = 10L) {
         # Nominal categories are handled with their parent unless selected on their own
         if (!is.null(o$category_of) && o$category_of %in% names(outcomes)) next
         if (o$level == 2L) {
-            add(paste0(dv, ".index"), residual_plot(model, dv, x = "case"))
+            add(paste0(dv, ".index"), residual_plot(model, dv, x = "#case"))
             for (col in diag_outcome_predictors(model, o)$level2) {
                 add(paste0(dv, ".", col), residual_plot(model, dv, x = col, discrete_max_unique = discrete_max_unique))
             }
@@ -112,13 +112,13 @@ diagnostic_plots <- function(model, selector, discrete_max_unique = 10L) {
         preds <- diag_outcome_predictors(model, o)
 
         if (o$type %in% c("continuous", "ordinal")) {
-            add(paste0(dv, ".predicted"), residual_plot(model, dv, x = "predicted"))
+            add(paste0(dv, ".predicted"), residual_plot(model, dv, x = "#predicted"))
             for (p in names(preds$level1)) {
                 add(paste0(dv, ".", p), residual_plot(model, dv, x = p, discrete_max_unique = discrete_max_unique))
             }
-            add(paste0(dv, ".index"), residual_plot(model, dv, x = "case"))
+            add(paste0(dv, ".index"), residual_plot(model, dv, x = "#case"))
             if (o$type == "continuous" && !is.na(o$cluster)) {
-                add(paste0(dv, ".cluster_variance"), residual_plot(model, dv, x = "cluster"))
+                add(paste0(dv, ".cluster_variance"), residual_plot(model, dv, x = "#cluster"))
             }
             if (o$type == "ordinal") {
                 for (p in unique(c(names(preds$level1), names(preds$level2)))) {
@@ -133,7 +133,7 @@ diagnostic_plots <- function(model, selector, discrete_max_unique = 10L) {
             # One set of binned plots per non-reference category
             cats <- if (is.null(o$category_of)) paste0(dv, ".", o$categories) else dv
             for (ck in cats) {
-                add(paste0(ck, ".binned"), residual_plot(model, ck, x = "predicted"))
+                add(paste0(ck, ".binned"), residual_plot(model, ck, x = "#predicted"))
                 for (p in names(diag_outcome_predictors(model, diag_outcome(model, ck))$level1)) {
                     add(paste0(ck, ".", p), residual_plot(model, ck, x = p, discrete_max_unique = discrete_max_unique))
                 }
@@ -143,7 +143,7 @@ diagnostic_plots <- function(model, selector, discrete_max_unique = 10L) {
                 add(paste0(parent, ".", p, ".probability"), probability_plot(model, parent, p, discrete_max_unique))
             }
         } else if (o$type == "count") {
-            add(paste0(dv, ".index"), residual_plot(model, dv, x = "case"))
+            add(paste0(dv, ".index"), residual_plot(model, dv, x = "#case"))
             for (p in names(preds$level1)) {
                 add(paste0(dv, ".", p), residual_plot(model, dv, x = p, discrete_max_unique = discrete_max_unique))
             }

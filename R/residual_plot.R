@@ -11,10 +11,12 @@
 #'   outcome, the parent name (e.g., `"y"`) plots every non-reference category and a
 #'   category name (e.g., `"y.2"`) plots one.
 #' @param x what to plot the residuals against:
-#'   - `"predicted"`: the predicted values (the default when the outcome has them).
+#'   - `"#predicted"`: the predicted values (the default when the outcome has them).
 #'   - one or more predictor names: a separate panel for each predictor.
-#'   - `"case"`: the record number (an index plot; the default otherwise).
-#'   - `"cluster"`: clusters ordered by their residual spread (clustered continuous outcomes).
+#'   - `"#case"`: the record number (an index plot; the default otherwise).
+#'   - `"#cluster"`: clusters ordered by their residual spread (clustered continuous outcomes).
+#'
+#'   The special values start with `#` so they cannot clash with a variable name.
 #' @param se a logical value. If `TRUE`, adds 95% pointwise bands around the loess
 #'   curve. See details.
 #' @param index_thresholds a numeric vector of reference lines for standardized
@@ -87,7 +89,7 @@
 #' residual_plot(m1, 'y', x = c('x', 'm'), se = TRUE)
 #'
 #' # Index plot
-#' residual_plot(m1, 'y', x = 'case') + ggplot2::theme_minimal()
+#' residual_plot(m1, 'y', x = '#case') + ggplot2::theme_minimal()
 #' @import ggplot2
 #' @importFrom stats loess var
 #' @importFrom methods is
@@ -113,17 +115,17 @@ residual_plot <- function(
 
     # Default x
     if (missing(x)) {
-        x <- if (outcome$level == 1L && outcome$type != "count") "predicted" else "case"
+        x <- if (outcome$level == 1L && outcome$type != "count") "#predicted" else "#case"
     }
     if (!is.character(x) || !length(x)) throw_error(
         "{.arg x} must be a character vector"
     )
 
-    if (length(x) == 1 && x %in% c("predicted", "case", "cluster")) {
-        uses_se <- x == "predicted" && outcome$level == 1L && outcome$type %in% c("continuous", "ordinal")
+    if (length(x) == 1 && x %in% c("#predicted", "#case", "#cluster")) {
+        uses_se <- x == "#predicted" && outcome$level == 1L && outcome$type %in% c("continuous", "ordinal")
         if (se && !uses_se) inform_no_se()
         return(switch(
-            x,
+            sub("^#", "", x),
             predicted = resid_vs_predicted(imp_list, outcome, se),
             case = resid_index(model, imp_list, outcome, index_thresholds, max_labels),
             cluster = resid_by_cluster(imp_list, outcome)
@@ -145,13 +147,13 @@ inform_no_se <- function() {
 resid_vs_predicted <- function(imp_list, outcome, se) {
     if (outcome$level == 2L) throw_error(c(
         "Level-2 residuals have no predicted values.",
-        "i" = "Use {.code x = \"case\"} or a level-2 predictor."
+        "i" = "Use {.code x = \"#case\"} or a level-2 predictor."
     ))
     if (outcome$type == "count") throw_error(c(
         "Residuals against predicted values are not plotted for count outcomes.",
-        "i" = "Use {.code x = \"case\"} or a predictor for Pearson residuals."
+        "i" = "Use {.code x = \"#case\"} or a predictor for Pearson residuals."
     ))
-    if (outcome$type == "nominal") return(binned_plot(imp_list, outcome, "predicted"))
+    if (outcome$type == "nominal") return(binned_plot(imp_list, outcome, "#predicted"))
 
     xy_list <- lapply(imp_list, \(d) data.frame(x = d[[outcome$predicted]], y = d[[outcome$residual]]))
     panel <- list(name = "Predicted", xy_list = xy_list, discrete = FALSE)
@@ -181,10 +183,12 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
             c("i" = "{.val {at_other}} {?is a/are} level-2 predictor{?s}; plot {?it/them} against {.val {outcome$level2_residuals[1]}}.")
         } else if (length(at_other)) {
             c("i" = "{.val {at_other}} {?is a/are} level-1 predictor{?s}.")
+        } else if (any(bad %in% c("predicted", "case", "cluster"))) {
+            c("i" = "For the special plots, start the name with {.code #}, e.g. {.val {paste0('#', bad[1])}}.")
         }
         throw_error(c(
             "{.val {bad}} {?is/are} not {?a predictor/predictors} of {.val {outcome$name}}.",
-            "i" = "Valid values: {.val {c('predicted', 'case', names(allowed))}}.",
+            "i" = "Valid values: {.val {c('#predicted', '#case', names(allowed))}}.",
             hint
         ))
     }
@@ -466,7 +470,7 @@ resid_by_cluster <- function(imp_list, outcome) {
 
 #' Internal function for binned residuals of a nominal outcome
 #' Within each imputation, residuals I(Y = k) - p are binned by the predicted
-#' probability (`x = "predicted"`) or a predictor; bin edges are fixed from the
+#' probability (`x = "#predicted"`) or a predictor; bin edges are fixed from the
 #' pooled values and the per-imputation bin means are averaged. A panel for each
 #' non-reference category. No standard-error bands.
 #' @noRd
@@ -478,7 +482,7 @@ binned_plot <- function(imp_list, outcome, x, discrete = logical(0), levels = li
     for (k in outcome$categories) {
         prob <- paste0(parent, ".", k, ".probability")
         for (xc in x) {
-            by_pred <- xc == "predicted"
+            by_pred <- xc == "#predicted"
             xy_list <- lapply(imp_list, \(d) {
                 z <- data.frame(x = if (by_pred) d[[prob]] else d[[xc]], y = as.numeric(d[[parent]] == k) - d[[prob]])
                 z[is.finite(z$x) & is.finite(z$y), , drop = FALSE]
@@ -533,7 +537,7 @@ binned_plot <- function(imp_list, outcome, x, discrete = logical(0), levels = li
     } else if (n_x > 1) {
         p <- p + ggplot2::facet_wrap(~predictor, scales = "free_x")
     }
-    by_pred <- identical(x, "predicted")
+    by_pred <- identical(x, "#predicted")
     if (n_x == 1 && length(x) == 1 && isTRUE(discrete[x])) p <- p + discrete_x_scale(levels[[x]])
     p + ggplot2::labs(
         title = sprintf(if (by_pred) "Binned Residual vs. Predicted: %s" else "Binned Residual vs. Predictor: %s", outcome$name),
