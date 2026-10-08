@@ -8,7 +8,8 @@
 #' @param variable a character string naming one saved variable: a variable in the model,
 #'   a model-implied quantity (e.g., `"y.residual"`, `"f.latent"`, `"y.1.probability"`,
 #'   `"y.yjt"`), or a level-2 quantity (e.g., `"y[school]"`, `"x.mean[school]"`).
-#' @param bins an integer. The target number of histogram bins for continuous variables.
+#' @param bins an integer. The target number of histogram bins for continuous variables; it also
+#'   sets the smoothness of the density curve.
 #'   Integer-valued variables always use a bin width of 1.
 #' @param discrete_max_unique an integer. A variable with this many or fewer distinct values
 #'   is treated as discrete (no density curve, integer axis ticks) even if it was not declared
@@ -23,7 +24,9 @@
 #'   outlined bars. Level-2 quantities are reduced to one value per cluster first.
 #'
 #' The density curve weights each imputed value by \eqn{1/M} so that cases with missing values
-#' count once. It is omitted for declared or effectively discrete variables. The vertical
+#' count once. Its bandwidth equals the histogram's bin width, so the curve and the bars show
+#' the same level of detail; `bins` changes both. It is omitted for declared or effectively
+#' discrete variables. The vertical
 #' (density) axis is not drawn; add `ggplot2::scale_y_continuous()`,
 #' `ggplot2::guides(y = "axis")`, and `ggplot2::labs(y = "Density")` to show it.
 #'
@@ -110,7 +113,8 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
         ggplot2::scale_fill_discrete(NULL, limits = lv, breaks = "Observed") +
         ggplot2::scale_colour_discrete(NULL, limits = lv, breaks = "Imputed")
 
-    # Density curve over all cases; imputed values weighted 1/M
+    # Density curve over all cases; imputed values weighted 1/M. Its bandwidth is the
+    # bin width, so the curve and the bars show the same level of detail at any M
     if (!force_integer && length(all_vals) >= 2) {
         n_imps <- length(model@imputations)
         dens <- data.frame(
@@ -123,7 +127,7 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
                 data = dens,
                 ggplot2::aes(x = value, weight = weight, colour = ggplot2::from_theme(accent), linetype = "Combined",
                              linewidth = ggplot2::from_theme(linewidth * curve_line_ratio)),
-                fill = NA, bw = stats::bw.nrd0(all_vals), inherit.aes = FALSE, key_glyph = "path",
+                fill = NA, bw = binwidth, inherit.aes = FALSE, key_glyph = "path",
                 show.legend = c(linetype = TRUE, colour = FALSE, fill = FALSE)
             ) +
             ggplot2::scale_linetype_manual(NULL, values = c(Combined = "solid"))

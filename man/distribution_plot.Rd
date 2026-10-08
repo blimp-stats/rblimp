@@ -13,7 +13,8 @@ distribution_plot(model, variable, bins = 30, discrete_max_unique = 5L)
 a model-implied quantity (e.g., \code{"y.residual"}, \code{"f.latent"}, \code{"y.1.probability"},
 \code{"y.yjt"}), or a level-2 quantity (e.g., \code{"y[school]"}, \code{"x.mean[school]"}).}
 
-\item{bins}{an integer. The target number of histogram bins for continuous variables.
+\item{bins}{an integer. The target number of histogram bins for continuous variables; it also
+sets the smoothness of the density curve.
 Integer-valued variables always use a bin width of 1.}
 
 \item{discrete_max_unique}{an integer. A variable with this many or fewer distinct values
@@ -38,7 +39,9 @@ outlined bars. Level-2 quantities are reduced to one value per cluster first.
 }
 
 The density curve weights each imputed value by \eqn{1/M} so that cases with missing values
-count once. It is omitted for declared or effectively discrete variables. The vertical
+count once. Its bandwidth equals the histogram's bin width, so the curve and the bars show
+the same level of detail; \code{bins} changes both. It is omitted for declared or effectively
+discrete variables. The vertical
 (density) axis is not drawn; add \code{ggplot2::scale_y_continuous()},
 \code{ggplot2::guides(y = "axis")}, and \code{ggplot2::labs(y = "Density")} to show it.
 
