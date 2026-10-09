@@ -454,9 +454,15 @@ resid_by_cluster <- function(imp_list, outcome) {
         "i" = "Ordinal, nominal, and count outcomes have no free level-1 residual variance."
     ))
     s <- sqrt(mean(vapply(imp_list, \(d) stats::var(d[[outcome$residual]], na.rm = TRUE), 0), na.rm = TRUE))
-    df <- do.call(rbind, lapply(imp_list, \(d) data.frame(cluster = d[[cl]], z = d[[outcome$residual]] / s)))
+    df <- do.call(rbind, lapply(seq_along(imp_list), \(i) {
+        d <- imp_list[[i]]
+        data.frame(imp = i, cluster = d[[cl]], z = d[[outcome$residual]] / s)
+    }))
     df <- df[is.finite(df$z) & !is.na(df$cluster), , drop = FALSE]
-    spread <- tapply(df$z, df$cluster, stats::sd, na.rm = TRUE)
+    # Each cluster's variance within each imputation, averaged, then the square root
+    spread <- sqrt(sapply(split(df, df$cluster), \(dk) mean(tapply(dk$z, dk$imp, stats::var), na.rm = TRUE)))
+    # A one-case cluster has no spread: it counts as 0, so it sorts to the left
+    spread[is.nan(spread)] <- 0
     ord <- names(sort(spread[is.finite(spread)]))
     df$rank <- match(as.character(df$cluster), ord)
     df <- df[!is.na(df$rank), , drop = FALSE]
