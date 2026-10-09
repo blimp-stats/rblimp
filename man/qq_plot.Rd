@@ -14,7 +14,7 @@ a model-implied quantity (e.g., \code{"y.residual"}, \code{"f.latent"}, \code{"y
 \code{"y.yjt"}), or a level-2 quantity (e.g., \code{"y[school]"}, \code{"x.mean[school]"}).}
 
 \item{discrete_max_unique}{an integer. A variable with this many or fewer distinct values
-in a completed dataset is treated as discrete (no density curve or Q-Q plot, integer
+in a completed dataset is treated as discrete (no density curves or Q-Q plot, integer
 axis ticks) even if it was not declared ORDINAL, NOMINAL, or COUNT. Declared variables
 and factor, character, and logical columns always are; categories are labeled by name.}
 }
@@ -22,12 +22,16 @@ and factor, character, and logical columns always are; categories are labeled by
 a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
 }
 \description{
-Plots the standardized values of one variable, pooled across every saved imputation,
-against standard normal quantiles.
+Plots the standardized values of one variable against standard normal quantiles, one
+set of points per completed dataset, overlaid.
 }
 \details{
-The values are those shown by \code{\link{distribution_plot}} (level-2 quantities reduced to one value
-per cluster), standardized, and plotted on equal axes with a 45-degree reference line.
+Each completed dataset (the observed values plus one imputation's imputed values; level-2
+quantities reduced to one value per cluster) is sorted and plotted against the normal
+quantiles for its size, so every case counts once in each dataset. Points are matched by
+rank, not by case. Values are standardized by their mean and the pooled within-imputation
+standard deviation, and plotted on equal axes with a 45-degree reference line. A variable
+with no imputed values gives one set of points.
 
 A Q-Q plot is not drawn for predicted probabilities (bounded in [0, 1]), for the residuals
 of ordinal, nominal, or count outcomes (latent-response residuals), or for discrete

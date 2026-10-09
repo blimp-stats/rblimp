@@ -153,13 +153,17 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
 
 #' Normal Q-Q plot of a variable in a [`blimp_obj`]
 #' @description
-#' Plots the standardized values of one variable, pooled across every saved imputation,
-#' against standard normal quantiles.
+#' Plots the standardized values of one variable against standard normal quantiles, one
+#' set of points per completed dataset, overlaid.
 #' @inheritParams distribution_plot
 #' @returns a [`ggplot2::ggplot`] plot
 #' @details
-#' The values are those shown by [`distribution_plot`] (level-2 quantities reduced to one value
-#' per cluster), standardized, and plotted on equal axes with a 45-degree reference line.
+#' Each completed dataset (the observed values plus one imputation's imputed values; level-2
+#' quantities reduced to one value per cluster) is sorted and plotted against the normal
+#' quantiles for its size, so every case counts once in each dataset. Points are matched by
+#' rank, not by case. Values are standardized by their mean and the pooled within-imputation
+#' standard deviation, and plotted on equal axes with a 45-degree reference line. A variable
+#' with no imputed values gives one set of points.
 #'
 #' A Q-Q plot is not drawn for predicted probabilities (bounded in \[0, 1\]), for the residuals
 #' of ordinal, nominal, or count outcomes (latent-response residuals), or for discrete
@@ -202,9 +206,16 @@ qq_plot <- function(model, variable, discrete_max_unique = 5L) {
     ))
     if (length(v) < 3 || stats::sd(v) == 0) throw_error("Too few distinct values of {.val {variable}}.")
 
-    z <- (v - mean(v)) / stats::sd(v)
-    qq <- stats::qqnorm(z, plot.it = FALSE)
-    df <- data.frame(theoretical = qq$x, sample = qq$y)
+    # One Q-Q per completed dataset: its sorted values against the normal quantiles for its
+    # size, standardized by the mean and the pooled within-imputation SD
+    completed <- Filter(\(x) length(x) >= 3, vals$completed)
+    center <- mean(unlist(completed))
+    scale <- sqrt(mean(vapply(completed, stats::var, 0)))
+    if (!is.finite(scale) || scale == 0) throw_error("Too few distinct values of {.val {variable}}.")
+    df <- do.call(rbind, lapply(completed, \(x) {
+        qq <- stats::qqnorm((x - center) / scale, plot.it = FALSE)
+        data.frame(theoretical = qq$x, sample = qq$y)
+    }))
     lim <- max(abs(c(df$theoretical, df$sample)))
 
     ggplot2::ggplot(df, ggplot2::aes(x = theoretical, y = sample)) +
@@ -216,7 +227,7 @@ qq_plot <- function(model, variable, discrete_max_unique = 5L) {
             ),
             colour = list(reference.color = "grey50")
         ) +
-        geom_point_mi(n_imps = if (vals$kind == "observed") 1 else length(model@imputations)) +
+        geom_point_mi(n_imps = length(completed)) +
         ggplot2::coord_fixed(ratio = 1, xlim = c(-lim, lim), ylim = c(-lim, lim)) +
         ggplot2::labs(
             title = sprintf("Normal Q-Q: %s", var_label(variable)),
@@ -254,17 +265,17 @@ distribution_values <- function(model, variable) {
     # Level-2 quantities: one value per cluster within each imputation
     if (grepl("\\[.+\\]$", variable)) {
         cl <- sub("^.+\\[(.+)\\]$", "\\1", variable)
-        v <- unlist(lapply(model@imputations, \(d) {
+        completed <- lapply(model@imputations, \(d) {
             x <- as_codes(d[[variable]], lv)
             if (cl %in% names(d)) x[!duplicated(d[[cl]])] else x
-        }), use.names = FALSE)
-        return(finite_values("implied", numeric(0), v, variable))
+        })
+        return(finite_values("implied", numeric(0), unlist(completed, use.names = FALSE), variable, completed))
     }
 
     # Model-implied quantities: every value varies across imputations
     if (grepl("\\.(residual|latent|probability|yjt)$", variable)) {
-        v <- unlist(lapply(model@imputations, \(d) as_codes(d[[variable]], lv)), use.names = FALSE)
-        return(finite_values("implied", numeric(0), v, variable))
+        completed <- lapply(model@imputations, \(d) as_codes(d[[variable]], lv))
+        return(finite_values("implied", numeric(0), unlist(completed, use.names = FALSE), variable, completed))
     }
 
     # Data variables: Blimp flags imputed cases with a nonzero imputation variance
@@ -273,21 +284,25 @@ distribution_values <- function(model, variable) {
     )
     vimp <- model@variance_imp[[variable]]
     miss <- is.finite(vimp) & vimp != 0
-    obs <- as_codes(model@imputations[[1]][[variable]], lv)[!miss]
-    imp <- unlist(lapply(model@imputations, \(d) as_codes(d[[variable]], lv)[miss]), use.names = FALSE)
-    out <- finite_values(if (any(miss)) "mixed" else "observed", obs, imp, variable)
+    completed <- lapply(model@imputations, \(d) as_codes(d[[variable]], lv))
+    obs <- completed[[1]][!miss]
+    imp <- unlist(lapply(completed, \(x) x[miss]), use.names = FALSE)
+    out <- finite_values(if (any(miss)) "mixed" else "observed", obs, imp, variable,
+                         if (any(miss)) completed else completed[1])
     out$pct_imp <- 100 * mean(miss)
     out
 }
 
 #' Internal function to keep finite numeric values
+#' `completed` holds the values in each completed dataset (one when nothing is imputed).
 #' @noRd
-finite_values <- function(kind, observed, imputed, variable) {
+finite_values <- function(kind, observed, imputed, variable, completed) {
     if (!is.numeric(observed) && length(observed) || !is.numeric(imputed) && length(imputed)) {
         throw_error("{.val {variable}} is not numeric.")
     }
     observed <- observed[is.finite(observed)]
     imputed <- imputed[is.finite(imputed)]
     if (!length(observed) && !length(imputed)) throw_error("{.val {variable}} has no finite values.")
-    list(kind = kind, observed = observed, imputed = imputed, pct_imp = NA_real_)
+    completed <- lapply(completed, \(x) x[is.finite(x)])
+    list(kind = kind, observed = observed, imputed = imputed, completed = completed, pct_imp = NA_real_)
 }
