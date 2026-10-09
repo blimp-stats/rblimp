@@ -14,11 +14,11 @@ a model-implied quantity (e.g., \code{"y.residual"}, \code{"f.latent"}, \code{"y
 \code{"y.yjt"}), or a level-2 quantity (e.g., \code{"y[school]"}, \code{"x.mean[school]"}).}
 
 \item{bins}{an integer. The target number of histogram bins for continuous variables; it also
-sets the smoothness of the density curve.
+sets the smoothness of the density curves.
 Integer-valued variables always use a bin width of 1.}
 
 \item{discrete_max_unique}{an integer. A variable with this many or fewer distinct values
-in a completed dataset is treated as discrete (no density curve or Q-Q plot, integer
+in a completed dataset is treated as discrete (no density curves or Q-Q plot, integer
 axis ticks) even if it was not declared ORDINAL, NOMINAL, or COUNT. Declared variables
 and factor, character, and logical columns always are; categories are labeled by name.}
 }
@@ -27,7 +27,7 @@ a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
 }
 \description{
 Plots the distribution of one variable across every saved imputation: observed values as
-filled bars, imputed values as outlined bars, and a density curve for the combined values.
+filled bars, imputed values as outlined bars, and a density curve for each completed dataset.
 }
 \details{
 Variables are shown in one of three ways:
@@ -39,19 +39,20 @@ imputed values from every imputation, and the percent imputed in the title.
 outlined bars. Level-2 quantities are reduced to one value per cluster first.
 }
 
-The density curve weights each imputed value by \eqn{1/M} so that cases with missing values
-count once. Its bandwidth equals the histogram's bin width, so the curve and the bars show
-the same level of detail; \code{bins} changes both. It is omitted for declared or effectively
-discrete variables. The vertical
+One density curve is drawn for each completed dataset (the observed values plus one
+imputation's values), so the spread of the curves shows how much the imputations differ.
+A variable with no imputed values gets one curve. The bandwidth equals the histogram's bin
+width, so the curves and the bars show the same level of detail; \code{bins} changes both. The
+curves are omitted for declared or effectively discrete variables. The vertical
 (density) axis is not drawn; add \code{ggplot2::scale_y_continuous()},
 \code{ggplot2::guides(y = "axis")}, and \code{ggplot2::labs(y = "Density")} to show it.
 
 Colors come from the plot theme: the observed-value bars use the theme's geom fill and the
 imputed-value bars the \code{data_color} setting of \code{\link{blimp_style}}, or the first two colors of
-the discrete fill and colour palettes when these are not set; the density curve uses the
+the discrete fill and colour palettes when these are not set; the density curves use the
 theme's accent. See \code{\link[ggplot2:element_geom]{ggplot2::element_geom}}. A fill or colour scale added to the plot
 (e.g., \code{scale_fill_manual(values = c(Observed = "grey70"))}) takes precedence. The
-transparency of the observed-value bars is set with \code{\link{blimp_style}}.
+transparency of the observed-value bars and of the density curves is set with \code{\link{blimp_style}}.
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}

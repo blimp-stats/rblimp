@@ -12,6 +12,7 @@ blimp_style(
   summary_shape = NULL,
   ribbon_alpha = NULL,
   area_alpha = NULL,
+  curve_alpha = NULL,
   reference_color = NULL,
   guide_color = NULL,
   label_color = NULL,
@@ -48,6 +49,9 @@ per category instead.}
 \item{area_alpha}{a number in [0, 1]. Transparency of filled areas. Unset: 0.25
 for the densities in \code{\link{posterior_plot}} and 0.3 for the observed-value bars in
 \code{\link{distribution_plot}}.}
+
+\item{curve_alpha}{a number in [0, 1]. Transparency of the per-imputation density curves
+in \code{\link{distribution_plot}}. Unset: 1 / M^(1/3) for M curves (opaque for one).}
 
 \item{reference_color}{a color. Reference lines: the zero lines in the diagnostic
 plots, \code{\link{jn_plot}}, and \code{\link{jn_plot_func}} (unset: the theme's geom color), and the

@@ -3,16 +3,16 @@
 #' Observed and imputed distribution of a variable in a [`blimp_obj`]
 #' @description
 #' Plots the distribution of one variable across every saved imputation: observed values as
-#' filled bars, imputed values as outlined bars, and a density curve for the combined values.
+#' filled bars, imputed values as outlined bars, and a density curve for each completed dataset.
 #' @param model a [`blimp_obj`] with saved imputations.
 #' @param variable a character string naming one saved variable: a variable in the model,
 #'   a model-implied quantity (e.g., `"y.residual"`, `"f.latent"`, `"y.1.probability"`,
 #'   `"y.yjt"`), or a level-2 quantity (e.g., `"y[school]"`, `"x.mean[school]"`).
 #' @param bins an integer. The target number of histogram bins for continuous variables; it also
-#'   sets the smoothness of the density curve.
+#'   sets the smoothness of the density curves.
 #'   Integer-valued variables always use a bin width of 1.
 #' @param discrete_max_unique an integer. A variable with this many or fewer distinct values
-#'   in a completed dataset is treated as discrete (no density curve or Q-Q plot, integer
+#'   in a completed dataset is treated as discrete (no density curves or Q-Q plot, integer
 #'   axis ticks) even if it was not declared ORDINAL, NOMINAL, or COUNT. Declared variables
 #'   and factor, character, and logical columns always are; categories are labeled by name.
 #' @returns a [`ggplot2::ggplot`] plot
@@ -24,19 +24,20 @@
 #' - **Model-implied** (residuals, latent variables, probabilities, and level-2 quantities):
 #'   outlined bars. Level-2 quantities are reduced to one value per cluster first.
 #'
-#' The density curve weights each imputed value by \eqn{1/M} so that cases with missing values
-#' count once. Its bandwidth equals the histogram's bin width, so the curve and the bars show
-#' the same level of detail; `bins` changes both. It is omitted for declared or effectively
-#' discrete variables. The vertical
+#' One density curve is drawn for each completed dataset (the observed values plus one
+#' imputation's values), so the spread of the curves shows how much the imputations differ.
+#' A variable with no imputed values gets one curve. The bandwidth equals the histogram's bin
+#' width, so the curves and the bars show the same level of detail; `bins` changes both. The
+#' curves are omitted for declared or effectively discrete variables. The vertical
 #' (density) axis is not drawn; add `ggplot2::scale_y_continuous()`,
 #' `ggplot2::guides(y = "axis")`, and `ggplot2::labs(y = "Density")` to show it.
 #'
 #' Colors come from the plot theme: the observed-value bars use the theme's geom fill and the
 #' imputed-value bars the `data_color` setting of [`blimp_style`], or the first two colors of
-#' the discrete fill and colour palettes when these are not set; the density curve uses the
+#' the discrete fill and colour palettes when these are not set; the density curves use the
 #' theme's accent. See [`ggplot2::element_geom`]. A fill or colour scale added to the plot
 #' (e.g., `scale_fill_manual(values = c(Observed = "grey70"))`) takes precedence. The
-#' transparency of the observed-value bars is set with [`blimp_style`].
+#' transparency of the observed-value bars and of the density curves is set with [`blimp_style`].
 #' @seealso [`qq_plot`], [`distribution_plots`], [`residual_plot`], [`blimp_style`]
 #' @examplesIf has_blimp()
 #' # Generate Data
@@ -115,22 +116,21 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
         ggplot2::scale_fill_discrete(NULL, limits = lv, breaks = "Observed") +
         ggplot2::scale_colour_discrete(NULL, limits = lv, breaks = "Imputed")
 
-    # Density curve over all cases; imputed values weighted 1/M. Its bandwidth is the
-    # bin width, so the curve and the bars show the same level of detail at any M
-    if (!force_integer && length(all_vals) >= 2) {
-        n_imps <- length(model@imputations)
-        dens <- data.frame(
-            value = all_vals,
-            weight = c(rep(1, length(vals$observed)), rep(1 / n_imps, length(vals$imputed)))
-        )
-        dens$weight <- dens$weight / sum(dens$weight)
+    # One density curve per completed dataset (observed values plus that imputation's
+    # values). The bandwidth is the bin width, so the curves and the bars show the same
+    # level of detail at any M
+    completed <- Filter(\(x) length(x) >= 2, vals$completed)
+    if (!force_integer && length(completed)) {
+        dens <- do.call(rbind, lapply(seq_along(completed), \(i) data.frame(imp = i, value = completed[[i]])))
         p <- p +
-            ggplot2::geom_density(
-                data = dens,
-                ggplot2::aes(x = value, weight = weight, colour = ggplot2::from_theme(accent), linetype = "Combined",
-                             linewidth = ggplot2::from_theme(linewidth * curve_line_ratio)),
-                fill = NA, bw = binwidth, inherit.aes = FALSE, key_glyph = "path",
-                show.legend = c(linetype = TRUE, colour = FALSE, fill = FALSE)
+            themed(
+                ggplot2::geom_line(
+                    data = dens, stat = "density",
+                    ggplot2::aes(x = value, group = imp, colour = ggplot2::from_theme(accent), linetype = "Combined"),
+                    bw = binwidth, inherit.aes = FALSE,
+                    show.legend = c(linetype = TRUE, colour = FALSE)
+                ),
+                alpha = list(curve.alpha = 1 / length(completed)^(1 / 3))
             ) +
             ggplot2::scale_linetype_manual(NULL, values = c(Combined = "solid"))
     }
@@ -138,7 +138,7 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
     p <- p + if (vals$kind == "mixed") {
         ggplot2::guides(
             fill = ggplot2::guide_legend(order = 1), colour = ggplot2::guide_legend(order = 2),
-            linetype = ggplot2::guide_legend(order = 3)
+            linetype = ggplot2::guide_legend(order = 3, override.aes = list(alpha = 1))
         )
     } else {
         ggplot2::guides(fill = "none", colour = "none", linetype = "none")

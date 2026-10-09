@@ -37,11 +37,11 @@ probabilities, and Yeo-Johnson values), and level-2 quantities.}
 \item{qq}{a logical value. If \code{TRUE}, adds a \verb{<var>.qq} normal Q-Q plot wherever one applies.}
 
 \item{bins}{an integer. The target number of histogram bins for continuous variables; it also
-sets the smoothness of the density curve.
+sets the smoothness of the density curves.
 Integer-valued variables always use a bin width of 1.}
 
 \item{discrete_max_unique}{an integer. A variable with this many or fewer distinct values
-in a completed dataset is treated as discrete (no density curve or Q-Q plot, integer
+in a completed dataset is treated as discrete (no density curves or Q-Q plot, integer
 axis ticks) even if it was not declared ORDINAL, NOMINAL, or COUNT. Declared variables
 and factor, character, and logical columns always are; categories are labeled by name.}
 

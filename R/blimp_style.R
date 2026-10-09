@@ -6,7 +6,7 @@
 # Color settings use the `color` spelling; `blimp_style()` also accepts `colour`.
 blimp_settings <- c(
     point.alpha = "alpha", data.color = "color", summary.size = "size", summary.shape = "shape",
-    ribbon.alpha = "alpha", area.alpha = "alpha", reference.color = "color",
+    ribbon.alpha = "alpha", area.alpha = "alpha", curve.alpha = "alpha", reference.color = "color",
     guide.color = "color", label.color = "color",
     boundary.color = "color", boundary.alpha = "alpha", boundary.linewidth = "size"
 )
@@ -105,6 +105,8 @@ theme_color_override <- function(layer, aes, value, level, n = 2) {
 #' @param area_alpha a number in \[0, 1\]. Transparency of filled areas. Unset: 0.25
 #'   for the densities in [`posterior_plot`] and 0.3 for the observed-value bars in
 #'   [`distribution_plot`].
+#' @param curve_alpha a number in \[0, 1\]. Transparency of the per-imputation density curves
+#'   in [`distribution_plot`]. Unset: 1 / M^(1/3) for M curves (opaque for one).
 #' @param reference_color a color. Reference lines: the zero lines in the diagnostic
 #'   plots, [`jn_plot`], and [`jn_plot_func`] (unset: the theme's geom color), and the
 #'   dashed thresholds, Q-Q diagonal, and influence cutoffs in the diagnostic plots
@@ -169,7 +171,7 @@ theme_color_override <- function(layer, aes, value, level, n = 2) {
 #' ggplot2::theme_set(old)
 #' @export
 blimp_style <- function(..., point_alpha = NULL, data_color = NULL, summary_size = NULL,
-                        summary_shape = NULL, ribbon_alpha = NULL, area_alpha = NULL,
+                        summary_shape = NULL, ribbon_alpha = NULL, area_alpha = NULL, curve_alpha = NULL,
                         reference_color = NULL, guide_color = NULL, label_color = NULL,
                         boundary_color = NULL, boundary_alpha = NULL, boundary_linewidth = NULL) {
 
