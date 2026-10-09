@@ -9,7 +9,7 @@
 \alias{&.diagnostic_plots}
 \title{Every applicable diagnostic plot for a \code{\link{blimp_obj}}}
 \usage{
-diagnostic_plots(model, selector, discrete_max_unique = 10L)
+diagnostic_plots(model, selector, discrete_max_unique = 10L, bars = TRUE)
 
 \method{print}{diagnostic_plots}(x, ...)
 
@@ -30,6 +30,9 @@ with saved residuals is included.}
 \item{discrete_max_unique}{an integer, passed to \code{\link{residual_plot}} and
 \code{\link{probability_plot}}. A predictor with this many or fewer distinct values gets category
 means instead of a loess curve.}
+
+\item{bars}{passed to \code{\link{residual_plot}}: \code{TRUE} (95\%), a number in (0, 1], or \code{FALSE}. Plots
+that cannot show bars stack the imputations without a message.}
 
 \item{x}{a \code{diagnostic_plots} list.}
 

@@ -11,7 +11,8 @@ residual_plot(
   se = FALSE,
   index_thresholds = c(-3, 3),
   max_labels = 10,
-  discrete_max_unique = 10L
+  discrete_max_unique = 10L,
+  bars = TRUE
 )
 }
 \arguments{
@@ -45,6 +46,11 @@ residuals. Cases beyond the largest absolute value are labeled on the index plot
 in a completed dataset gets category means instead of a loess curve, even if it was not
 declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical
 columns always do, unless they are group-mean centered.}
+
+\item{bars}{\code{TRUE}, \code{FALSE}, or a number in (0, 1]. With bars, each case is one point at
+its mean residual across imputations, with a vertical bar covering the middle share of its
+imputations: 95\% for \code{TRUE}, that share for a number (\code{0.8} is the middle 80\%), and the
+full range for \code{1}. \code{FALSE} stacks every imputation as points. See details.}
 }
 \value{
 a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
@@ -56,8 +62,16 @@ Plots an outcome's residuals against its predicted values, a predictor, the case
 \details{
 Every quantity is computed within each imputed data set and then pooled; nothing is
 computed on an average of the imputations, because averaging an imputed predictor and
-the residual together induces a spurious association between them. Points stack all
-imputations, and the loess curve is fit within each imputation and the curves averaged.
+the residual together induces a spurious association between them. The loess curve is
+fit within each imputation and the curves averaged.
+
+With \code{bars} (the default), the index plot and plots against a predictor show one point
+per case at its mean residual, with a vertical bar showing how much the residual changes
+across imputations. Bars need each case to have one position on the x axis, so a plot
+against a predictor whose values differ across imputations (imputed values or group-mean
+centering), against predicted values, or by cluster stacks every imputation as points
+instead; a message says so when \code{bars} is set explicitly. With \code{bars = FALSE}, every plot
+stacks the imputations.
 
 The residual scale is fixed by the plot, as in \code{\link[stats:plot.lm]{plot.lm}}:
 \itemize{

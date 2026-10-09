@@ -26,12 +26,24 @@
 #'   in a completed dataset gets category means instead of a loess curve, even if it was not
 #'   declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical
 #'   columns always do, unless they are group-mean centered.
+#' @param bars `TRUE`, `FALSE`, or a number in (0, 1\]. With bars, each case is one point at
+#'   its mean residual across imputations, with a vertical bar covering the middle share of its
+#'   imputations: 95% for `TRUE`, that share for a number (`0.8` is the middle 80%), and the
+#'   full range for `1`. `FALSE` stacks every imputation as points. See details.
 #' @returns a [`ggplot2::ggplot`] plot
 #' @details
 #' Every quantity is computed within each imputed data set and then pooled; nothing is
 #' computed on an average of the imputations, because averaging an imputed predictor and
-#' the residual together induces a spurious association between them. Points stack all
-#' imputations, and the loess curve is fit within each imputation and the curves averaged.
+#' the residual together induces a spurious association between them. The loess curve is
+#' fit within each imputation and the curves averaged.
+#'
+#' With `bars` (the default), the index plot and plots against a predictor show one point
+#' per case at its mean residual, with a vertical bar showing how much the residual changes
+#' across imputations. Bars need each case to have one position on the x axis, so a plot
+#' against a predictor whose values differ across imputations (imputed values or group-mean
+#' centering), against predicted values, or by cluster stacks every imputation as points
+#' instead; a message says so when `bars` is set explicitly. With `bars = FALSE`, every plot
+#' stacks the imputations.
 #'
 #' The residual scale is fixed by the plot, as in [`plot.lm`][stats::plot.lm]:
 #' - against predicted values: raw residuals;
@@ -99,7 +111,7 @@
 #' @export
 residual_plot <- function(
         model, variable, x, se = FALSE,
-        index_thresholds = c(-3, 3), max_labels = 10, discrete_max_unique = 10L
+        index_thresholds = c(-3, 3), max_labels = 10, discrete_max_unique = 10L, bars = TRUE
 ) {
 
     # Check inputs
@@ -112,6 +124,9 @@ residual_plot <- function(
         "{.arg index_thresholds} must be numeric"
     )
     check_max_unique(discrete_max_unique)
+    bar_level <- check_bars(bars)
+    # Say why bars are missing only when they were asked for, not when on by default
+    bars_asked <- !missing(bars) && !is.null(bar_level)
 
     outcome <- diag_outcome(model, variable)
     imp_list <- imputation_frames(model)
@@ -127,14 +142,19 @@ residual_plot <- function(
     if (length(x) == 1 && x %in% c("#predicted", "#case", "#cluster")) {
         uses_se <- x == "#predicted" && outcome$level == 1L && outcome$type %in% c("continuous", "ordinal")
         if (se && !uses_se) inform_no_se()
+        if (bars_asked && x != "#case") inform_no_bars(if (x == "#predicted") {
+            "Predicted values differ across imputations, so a case has no single position."
+        } else {
+            "Cases are grouped by cluster, so a case has no single position."
+        })
         return(switch(
             sub("^#", "", x),
             predicted = resid_vs_predicted(imp_list, outcome, se),
-            case = resid_index(model, imp_list, outcome, index_thresholds, max_labels),
+            case = resid_index(model, imp_list, outcome, index_thresholds, max_labels, bar_level),
             cluster = resid_by_cluster(imp_list, outcome)
         ))
     }
-    resid_vs_predictors(model, imp_list, outcome, x, se, index_thresholds, discrete_max_unique)
+    resid_vs_predictors(model, imp_list, outcome, x, se, index_thresholds, discrete_max_unique, bar_level, bars_asked)
 }
 
 #' Internal function for the message when bands do not apply
@@ -171,7 +191,8 @@ resid_vs_predicted <- function(imp_list, outcome, se) {
 
 #' Internal function for residuals against one or more predictors
 #' @noRd
-resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_thresholds, max_unique) {
+resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_thresholds, max_unique,
+                                bar_level = NULL, bars_asked = FALSE) {
     preds <- diag_outcome_predictors(model, outcome)
     discrete_vars <- diag_discrete_vars(model)
 
@@ -199,6 +220,7 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
     declared <- \(name) name %in% discrete_vars || sub("\\[.+\\]$", "", name) %in% discrete_vars
     if (outcome$type == "nominal") {
         if (se) inform_no_se()
+        if (bars_asked) inform_no_bars("Binned residuals already summarize the imputations.")
         discrete <- vapply(cols, \(col) {
             is_discrete(model@imputations[[1]][[col]], declared(names(allowed)[match(col, allowed)]), max_unique)
         }, TRUE)
@@ -241,11 +263,15 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
                 data.frame(x = xfun(d), y = d[[outcome$residual]] / sigma)
             }
         })
+        # Bars need each case's predictor value to be the same in every imputation
+        bars <- !is.null(bar_level) && same_x(xy_list)
+        if (bars_asked && !bars) inform_no_bars("{.val {x_label}} differs across imputations (imputed values or centering).")
         list(
             name = x_label, xy_list = xy_list,
             # A group-mean centered predictor is judged by its centered (continuous) values
             discrete = is_discrete(xfun(imp_list[[1]]), is_declared && !centered, max_unique),
-            levels = if (identical(x_label, name)) column_levels(model, col)
+            levels = if (identical(x_label, name)) column_levels(model, col),
+            bars = bars
         )
     })
 
@@ -265,8 +291,18 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
     }
     scatter_panels(
         panels, se = se, thresholds = thresholds, title = title,
-        x_label = if (length(panels) == 1) panels[[1]]$name else NULL, y_label = y_label
+        x_label = if (length(panels) == 1) panels[[1]]$name else NULL, y_label = y_label,
+        bar_level = bar_level
     )
+}
+
+#' Internal function to check that each case's x is the same in every imputation
+#' @noRd
+same_x <- function(xy_list) {
+    n <- nrow(xy_list[[1]])
+    if (!all(vapply(xy_list, nrow, 1L) == n) || !is.numeric(xy_list[[1]]$x)) return(FALSE)
+    x1 <- xy_list[[1]]$x
+    all(vapply(xy_list, \(d) isTRUE(all.equal(d$x, x1, check.attributes = FALSE)), TRUE))
 }
 
 #' Internal function to match a requested predictor name to its column
@@ -283,9 +319,11 @@ resolve_predictor <- function(p, allowed) {
 
 #' Internal function to build scatter panels with pooled curves
 #' Each panel holds per-imputation (x, y) data. Continuous panels get a pooled
-#' loess; discrete panels get category means. Several panels are faceted.
+#' loess; discrete panels get category means. Several panels are faceted. Panels
+#' with `bars = TRUE` show one point per case with a bar covering `bar_level` of its
+#' imputations; the others stack every imputation.
 #' @noRd
-scatter_panels <- function(panels, se, thresholds, title, x_label, y_label) {
+scatter_panels <- function(panels, se, thresholds, title, x_label, y_label, bar_level = NULL) {
     M <- length(panels[[1]]$xy_list)
     pts <- do.call(rbind, lapply(panels, \(p) {
         df <- do.call(rbind, p$xy_list)
@@ -299,7 +337,18 @@ scatter_panels <- function(panels, se, thresholds, title, x_label, y_label) {
 
     p <- ggplot2::ggplot(pts, ggplot2::aes(x = x, y = y)) + ref_hline(0)
     if (length(thresholds)) p <- p + ref_hline(thresholds, dashed = TRUE)
-    p <- p + geom_point_mi(n_imps = M)
+    with_bars <- vapply(panels, \(p) isTRUE(p$bars), TRUE)
+    cloud <- pts[pts$predictor %in% levels_order[!with_bars], , drop = FALSE]
+    if (nrow(cloud)) p <- p + geom_point_mi(data = cloud, n_imps = M)
+    if (any(with_bars)) {
+        s <- do.call(rbind, lapply(panels[with_bars], \(panel) {
+            df <- do.call(rbind, lapply(panel$xy_list, \(d) data.frame(key = seq_len(nrow(d)), x = d$x, y = d$y)))
+            s <- bar_summary(df[is.finite(df$x) & is.finite(df$y), , drop = FALSE], bar_level)
+            if (nrow(s)) s$predictor <- factor(panel$name, levels = levels_order)
+            s
+        }))
+        if (nrow(s)) p <- p + bar_layers(s)
+    }
 
     for (panel in panels) {
         if (panel$discrete) {
@@ -335,7 +384,7 @@ scatter_panels <- function(panels, se, thresholds, title, x_label, y_label) {
 
 #' Internal function for the standardized residual index plot
 #' @noRd
-resid_index <- function(model, imp_list, outcome, index_thresholds, max_labels) {
+resid_index <- function(model, imp_list, outcome, index_thresholds, max_labels, bar_level = NULL) {
     if (outcome$type == "nominal") throw_error(c(
         "An index plot is not drawn for nominal outcomes.",
         "i" = "Nominal residuals have no meaningful standardized analogue; use binned residuals."
@@ -377,7 +426,14 @@ resid_index <- function(model, imp_list, outcome, index_thresholds, max_labels) 
 
     p <- ggplot2::ggplot(df, ggplot2::aes(x = case, y = z)) + ref_hline(0)
     if (length(index_thresholds)) p <- p + ref_hline(index_thresholds, dashed = TRUE)
-    p <- p + geom_point_mi(n_imps = length(imp_list))
+    p <- p + if (is.null(bar_level)) {
+        geom_point_mi(n_imps = length(imp_list))
+    } else {
+        # One point per case at its mean, with a bar over the middle `bar_level` of its imputations
+        s <- bar_summary(data.frame(key = df$case, x = df$case, y = df$z), bar_level)
+        names(s)[names(s) == "y"] <- "z"
+        bar_layers(s, y = "z")
+    }
 
     # Label cases whose mean standardized residual exceeds the largest threshold
     if (length(index_thresholds)) {

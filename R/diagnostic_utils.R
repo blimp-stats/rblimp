@@ -39,7 +39,7 @@ utils::globalVariables(c(
     "lower", "upper", "theoretical", "sample", "prob", "category", "predictor",
     "x_mean", "resid_mean", "pred_mean", "measure", "outcome_status", "label",
     "accent", "density", "fontsize", "pointsize", "linewidth", "family", "slope", "intercept",
-    "yintercept"
+    "yintercept", "ymin", "ymax"
 ))
 
 # Fixed design constants ======================================================
@@ -54,6 +54,8 @@ point_alpha_base <- 0.7
 ref_line_ratio <- 0.5
 # Width of smooth curves as a multiple of the theme's line width
 curve_line_ratio <- 2
+# Share of the imputations covered by a case's bar when `bars = TRUE`
+bar_level_default <- 0.95
 
 # Model checks ================================================================
 
@@ -385,6 +387,61 @@ geom_point_mi <- function(..., n_imps = 1) {
         ggplot2::geom_point(...),
         alpha = list(point.alpha = point_alpha_base / max(n_imps, 1)^(1 / 3)),
         colour = list(data.color = NULL)
+    )
+}
+
+#' Internal function to check a `bars` argument
+#' Returns the share of imputations a bar covers, or NULL for no bars. `TRUE` is
+#' `bar_level_default`; `1` is the full range.
+#' @noRd
+check_bars <- function(bars) {
+    if (is.logical(bars) && length(bars) == 1 && !is.na(bars)) return(if (bars) bar_level_default)
+    if (is.numeric(bars) && length(bars) == 1 && !is.na(bars) && bars > 0 && bars <= 1) return(bars)
+    throw_error("{.arg bars} must be {.code TRUE}, {.code FALSE}, or a single number in (0, 1].")
+}
+
+#' Internal function for the message when requested bars cannot be drawn
+#' @noRd
+inform_no_bars <- function(why, .envir = parent.frame()) {
+    cli::cli_inform(
+        c("No bars on this plot; the imputations are shown as points.", "i" = why),
+        class = "rblimp_no_bars", .envir = .envir
+    )
+}
+
+#' Internal function to summarize each case across imputations for bars
+#' `df` stacks the imputations with columns `key` (the case), `x`, and `y`. Returns one
+#' row per case: its x, the mean y, and the middle `level` share of its y values.
+#' @noRd
+bar_summary <- function(df, level) {
+    p <- (1 - level) / 2
+    g <- factor(df$key, levels = unique(df$key))
+    out <- data.frame(
+        key = levels(g),
+        x = as.numeric(tapply(df$x, g, `[`, 1)),
+        y = as.numeric(tapply(df$y, g, mean)),
+        ymin = as.numeric(tapply(df$y, g, stats::quantile, p, names = FALSE)),
+        ymax = as.numeric(tapply(df$y, g, stats::quantile, 1 - p, names = FALSE))
+    )
+    out[is.finite(out$y), , drop = FALSE]
+}
+
+#' Internal function for the bar layers: one point per case at its mean and a vertical bar
+#' Points are not stacked, so they use the unstacked transparency; bars match the points.
+#' @noRd
+bar_layers <- function(s, x = "x", y = "y") {
+    list(
+        themed(
+            ggplot2::geom_linerange(
+                data = s,
+                ggplot2::aes(x = .data[[x]], ymin = ymin, ymax = ymax,
+                             linewidth = ggplot2::from_theme(linewidth * ref_line_ratio)),
+                inherit.aes = FALSE
+            ),
+            alpha = list(point.alpha = point_alpha_base),
+            colour = list(data.color = NULL)
+        ),
+        geom_point_mi(data = s, ggplot2::aes(x = .data[[x]], y = .data[[y]]), inherit.aes = FALSE)
     )
 }
 
