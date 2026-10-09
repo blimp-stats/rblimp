@@ -24,7 +24,8 @@
 #' @param max_labels an integer. The maximum number of cases labeled on an index plot.
 #' @param discrete_max_unique an integer. A predictor with this many or fewer distinct values
 #'   in a completed dataset gets category means instead of a loess curve, even if it was not
-#'   declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical columns always do.
+#'   declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical
+#'   columns always do, unless they are group-mean centered.
 #' @returns a [`ggplot2::ggplot`] plot
 #' @details
 #' Every quantity is computed within each imputed data set and then pooled; nothing is
@@ -41,7 +42,9 @@
 #' What is plotted depends on the outcome:
 #' - **Continuous and ordinal outcomes** (ordinal on the latent scale): residual scatter
 #'   plots with a loess curve, or category means when a predictor is discrete (see
-#'   `discrete_max_unique`). Factor and character predictors are labeled by category name.
+#'   `discrete_max_unique`). Category means are taken at each value within each imputation,
+#'   then averaged. A group-mean centered predictor is judged by its centered values, so it
+#'   usually gets a curve. Factor and character predictors are labeled by category name.
 #' - **Nominal outcomes**: binned residuals on the probability scale (Gelman & Hill, 2007),
 #'   with a panel for each non-reference category. There is no index plot.
 #' - **Count outcomes**: Pearson residuals, using the negative binomial dispersion
@@ -223,7 +226,8 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
         # Level-1 predictors are labeled by their model name; level-2 columns describe themselves
         x_label <- if (outcome$level == 1L) name else var_label(col)
         center_col <- paste0(name, ".mean[", outcome$cluster, "]")
-        if (outcome$level == 1L && name %in% groupmean && center_col %in% names(imp_list[[1]])) {
+        centered <- outcome$level == 1L && name %in% groupmean && center_col %in% names(imp_list[[1]])
+        if (centered) {
             xfun <- \(d) d[[col]] - d[[center_col]]
             x_label <- paste0(name, " (group-mean centered)")
         }
@@ -237,12 +241,10 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
                 data.frame(x = xfun(d), y = d[[outcome$residual]] / sigma)
             }
         })
-        x1 <- xfun(imp_list[[1]])
-        nux <- length(unique(x1[is.finite(x1)]))
-        if (!is_declared && nux <= 5) warn_few_values(name, nux)
         list(
             name = x_label, xy_list = xy_list,
-            discrete = is_discrete(x1, is_declared, max_unique),
+            # A group-mean centered predictor is judged by its centered (continuous) values
+            discrete = is_discrete(xfun(imp_list[[1]]), is_declared && !centered, max_unique),
             levels = if (identical(x_label, name)) column_levels(model, col)
         )
     })
@@ -301,9 +303,14 @@ scatter_panels <- function(panels, se, thresholds, title, x_label, y_label) {
 
     for (panel in panels) {
         if (panel$discrete) {
-            df <- do.call(rbind, panel$xy_list)
-            df <- df[is.finite(df$x) & is.finite(df$y), , drop = FALSE]
-            md <- stats::aggregate(y ~ x, data = transform(df, x = round(x)), FUN = mean)
+            # Means at each value within each imputation, then averaged
+            per_imp <- lapply(panel$xy_list, \(d) {
+                d <- d[is.finite(d$x) & is.finite(d$y), , drop = FALSE]
+                if (nrow(d)) stats::aggregate(y ~ x, data = d, FUN = mean)
+            })
+            per_imp <- do.call(rbind, per_imp)
+            if (is.null(per_imp)) next
+            md <- stats::aggregate(y ~ x, data = per_imp, FUN = mean)
             md$predictor <- factor(panel$name, levels = levels_order)
             p <- p + summary_points(
                 ggplot2::geom_point(data = md, ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent))),

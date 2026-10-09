@@ -43,7 +43,8 @@ residuals. Cases beyond the largest absolute value are labeled on the index plot
 
 \item{discrete_max_unique}{an integer. A predictor with this many or fewer distinct values
 in a completed dataset gets category means instead of a loess curve, even if it was not
-declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical columns always do.}
+declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical
+columns always do, unless they are group-mean centered.}
 }
 \value{
 a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
@@ -70,7 +71,9 @@ What is plotted depends on the outcome:
 \itemize{
 \item \strong{Continuous and ordinal outcomes} (ordinal on the latent scale): residual scatter
 plots with a loess curve, or category means when a predictor is discrete (see
-\code{discrete_max_unique}). Factor and character predictors are labeled by category name.
+\code{discrete_max_unique}). Category means are taken at each value within each imputation,
+then averaged. A group-mean centered predictor is judged by its centered values, so it
+usually gets a curve. Factor and character predictors are labeled by category name.
 \item \strong{Nominal outcomes}: binned residuals on the probability scale (Gelman & Hill, 2007),
 with a panel for each non-reference category. There is no index plot.
 \item \strong{Count outcomes}: Pearson residuals, using the negative binomial dispersion

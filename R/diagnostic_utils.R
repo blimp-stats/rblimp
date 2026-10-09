@@ -595,12 +595,3 @@ check_max_unique <- function(x) {
         "{.arg discrete_max_unique} must be a single non-negative number."
     )
 }
-
-#' Internal function to warn about a continuous predictor with few values
-#' @noRd
-warn_few_values <- function(predictor, nux) {
-    cli::cli_warn(c(
-        "Predictor {.val {predictor}} is modeled as continuous but has only {nux} distinct value{?s}.",
-        "i" = "If it is categorical, declare it as ORDINAL or NOMINAL and refit. The plot shows category means."
-    ))
-}
