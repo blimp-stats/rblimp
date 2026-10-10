@@ -37,9 +37,9 @@
 utils::globalVariables(c(
     "x", "y", "z", "case", "cluster", "rank", "value", "type", "weight",
     "lower", "upper", "theoretical", "sample", "prob", "category", "predictor",
-    "x_mean", "resid_mean", "pred_mean", "measure", "outcome_status", "label",
+    "x_mean", "resid_mean", "pred_mean", "measure", "label",
     "accent", "density", "fontsize", "pointsize", "linewidth", "family", "slope", "intercept",
-    "yintercept", "ymin", "ymax"
+    "yintercept", "ymin", "ymax", "status"
 ))
 
 # Fixed design constants ======================================================
@@ -54,6 +54,9 @@ point_alpha_base <- 0.7
 ref_line_ratio <- 0.5
 # Width of smooth curves as a multiple of the theme's line width
 curve_line_ratio <- 2
+# Observed values marked by `scale_imputed()` (while no colour scale is added) are drawn
+# this far from the theme's ink toward its paper: grey35 for black on white
+observed_ink_mix <- 0.35
 # Share of the imputations covered by a case's bar when `bars = TRUE`
 bar_level_default <- 0.95
 
@@ -390,6 +393,38 @@ geom_point_mi <- function(..., n_imps = 1) {
     )
 }
 
+# Observed vs imputed outcomes ================================================
+
+#' Internal function to mark each row's plotted value as observed or imputed
+#' A residual is observed when the case's outcome was observed. Level-2 outcomes are
+#' random effects, which are never observed, so every cluster counts as imputed.
+#' @noRd
+outcome_status <- function(model, outcome, n) {
+    imputed <- if (outcome$level == 2L) {
+        rep(TRUE, n)
+    } else {
+        # A nominal category's missing values are those of its parent variable
+        variable <- outcome$category_of %||% outcome$name
+        vimp <- if (NROW(model@variance_imp)) model@variance_imp[[variable]]
+        if (is.null(vimp)) rep(FALSE, n) else is.finite(vimp) & vimp != 0
+    }
+    factor(ifelse(imputed, "Imputed", "Observed"), levels = c("Observed", "Imputed"))
+}
+
+#' Internal function to tag a layer whose data has a `status` column, for [scale_imputed()]
+#' @noRd
+status_tag <- function(layer) {
+    layer$rblimp_status <- TRUE
+    layer
+}
+
+#' Internal function to mark a plot as an rblimp diagnostic plot, for [scale_imputed()]
+#' @noRd
+as_diagnostic_plot <- function(p) {
+    p@meta$rblimp <- TRUE
+    p
+}
+
 #' Internal function to check a `bars` argument
 #' Returns the share of imputations a bar covers, or NULL for no bars. `TRUE` is
 #' `bar_level_default`; `1` is the full range.
@@ -419,6 +454,7 @@ bar_summary <- function(df, level) {
     out <- data.frame(
         key = levels(g),
         x = as.numeric(tapply(df$x, g, `[`, 1)),
+        status = if (!is.null(df$status)) df$status[match(levels(g), df$key)],
         y = as.numeric(tapply(df$y, g, mean)),
         ymin = as.numeric(tapply(df$y, g, stats::quantile, p, names = FALSE)),
         ymax = as.numeric(tapply(df$y, g, stats::quantile, 1 - p, names = FALSE))
@@ -431,7 +467,7 @@ bar_summary <- function(df, level) {
 #' @noRd
 bar_layers <- function(s, x = "x", y = "y") {
     list(
-        themed(
+        status_tag(themed(
             ggplot2::geom_linerange(
                 data = s,
                 ggplot2::aes(x = .data[[x]], ymin = ymin, ymax = ymax,
@@ -440,9 +476,15 @@ bar_layers <- function(s, x = "x", y = "y") {
             ),
             alpha = list(point.alpha = point_alpha_base),
             colour = list(data.color = NULL)
-        ),
-        geom_point_mi(data = s, ggplot2::aes(x = .data[[x]], y = .data[[y]]), inherit.aes = FALSE)
+        )),
+        status_points(data = s, mapping = ggplot2::aes(x = .data[[x]], y = .data[[y]]), inherit.aes = FALSE)
     )
+}
+
+#' Internal function for a point layer that [scale_imputed()] can colour and shape by status
+#' @noRd
+status_points <- function(..., n_imps = 1) {
+    status_tag(geom_point_mi(..., n_imps = n_imps))
 }
 
 #' Internal function for summary markers (category means) drawn over a point cloud
@@ -502,7 +544,7 @@ ref_hline <- function(yintercept, dashed = FALSE, guide = FALSE) {
     themed(
         ggplot2::geom_hline(
             data = data, ggplot2::aes(yintercept = yintercept, linewidth = ggplot2::from_theme(linewidth * ratio)),
-            linetype = if (dashed) "dashed" else "solid", inherit.aes = FALSE
+            linetype = if (dashed) "dashed" else "solid", inherit.aes = FALSE, show.legend = FALSE
         ),
         colour = if (guide) list(guide.color = "grey70")
                  else list(reference.color = if (dashed) "grey50")
@@ -519,23 +561,23 @@ curve_layers <- function(curve, se = FALSE) {
     if (se) layers <- c(layers, list(themed(
         ggplot2::geom_ribbon(
             data = curve, ggplot2::aes(x = x, ymin = lower, ymax = upper, fill = ggplot2::from_theme(accent)),
-            colour = NA, inherit.aes = FALSE
+            colour = NA, inherit.aes = FALSE, show.legend = FALSE
         ),
         alpha = list(ribbon.alpha = 0.2)
     )), ggplot2::geom_line(
         data = curve,
         ggplot2::aes(x = x, y = lower, colour = ggplot2::from_theme(accent), linewidth = ggplot2::from_theme(linewidth)),
-        linetype = "dashed", inherit.aes = FALSE, na.rm = TRUE
+        linetype = "dashed", inherit.aes = FALSE, na.rm = TRUE, show.legend = FALSE
     ), ggplot2::geom_line(
         data = curve,
         ggplot2::aes(x = x, y = upper, colour = ggplot2::from_theme(accent), linewidth = ggplot2::from_theme(linewidth)),
-        linetype = "dashed", inherit.aes = FALSE, na.rm = TRUE
+        linetype = "dashed", inherit.aes = FALSE, na.rm = TRUE, show.legend = FALSE
     ))
     c(layers, list(ggplot2::geom_line(
         data = curve,
         ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent),
                      linewidth = ggplot2::from_theme(linewidth * curve_line_ratio)),
-        inherit.aes = FALSE, na.rm = TRUE
+        inherit.aes = FALSE, na.rm = TRUE, show.legend = FALSE
     )))
 }
 
@@ -566,10 +608,10 @@ outlier_labels <- function(df, value_col, threshold, max_labels, two_sided = FAL
     layer <- if (requireNamespace("ggrepel", quietly = TRUE)) {
         ggrepel::geom_text_repel(
             data = out, mapping = mapping, max.overlaps = Inf,
-            seed = 42, min.segment.length = 0.2, inherit.aes = FALSE
+            seed = 42, min.segment.length = 0.2, inherit.aes = FALSE, show.legend = FALSE
         )
     } else {
-        ggplot2::geom_text(data = out, mapping = mapping, vjust = -0.7, inherit.aes = FALSE)
+        ggplot2::geom_text(data = out, mapping = mapping, vjust = -0.7, inherit.aes = FALSE, show.legend = FALSE)
     }
     themed(layer, colour = list(label.color = "black"))
 }

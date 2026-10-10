@@ -8,8 +8,6 @@
 #' @param variable a character string naming one outcome.
 #' @param measure which values to plot: `"leverage"`, `"cooks"`, or both (the default), which
 #'   are drawn as two panels.
-#' @param mark_imputed a logical value. If `TRUE`, cases whose outcome value was imputed are
-#'   drawn with a different point shape. Change the shapes with [`ggplot2::scale_shape_manual`].
 #' @param max_labels an integer. The maximum number of cases labeled in each panel.
 #' @returns a [`ggplot2::ggplot`] plot
 #' @details
@@ -28,9 +26,11 @@
 #' For a case whose outcome was imputed, Cook's distance reflects the uncertainty in its
 #' imputed value: it is the case's expected influence given its leverage.
 #'
+#' To mark cases whose outcome was imputed, add [`scale_imputed`].
+#'
 #' Point transparency, reference lines, and labels are set with [`blimp_style`].
 #' @seealso [`residual_plot`], [`diagnostic_plots`], [`influence`][influence,blimp_obj-method],
-#'   [`blimp_style`]
+#'   [`scale_imputed`], [`blimp_style`]
 #' @examplesIf has_blimp()
 #' # Generate Data
 #' mydata <- rblimp_sim(
@@ -60,21 +60,20 @@
 #'
 #' # Only Cook's distance
 #' influence_plot(m1, 'y', measure = 'cooks')
+#'
+#' # Mark cases whose outcome was imputed
+#' influence_plot(m1, 'y') + scale_imputed()
 #' }
 #' @import ggplot2
 #' @export
 influence_plot <- function(
-        model, variable, measure = c("leverage", "cooks"),
-        mark_imputed = TRUE, max_labels = 10
+        model, variable, measure = c("leverage", "cooks"), max_labels = 10
 ) {
 
     # Check inputs
     if (!is(model, 'blimp_obj')) throw_error("{.arg model} is not a `blimp_obj`")
     check_variable_arg(variable, "diagnostic_plots")
     measure <- match.arg(measure, several.ok = TRUE)
-    if (!is.logical(mark_imputed) || length(mark_imputed) != 1 || is.na(mark_imputed)) throw_error(
-        "{.arg mark_imputed} must be a single logical value"
-    )
     inf <- get_influence(model)
     lev_col <- paste0(variable, ".leverage")
     if (!lev_col %in% names(inf)) {
@@ -98,11 +97,10 @@ influence_plot <- function(
     df$label <- df$case
     df <- df[is.finite(df$value), , drop = FALSE]
 
-    # Mark cases with an imputed outcome
+    # Observed or imputed outcome, shown when the user adds scale_imputed()
     vimp <- if (NROW(model@variance_imp)) model@variance_imp[[variable]] else NULL
     imputed <- if (is.null(vimp)) rep(FALSE, n) else is.finite(vimp) & vimp != 0
-    marked <- mark_imputed && any(imputed)
-    df$outcome_status <- factor(ifelse(imputed[df$case], "Imputed", "Observed"), levels = c("Observed", "Imputed"))
+    df$status <- factor(ifelse(imputed[df$case], "Imputed", "Observed"), levels = c("Observed", "Imputed"))
 
     # Reference lines
     refs <- rbind(
@@ -121,12 +119,7 @@ influence_plot <- function(
             ),
             colour = list(label.color = "black")
         )
-    plt <- if (marked) {
-        plt + geom_point_mi(ggplot2::aes(shape = outcome_status)) +
-            ggplot2::labs(shape = "Outcome")
-    } else {
-        plt + geom_point_mi()
-    }
+    plt <- plt + status_points()
 
     # Label the most extreme cases in each panel
     cuts <- c(Leverage = 3 * p / n, "Cook's D" = 4 / n)
@@ -136,7 +129,7 @@ influence_plot <- function(
 
     if (length(measure) > 1) plt <- plt + ggplot2::facet_wrap(~measure, ncol = 1, scales = "free_y")
     title <- if (length(measure) > 1) "Influence" else if (measure == "leverage") "Leverage" else "Cook's Distance"
-    plt + ggplot2::labs(
+    as_diagnostic_plot(plt) + ggplot2::labs(
         title = sprintf("%s: %s", title, variable),
         x = "Record Number",
         y = if (length(measure) == 1) labels[[measure]] else NULL

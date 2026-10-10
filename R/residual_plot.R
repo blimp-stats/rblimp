@@ -70,11 +70,13 @@
 #' curves are pooled with Rubin's rules: \eqn{T = W + B + B/M}, and the band is
 #' \eqn{\pm 1.96\sqrt{T}}. The bands are drawn only on plots with a loess curve.
 #'
+#' To mark cases whose outcome was imputed, add [`scale_imputed`].
+#'
 #' Colors come from the plot theme: points use the theme's geom color (or `data_color` in
 #' [`blimp_style`]) and curves use its accent. See [`ggplot2::element_geom`]. Point transparency, reference lines, labels, and the
 #' category-mean markers are set with [`blimp_style`].
 #' @seealso [`diagnostic_plots`], [`influence_plot`], [`probability_plot`], [`distribution_plot`],
-#'   [`blimp_style`]
+#'   [`scale_imputed`], [`blimp_style`]
 #' @examplesIf has_blimp()
 #' # Generate Data
 #' mydata <- rblimp_sim(
@@ -130,6 +132,8 @@ residual_plot <- function(
 
     outcome <- diag_outcome(model, variable)
     imp_list <- imputation_frames(model)
+    # Observed or imputed outcome for each row; shown when the user adds scale_imputed()
+    status <- outcome_status(model, outcome, nrow(imp_list[[1]]))
 
     # Default x
     if (missing(x)) {
@@ -147,14 +151,16 @@ residual_plot <- function(
         } else {
             "Cases are grouped by cluster, so a case has no single position."
         })
-        return(switch(
+        return(as_diagnostic_plot(switch(
             sub("^#", "", x),
-            predicted = resid_vs_predicted(imp_list, outcome, se),
-            case = resid_index(model, imp_list, outcome, index_thresholds, max_labels, bar_level),
-            cluster = resid_by_cluster(imp_list, outcome)
-        ))
+            predicted = resid_vs_predicted(imp_list, outcome, se, status),
+            case = resid_index(model, imp_list, outcome, index_thresholds, max_labels, bar_level, status),
+            cluster = resid_by_cluster(imp_list, outcome, status)
+        )))
     }
-    resid_vs_predictors(model, imp_list, outcome, x, se, index_thresholds, discrete_max_unique, bar_level, bars_asked)
+    as_diagnostic_plot(
+        resid_vs_predictors(model, imp_list, outcome, x, se, index_thresholds, discrete_max_unique, bar_level, bars_asked, status)
+    )
 }
 
 #' Internal function for the message when bands do not apply
@@ -167,7 +173,7 @@ inform_no_se <- function() {
 
 #' Internal function for raw residuals against predicted values
 #' @noRd
-resid_vs_predicted <- function(imp_list, outcome, se) {
+resid_vs_predicted <- function(imp_list, outcome, se, status) {
     if (outcome$level == 2L) throw_error(c(
         "Level-2 residuals have no predicted values.",
         "i" = "Use {.code x = \"#case\"} or a level-2 predictor."
@@ -178,7 +184,7 @@ resid_vs_predicted <- function(imp_list, outcome, se) {
     ))
     if (outcome$type == "nominal") return(binned_plot(imp_list, outcome, "#predicted"))
 
-    xy_list <- lapply(imp_list, \(d) data.frame(x = d[[outcome$predicted]], y = d[[outcome$residual]]))
+    xy_list <- lapply(imp_list, \(d) data.frame(x = d[[outcome$predicted]], y = d[[outcome$residual]], status = status))
     panel <- list(name = "Predicted", xy_list = xy_list, discrete = FALSE)
     scatter_panels(
         list(panel), se = se, thresholds = NULL,
@@ -192,7 +198,7 @@ resid_vs_predicted <- function(imp_list, outcome, se) {
 #' Internal function for residuals against one or more predictors
 #' @noRd
 resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_thresholds, max_unique,
-                                bar_level = NULL, bars_asked = FALSE) {
+                                bar_level = NULL, bars_asked = FALSE, status = NULL) {
     preds <- diag_outcome_predictors(model, outcome)
     discrete_vars <- diag_discrete_vars(model)
 
@@ -256,11 +262,11 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
         xy_list <- lapply(imp_list, \(d) {
             if (outcome$level == 2L) {
                 keep <- !duplicated(d[[cl]])
-                data.frame(x = xfun(d)[keep], y = d[[outcome$residual]][keep])
+                data.frame(x = xfun(d)[keep], y = d[[outcome$residual]][keep], status = status[keep])
             } else if (outcome$type == "count") {
-                data.frame(x = xfun(d), y = (d[[outcome$name]] - d[[outcome$predicted]]) / sigma)
+                data.frame(x = xfun(d), y = (d[[outcome$name]] - d[[outcome$predicted]]) / sigma, status = status)
             } else {
-                data.frame(x = xfun(d), y = d[[outcome$residual]] / sigma)
+                data.frame(x = xfun(d), y = d[[outcome$residual]] / sigma, status = status)
             }
         })
         # Bars need each case's predictor value to be the same in every imputation
@@ -339,10 +345,10 @@ scatter_panels <- function(panels, se, thresholds, title, x_label, y_label, bar_
     if (length(thresholds)) p <- p + ref_hline(thresholds, dashed = TRUE)
     with_bars <- vapply(panels, \(p) isTRUE(p$bars), TRUE)
     cloud <- pts[pts$predictor %in% levels_order[!with_bars], , drop = FALSE]
-    if (nrow(cloud)) p <- p + geom_point_mi(data = cloud, n_imps = M)
+    if (nrow(cloud)) p <- p + status_points(data = cloud, n_imps = M)
     if (any(with_bars)) {
         s <- do.call(rbind, lapply(panels[with_bars], \(panel) {
-            df <- do.call(rbind, lapply(panel$xy_list, \(d) data.frame(key = seq_len(nrow(d)), x = d$x, y = d$y)))
+            df <- do.call(rbind, lapply(panel$xy_list, \(d) data.frame(key = seq_len(nrow(d)), x = d$x, y = d$y, status = d$status)))
             s <- bar_summary(df[is.finite(df$x) & is.finite(df$y), , drop = FALSE], bar_level)
             if (nrow(s)) s$predictor <- factor(panel$name, levels = levels_order)
             s
@@ -362,7 +368,7 @@ scatter_panels <- function(panels, se, thresholds, title, x_label, y_label, bar_
             md <- stats::aggregate(y ~ x, data = per_imp, FUN = mean)
             md$predictor <- factor(panel$name, levels = levels_order)
             p <- p + summary_points(
-                ggplot2::geom_point(data = md, ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent))),
+                ggplot2::geom_point(data = md, ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent)), show.legend = FALSE),
                 shape = 18
             )
         } else {
@@ -384,7 +390,7 @@ scatter_panels <- function(panels, se, thresholds, title, x_label, y_label, bar_
 
 #' Internal function for the standardized residual index plot
 #' @noRd
-resid_index <- function(model, imp_list, outcome, index_thresholds, max_labels, bar_level = NULL) {
+resid_index <- function(model, imp_list, outcome, index_thresholds, max_labels, bar_level = NULL, status = NULL) {
     if (outcome$type == "nominal") throw_error(c(
         "An index plot is not drawn for nominal outcomes.",
         "i" = "Nominal residuals have no meaningful standardized analogue; use binned residuals."
@@ -400,7 +406,7 @@ resid_index <- function(model, imp_list, outcome, index_thresholds, max_labels, 
         # Centered within each imputation, scaled by one pooled SD
         s <- sqrt(mean(vapply(per_imp, \(d) stats::var(d$r, na.rm = TRUE), 0), na.rm = TRUE))
         df <- do.call(rbind, lapply(per_imp, \(d) data.frame(
-            case = match(d$id, ids), z = (d$r - mean(d$r, na.rm = TRUE)) / s, label = d$id
+            case = match(d$id, ids), z = (d$r - mean(d$r, na.rm = TRUE)) / s, label = d$id, status = "Imputed"
         )))
         title <- sprintf("Standardized Residual Index: %s", var_label(outcome$name))
         x_label <- "Cluster Number"
@@ -408,14 +414,14 @@ resid_index <- function(model, imp_list, outcome, index_thresholds, max_labels, 
     } else if (outcome$type == "count") {
         sbar <- pearson_sd(imp_list, outcome, model)
         df <- do.call(rbind, lapply(imp_list, \(d) data.frame(
-            case = seq_len(n), z = (d[[outcome$name]] - d[[outcome$predicted]]) / sbar
+            case = seq_len(n), z = (d[[outcome$name]] - d[[outcome$predicted]]) / sbar, status = status
         )))
         title <- sprintf("Standardized Pearson Residual Index: %s", outcome$name)
         x_label <- "Record Number"
         y_label <- "Standardized Pearson Residual"
     } else {
         sigma <- pooled_sigma(imp_list, outcome$residual, paste0("var.", outcome$name, ".predicted"))
-        df <- do.call(rbind, lapply(imp_list, \(d) data.frame(case = seq_len(n), z = d[[outcome$residual]] / sigma)))
+        df <- do.call(rbind, lapply(imp_list, \(d) data.frame(case = seq_len(n), z = d[[outcome$residual]] / sigma, status = status)))
         title <- sprintf("Standardized Residual Index: %s", outcome$name)
         x_label <- "Record Number"
         y_label <- "Standardized Residual"
@@ -423,14 +429,15 @@ resid_index <- function(model, imp_list, outcome, index_thresholds, max_labels, 
     df <- df[is.finite(df$z), , drop = FALSE]
     if (nrow(df) < 2) throw_error("Fewer than two finite residuals for {.val {outcome$name}}.")
     if (is.null(df$label)) df$label <- df$case
+    df$status <- factor(df$status, levels = c("Observed", "Imputed"))
 
     p <- ggplot2::ggplot(df, ggplot2::aes(x = case, y = z)) + ref_hline(0)
     if (length(index_thresholds)) p <- p + ref_hline(index_thresholds, dashed = TRUE)
     p <- p + if (is.null(bar_level)) {
-        geom_point_mi(n_imps = length(imp_list))
+        status_points(n_imps = length(imp_list))
     } else {
         # One point per case at its mean, with a bar over the middle `bar_level` of its imputations
-        s <- bar_summary(data.frame(key = df$case, x = df$case, y = df$z), bar_level)
+        s <- bar_summary(data.frame(key = df$case, x = df$case, y = df$z, status = df$status), bar_level)
         names(s)[names(s) == "y"] <- "z"
         bar_layers(s, y = "z")
     }
@@ -503,7 +510,7 @@ imputation_draws <- function(model) {
 #' Residuals are standardized by ONE pooled SD shared across clusters, so that
 #' unequal spread across clusters stays visible.
 #' @noRd
-resid_by_cluster <- function(imp_list, outcome) {
+resid_by_cluster <- function(imp_list, outcome, status) {
     cl <- outcome$cluster
     if (outcome$level != 1L || outcome$type != "continuous" || is.null(cl) || is.na(cl)) throw_error(c(
         "Within-cluster spread is plotted only for continuous outcomes in a clustered model.",
@@ -512,7 +519,7 @@ resid_by_cluster <- function(imp_list, outcome) {
     s <- sqrt(mean(vapply(imp_list, \(d) stats::var(d[[outcome$residual]], na.rm = TRUE), 0), na.rm = TRUE))
     df <- do.call(rbind, lapply(seq_along(imp_list), \(i) {
         d <- imp_list[[i]]
-        data.frame(imp = i, cluster = d[[cl]], z = d[[outcome$residual]] / s)
+        data.frame(imp = i, cluster = d[[cl]], z = d[[outcome$residual]] / s, status = status)
     }))
     df <- df[is.finite(df$z) & !is.na(df$cluster), , drop = FALSE]
     # Each cluster's variance within each imputation, averaged, then the square root
@@ -526,7 +533,7 @@ resid_by_cluster <- function(imp_list, outcome) {
     ggplot2::ggplot(df, ggplot2::aes(x = rank, y = z)) +
         ref_hline(0) +
         ref_hline(c(-3, -2, -1, 1, 2, 3), dashed = TRUE, guide = TRUE) +
-        geom_point_mi(n_imps = length(imp_list)) +
+        status_points(n_imps = length(imp_list)) +
         ggplot2::scale_y_continuous(breaks = \(l) seq(floor(l[1]), ceiling(l[2]))) +
         ggplot2::labs(
             title = sprintf("Within-Cluster Residual Spread: %s", outcome$name),

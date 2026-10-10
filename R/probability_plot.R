@@ -135,6 +135,8 @@ probability_plot <- function(model, variable, x, discrete_max_unique = 10L) {
         title = sprintf("Predicted Probability vs. Predictor: %s ~ %s", variable, x),
         x = var_label(col), y = "Predicted Probability"
     )
+    # Marked so that scale_imputed() on a diagnostic_plots() list leaves it unchanged
+    p <- as_diagnostic_plot(p)
     if (single) return(p)
     legend_title <- paste(variable, "Category")
     # Shapes and line types: the theme's discrete palettes, or a fixed set of seven

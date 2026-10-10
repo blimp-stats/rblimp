@@ -23,7 +23,7 @@ Imports:
     grDevices,
     methods,
     ggplot2 (>= 4.0.0),
-    scales
+    scales (>= 1.4.0)
 Suggests:
     mitml,
     rstudioapi,

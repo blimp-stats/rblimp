@@ -29,10 +29,12 @@ arguments must be named in full.}
 diagnostic plots. Unset, a point cloud that stacks M imputations uses
 0.7 / M^(1/3) and other points use 0.7.}
 
-\item{data_color}{a color. The data being checked: the points in the diagnostic
-plots (except points colored by category) and the imputed-value bars in
-\code{\link{distribution_plot}}. Unset: the theme's geom color for points and the second
-color of the discrete colour palette for bars.}
+\item{data_color}{a color for imputed and model-implied values: the points and bars in
+the diagnostic plots (residuals are model-implied; except points colored by category),
+the imputed values marked by \code{\link{scale_imputed}}, and the imputed-value bars in
+\code{\link{distribution_plot}}. Observed values marked by \code{\link{scale_imputed}} are dark grey, mixed
+from the theme's ink and paper. Unset: the theme's geom color for unmarked points and
+the second color of the discrete colour palette for imputed values and bars.}
 
 \item{summary_size}{a positive number. Size of the category-mean markers in
 \code{\link{residual_plot}} and \code{\link{probability_plot}}. Unset: 3.}

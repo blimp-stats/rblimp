@@ -35,9 +35,18 @@ blimp_setting <- function(theme, name) {
 #' aesthetics still take precedence.
 #' @noRd
 themed <- function(layer, ...) {
-    spec <- list(...)
-    parent <- layer$geom
-    layer$geom <- ggplot2::ggproto(NULL, parent,
+    layer$geom <- themed_geom(layer$geom, list(...))
+    layer
+}
+
+#' Internal function for the geom of `themed()`
+#' A function of its own so that the geom does not keep the layer it came from.
+#' @noRd
+themed_geom <- function(parent, spec) {
+    # ggproto() looks up its parent by name later, so `parent` is never reassigned
+    force(parent)
+    force(spec)
+    ggplot2::ggproto(NULL, parent,
         use_defaults = function(self, data, params = list(), modifiers = ggplot2::aes(),
                                 default_aes = NULL, theme = NULL, ...) {
             default_aes <- default_aes %||% self$default_aes
@@ -50,7 +59,6 @@ themed <- function(layer, ...) {
             )
         }
     )
-    layer
 }
 
 #' Internal function to let a mapped color follow a theme value
@@ -60,8 +68,21 @@ themed <- function(layer, ...) {
 #' key draw with the theme value. A color scale the user adds keeps its own colors.
 #' @noRd
 theme_color_override <- function(layer, aes, value, level, n = 2) {
-    parent <- layer$geom
-    layer$geom <- ggplot2::ggproto(NULL, parent,
+    layer$geom <- color_override_geom(layer$geom, aes, value, level, n)
+    layer
+}
+
+#' Internal function for the geom of `theme_color_override()`
+#' A function of its own so that the geom does not keep the layer it came from.
+#' @noRd
+color_override_geom <- function(parent, aes, value, level, n) {
+    # ggproto() looks up its parent by name later, so `parent` is never reassigned
+    force(parent)
+    force(aes)
+    force(value)
+    force(level)
+    force(n)
+    ggplot2::ggproto(NULL, parent,
         use_defaults = function(self, data, params = list(), modifiers = ggplot2::aes(),
                                 default_aes = NULL, theme = NULL, ...) {
             data <- ggplot2::ggproto_parent(parent, self)$use_defaults(
@@ -76,7 +97,6 @@ theme_color_override <- function(layer, aes, value, level, n = 2) {
             data
         }
     )
-    layer
 }
 
 #' Theme settings for rblimp plots
@@ -89,10 +109,12 @@ theme_color_override <- function(layer, aes, value, level, n = 2) {
 #' @param point_alpha a number in \[0, 1\]. Transparency of the points in the
 #'   diagnostic plots. Unset, a point cloud that stacks M imputations uses
 #'   0.7 / M^(1/3) and other points use 0.7.
-#' @param data_color a color. The data being checked: the points in the diagnostic
-#'   plots (except points colored by category) and the imputed-value bars in
-#'   [`distribution_plot`]. Unset: the theme's geom color for points and the second
-#'   color of the discrete colour palette for bars.
+#' @param data_color a color for imputed and model-implied values: the points and bars in
+#'   the diagnostic plots (residuals are model-implied; except points colored by category),
+#'   the imputed values marked by [`scale_imputed`], and the imputed-value bars in
+#'   [`distribution_plot`]. Observed values marked by [`scale_imputed`] are dark grey, mixed
+#'   from the theme's ink and paper. Unset: the theme's geom color for unmarked points and
+#'   the second color of the discrete colour palette for imputed values and bars.
 #' @param summary_size a positive number. Size of the category-mean markers in
 #'   [`residual_plot`] and [`probability_plot`]. Unset: 3.
 #' @param summary_shape a point shape, as a number or name. Shape of the category-mean

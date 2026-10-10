@@ -8,7 +8,6 @@ influence_plot(
   model,
   variable,
   measure = c("leverage", "cooks"),
-  mark_imputed = TRUE,
   max_labels = 10
 )
 }
@@ -19,9 +18,6 @@ influence_plot(
 
 \item{measure}{which values to plot: \code{"leverage"}, \code{"cooks"}, or both (the default), which
 are drawn as two panels.}
-
-\item{mark_imputed}{a logical value. If \code{TRUE}, cases whose outcome value was imputed are
-drawn with a different point shape. Change the shapes with \code{\link[ggplot2:scale_shape_manual]{ggplot2::scale_shape_manual}}.}
 
 \item{max_labels}{an integer. The maximum number of cases labeled in each panel.}
 }
@@ -47,6 +43,8 @@ distance. Cases above \eqn{3p/n} or \eqn{4/n} are labeled.
 
 For a case whose outcome was imputed, Cook's distance reflects the uncertainty in its
 imputed value: it is the case's expected influence given its leverage.
+
+To mark cases whose outcome was imputed, add \code{\link{scale_imputed}}.
 
 Point transparency, reference lines, and labels are set with \code{\link{blimp_style}}.
 }
@@ -80,10 +78,13 @@ influence_plot(m1, 'y')
 
 # Only Cook's distance
 influence_plot(m1, 'y', measure = 'cooks')
+
+# Mark cases whose outcome was imputed
+influence_plot(m1, 'y') + scale_imputed()
 }
 \dontshow{\}) # examplesIf}
 }
 \seealso{
 \code{\link{residual_plot}}, \code{\link{diagnostic_plots}}, \code{\link[=influence,blimp_obj-method]{influence}},
-\code{\link{blimp_style}}
+\code{\link{scale_imputed}}, \code{\link{blimp_style}}
 }
