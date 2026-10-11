@@ -39,7 +39,7 @@ utils::globalVariables(c(
     "lower", "upper", "theoretical", "sample", "prob", "category", "predictor",
     "x_mean", "resid_mean", "pred_mean", "measure", "label",
     "accent", "density", "fontsize", "pointsize", "linewidth", "family", "slope", "intercept",
-    "yintercept", "ymin", "ymax", "status"
+    "yintercept", "ymin", "ymax", "status", "imp"
 ))
 
 # Fixed design constants ======================================================

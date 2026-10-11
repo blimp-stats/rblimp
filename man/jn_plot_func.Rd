@@ -16,7 +16,7 @@ jn_plot_func(func, xrange, ci = 0.95, ...)
 \item{...}{values passed to internal boundary search algorithm. See Details below.}
 }
 \value{
-a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot. The bounding values are saved in the attribute 'bounds'.
+a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot. The bounding values are saved in the attribute 'boundaries'.
 }
 \description{
 Generates a Johnson-Neyman Plot using a function to produce the conditional effect

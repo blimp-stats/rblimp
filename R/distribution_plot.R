@@ -117,8 +117,7 @@ draw_distribution <- function(d) {
     # Each bar layer gets its own legend key; palette positions are fixed by both levels.
     # The theme's geom fill (observed) and `blimp.data.color` (imputed) override the palette when set.
     lv <- c("Observed", "Imputed")
-    # Guides are added once, after the list: each guides() keeps a copy of the plot, and
-    # inside the list ggplot2 would keep one more
+    # guides() goes after the list: inside it, ggplot2 keeps an extra copy of the plot
     ggplot2::ggplot(d$values, ggplot2::aes(x = value)) + list(
         if (d$has_observed) themed(
             theme_color_override(ggplot2::geom_histogram(

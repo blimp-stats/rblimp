@@ -303,8 +303,7 @@ trace_plot <- function(
 #' `...` goes to [`ggplot2::facet_wrap`].
 #' @noRd
 draw_trace <- function(d, ...) {
-    # Evaluated now: facet_wrap() can leave arguments unevaluated, and they would keep the
-    # caller's environment
+    # Evaluate `...` now, so the plot does not keep the caller's environment
     list(...)
     # Suppress R CMD check NOTEs about ggplot2 NSE
     Iteration <- Parameter <- Chain <- NULL

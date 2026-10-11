@@ -30,7 +30,7 @@ boundary_layer <- function(layer, alpha = NULL, linewidth = NULL) {
 #' @param xrange a [`numeric`] of length two with the min and max of the x-axis
 #' @param ci a value between 0 and 1 specifying the credible interval size
 #' @param ... values passed to internal boundary search algorithm. See Details below.
-#' @returns a [`ggplot2::ggplot`] plot. The bounding values are saved in the attribute 'bounds'.
+#' @returns a [`ggplot2::ggplot`] plot. The bounding values are saved in the attribute 'boundaries'.
 #' @details
 #' To change colors use ggplot2's scale system; the shaded regions use the fill scale. See
 #' [`ggplot2::aes_colour_fill_alpha`] for more information about setting a manual set of colors.
@@ -139,6 +139,9 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
         apply(func(m, quantile, probs = probs), 2, prod) >= 0
     }
 
+    # Evaluate `...` now, so the plot does not keep the caller's environment
+    list(...)
+
     # Obtain boundaries
     boundaries <- find_boundaries(f, xrange[1], xrange[2], ...)
     bound_y <- sapply(boundaries, func, quantile, probs = probs)
@@ -146,6 +149,7 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
     # Suppress R CMD check NOTEs about ggplot2 NSE
     x <- y <- NULL
     # Create plot, with the boundaries as an attribute
+    # guides() goes after the list: inside it, ggplot2 keeps an extra copy of the plot
     structure(ggplot() + list(
         # Set 0 value line
         themed(geom_hline(yintercept = 0), colour = list(reference.color = NULL)),
@@ -205,7 +209,7 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
         },
         # Set range
         xlim(xrange)
-    ) + guides(fill = "none"), boundaries = boundaries)   # after the list: inside it, ggplot2 keeps one more copy of the plot
+    ) + guides(fill = "none"), boundaries = boundaries)
 }
 
 #' Convenience Function for computing conditional effects for [`jn_plot_func`]
@@ -751,7 +755,7 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
 #' @noRd
 draw_jn <- function(d) {
     # Suppress NSE NOTEs from the column names referenced inside `aes()` below.
-    m <- lower <- upper <- median <- sig <- grp <- x <- ymin <- ymax <- facet <- NULL
+    m <- lower <- upper <- median <- sig <- grp <- x <- ymin <- ymax <- NULL
 
     # Always default to facet_grid. Layout:
     #   1 mod  -> .       ~ mod      (row of panels)
@@ -765,6 +769,7 @@ draw_jn <- function(d) {
         facet_grid(stats::as.formula(paste(lhs, "~", rhs)))
     }
 
+    # guides() goes after the list: inside it, ggplot2 keeps an extra copy of the plot
     ggplot(d$data, aes(x = m)) + list(
         themed(geom_hline(yintercept = 0), colour = list(reference.color = NULL)),
         themed(geom_ribbon(aes(ymin = lower, ymax = upper, fill = sig, group = grp), colour = NA), alpha = list(ribbon.alpha = 0.25)),
@@ -788,7 +793,7 @@ draw_jn <- function(d) {
         if (d$one_level) scale_fill_discrete(limits = c("FALSE", "TRUE")),
         xlim(d$xrange),
         labs(title = d$title, subtitle = d$subtitle, y = d$y_label, x = d$x_label)
-    ) + guides(fill = "none")   # after the list: inside it, ggplot2 keeps one more copy of the plot
+    ) + guides(fill = "none")
 }
 
 #' Internal: parse SIMPLE output and group rows by held-constant moderator values.

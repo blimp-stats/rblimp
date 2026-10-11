@@ -454,11 +454,10 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
 #' `...` goes to [`ggplot2::geom_line`].
 #' @noRd
 draw_simple <- function(d, ...) {
-    # Evaluated now: geom_line() can leave arguments unevaluated, and they would keep the
-    # caller's environment
+    # Evaluate `...` now, so the plot does not keep the caller's environment
     list(...)
     # Suppress R CMD check NOTEs about ggplot2 NSE
-    focal <- moderator <- h <- outcome <- NULL
+    focal <- moderator <- l <- h <- outcome <- NULL
 
     # Auto-facet by any moderators beyond the color one. We always default to
     # `facet_grid` (predictable layout, no automatic wrapping) using the layout:

@@ -192,12 +192,11 @@ posterior_plot <- function(
 #' `...` goes to [`ggplot2::facet_wrap`].
 #' @noRd
 draw_posterior <- function(d, ...) {
-    # Evaluated now: facet_wrap() can leave arguments unevaluated, and they would keep the
-    # caller's environment
+    # Evaluate `...` now, so the plot does not keep the caller's environment
     list(...)
     # Suppress R CMD check NOTEs about ggplot2 NSE
     Parameter <- `Parameter Type` <- x <- NULL
-    # Guides are added after the list: inside it, ggplot2 would keep one more copy of the plot
+    # guides() goes after the list: inside it, ggplot2 keeps an extra copy of the plot
     ggplot2::ggplot(d$data, ggplot2::aes(Parameter)) + list(
         themed(
             ggplot2::geom_density(ggplot2::aes(color = `Parameter Type`, fill = `Parameter Type`)),
