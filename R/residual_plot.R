@@ -593,7 +593,7 @@ binned_plot <- function(imp_list, outcome, x, discrete = logical(0), levels = li
                 z[is.finite(z$x) & is.finite(z$y), , drop = FALSE]
             })
             n_keep <- nrow(xy_list[[1]])
-            if (n_keep < 16) next
+            if (n_keep < binned_min_cases) next
             panel_x <- if (by_pred) "Mean Predicted Probability" else var_label(xc)
             panel_k <- sprintf("%s.%d", parent, as.integer(k))
             if (!by_pred && isTRUE(discrete[xc])) {

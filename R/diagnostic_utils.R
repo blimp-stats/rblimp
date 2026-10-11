@@ -59,6 +59,16 @@ curve_line_ratio <- 2
 observed_ink_mix <- 0.35
 # Share of the imputations covered by a case's bar when `bars = TRUE`
 bar_level_default <- 0.95
+# Loess curves are fit with this span and evaluated at this many points, spread between
+# the `loess_grid_trim` and 1 - `loess_grid_trim` quantiles of x
+loess_span <- 0.75
+loess_grid_size <- 200
+loess_grid_trim <- 0.01
+# An imputation gets a loess curve only with at least this many cases and distinct x values
+loess_min_cases <- 10
+loess_min_x_values <- 4
+# Binned residuals need at least this many cases; the number of bins is the square root of the cases
+binned_min_cases <- 16
 
 # Model checks ================================================================
 
@@ -499,29 +509,29 @@ summary_points <- function(layer, shape = NULL) {
 #' (trimmed to the 1-99% quantiles), and averages the curves. With `se = TRUE`,
 #' adds 95% pointwise bands pooled with Rubin's rules.
 #' @noRd
-pooled_loess <- function(xy_list, se = FALSE, span = 0.75, n_grid = 200) {
+pooled_loess <- function(xy_list, se = FALSE) {
     allx <- unlist(lapply(xy_list, \(d) d$x), use.names = FALSE)
     allx <- allx[is.finite(allx)]
     if (length(allx) < 2) return(data.frame(x = numeric(0), y = numeric(0), lower = numeric(0), upper = numeric(0)))
-    rng <- stats::quantile(allx, c(0.01, 0.99))
-    grid <- seq(rng[1], rng[2], length.out = n_grid)
+    rng <- stats::quantile(allx, c(loess_grid_trim, 1 - loess_grid_trim))
+    grid <- seq(rng[1], rng[2], length.out = loess_grid_size)
     fits <- lapply(xy_list, \(d) {
         d <- d[is.finite(d$x) & is.finite(d$y), ]
-        if (nrow(d) < 10 || length(unique(d$x)) < 4) return(NULL)
-        fit <- tryCatch(suppressWarnings(stats::loess(y ~ x, d, span = span)), error = \(e) NULL)
+        if (nrow(d) < loess_min_cases || length(unique(d$x)) < loess_min_x_values) return(NULL)
+        fit <- tryCatch(suppressWarnings(stats::loess(y ~ x, d, span = loess_span)), error = \(e) NULL)
         if (is.null(fit)) return(NULL)
         suppressWarnings(stats::predict(fit, newdata = data.frame(x = grid), se = se))
     })
     fits <- Filter(Negate(is.null), fits)
     if (!length(fits)) return(data.frame(x = numeric(0), y = numeric(0), lower = numeric(0), upper = numeric(0)))
-    f <- vapply(fits, \(p) if (se) p$fit else p, numeric(n_grid))
-    f <- matrix(f, nrow = n_grid)
+    f <- vapply(fits, \(p) if (se) p$fit else p, numeric(loess_grid_size))
+    f <- matrix(f, nrow = loess_grid_size)
     # Only where every imputation's curve is defined (loess does not extrapolate),
     # so the average never jumps as imputations drop out near the edges
     out <- data.frame(x = grid, y = rowMeans(f), lower = NA_real_, upper = NA_real_)
     if (se) {
         M <- ncol(f)
-        W <- rowMeans(matrix(vapply(fits, \(p) p$se.fit^2, numeric(n_grid)), nrow = n_grid))
+        W <- rowMeans(matrix(vapply(fits, \(p) p$se.fit^2, numeric(loess_grid_size)), nrow = loess_grid_size))
         B <- if (M > 1) apply(f, 1, stats::var) else 0
         total <- W + B + B / M
         out$lower <- out$y - 1.96 * sqrt(total)
