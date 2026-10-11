@@ -69,6 +69,8 @@ loess_min_cases <- 10
 loess_min_x_values <- 4
 # Binned residuals need at least this many cases; the number of bins is the square root of the cases
 binned_min_cases <- 16
+# A discrete axis gets a tick at each value when it has at most this many values
+max_axis_ticks <- 12
 
 # Model checks ================================================================
 
@@ -596,7 +598,7 @@ curve_layers <- function(curve, se = FALSE) {
 integer_breaks <- function(limits) {
     if (any(!is.finite(limits))) return(numeric(0))
     rng <- ceiling(limits[1]):floor(limits[2])
-    if (length(rng) <= 12) return(rng)
+    if (length(rng) <= max_axis_ticks) return(rng)
     seq(ceiling(limits[1]), floor(limits[2]), by = ceiling(length(rng) / 7))
 }
 
@@ -690,11 +692,26 @@ imputation_frames <- function(model) {
     })
 }
 
-#' Internal function for the x scale of a discrete axis: factor labels, else integer breaks
+#' Internal function for the categories of a discrete variable: the values found in every
+#' completed dataset in `x_list`. Imputed values between the categories differ across
+#' imputations, so they drop out.
 #' @noRd
-discrete_x_scale <- function(levels = NULL) {
-    if (length(levels)) ggplot2::scale_x_continuous(breaks = seq_along(levels), labels = levels)
-    else ggplot2::scale_x_continuous(breaks = integer_breaks)
+category_values <- function(x_list) {
+    sort(unique(Reduce(intersect, lapply(x_list, \(x) x[is.finite(x)]))))
+}
+
+#' Internal function for the x scale of a discrete axis
+#' Factor labels when there are levels; a tick at each of the `categories` when they are not
+#' all whole numbers (and there are at most `max_axis_ticks`); else integer breaks.
+#' @noRd
+discrete_x_scale <- function(levels = NULL, categories = NULL) {
+    if (length(levels)) {
+        ggplot2::scale_x_continuous(breaks = seq_along(levels), labels = levels)
+    } else if (any(categories != round(categories)) && length(categories) <= max_axis_ticks) {
+        ggplot2::scale_x_continuous(breaks = categories)
+    } else {
+        ggplot2::scale_x_continuous(breaks = integer_breaks)
+    }
 }
 
 #' Internal function to check a `discrete_max_unique` argument

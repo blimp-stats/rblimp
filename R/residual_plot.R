@@ -376,6 +376,7 @@ scatter_panels <- function(panels, se, thresholds, title, x_label, y_label, bar_
         summaries = summaries, se = se, n_imps = M, thresholds = thresholds,
         facet = length(panels) > 1,
         discrete = length(panels) == 1 && panels[[1]]$discrete, levels = panels[[1]]$levels,
+        categories = if (length(panels) == 1 && panels[[1]]$discrete) category_values(lapply(panels[[1]]$xy_list, \(d) d$x)),
         title = title, x_label = x_label, y_label = y_label
     ))
 }
@@ -397,7 +398,7 @@ draw_scatter <- function(d) {
         } else {
             curve_layers(s$curve, d$se)
         }),
-        if (d$facet) ggplot2::facet_wrap(~predictor, scales = "free_x") else if (d$discrete) discrete_x_scale(d$levels),
+        if (d$facet) ggplot2::facet_wrap(~predictor, scales = "free_x") else if (d$discrete) discrete_x_scale(d$levels, d$categories),
         ggplot2::labs(title = d$title, x = d$x_label, y = d$y_label)
     )
 }
@@ -634,6 +635,7 @@ binned_plot <- function(imp_list, outcome, x, discrete = logical(0), levels = li
         bins = bins, curve = if (length(curves)) do.call(rbind, curves) else data.frame(),
         n_k = length(unique(bins$category)), n_x = n_x,
         discrete = discrete_x, levels = if (discrete_x) levels[[x]],
+        categories = if (discrete_x) category_values(lapply(imp_list, \(d) d[[x]])),
         title = sprintf(if (by_pred) "Binned Residual vs. Predicted: %s" else "Binned Residual vs. Predictor: %s", outcome$name),
         x_label = if (n_x == 1) bins$predictor[1] else NULL
     ))
@@ -654,7 +656,7 @@ draw_binned <- function(d) {
         } else if (d$n_x > 1) {
             ggplot2::facet_wrap(~predictor, scales = "free_x")
         },
-        if (d$discrete) discrete_x_scale(d$levels),
+        if (d$discrete) discrete_x_scale(d$levels, d$categories),
         ggplot2::labs(title = d$title, x = d$x_label, y = "Mean Residual")
     )
 }

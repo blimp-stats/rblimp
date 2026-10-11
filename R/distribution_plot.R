@@ -106,7 +106,8 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
         values = df, has_observed = length(vals$observed) > 0, has_imputed = length(vals$imputed) > 0,
         binwidth = binwidth, boundary = boundary, density = dens, n_curves = length(completed),
         mixed = vals$kind == "mixed", discrete = force_integer,
-        levels = if (force_integer) column_levels(model, variable), title = title, x_label = title_var
+        levels = if (force_integer) column_levels(model, variable),
+        categories = if (force_integer) category_values(vals$completed), title = title, x_label = title_var
     ))
 }
 
@@ -146,7 +147,7 @@ draw_distribution <- function(d) {
             ),
             ggplot2::scale_linetype_manual(NULL, values = c(Combined = "solid"))
         ),
-        if (d$discrete) discrete_x_scale(d$levels),
+        if (d$discrete) discrete_x_scale(d$levels, d$categories),
         # Density values are not read off the plot, so the y axis is not drawn
         ggplot2::scale_y_continuous(breaks = NULL),
         ggplot2::labs(title = d$title, x = d$x_label, y = NULL)

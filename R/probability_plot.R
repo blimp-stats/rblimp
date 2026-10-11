@@ -108,6 +108,7 @@ probability_plot <- function(model, variable, x, discrete_max_unique = 10L) {
     draw_probability(list(
         points = long_df, n_imps = M, single = single, discrete = discrete, cell = cell, curves = curves,
         levels = if (discrete) column_levels(model, col),
+        categories = if (discrete) category_values(lapply(imp_list, \(d) d[[col]])),
         title = sprintf("Predicted Probability vs. Predictor: %s ~ %s", variable, x), x_label = var_label(col),
         legend_title = paste(variable, "Category")
     ))
@@ -130,12 +131,12 @@ draw_probability <- function(d) {
                 ggplot2::geom_line(data = d$cell, ggplot2::aes(x = x, y = prob, colour = ggplot2::from_theme(accent),
                     linewidth = ggplot2::from_theme(linewidth * curve_line_ratio))),
                 summary_points(ggplot2::geom_point(data = d$cell, ggplot2::aes(x = x, y = prob, colour = ggplot2::from_theme(accent)))),
-                discrete_x_scale(d$levels)
+                discrete_x_scale(d$levels, d$categories)
             ) else list(
                 ggplot2::geom_line(data = d$cell, ggplot2::aes(x = x, y = prob, colour = category, linetype = category,
                     linewidth = ggplot2::from_theme(linewidth * curve_line_ratio))),
                 summary_points(ggplot2::geom_point(data = d$cell, ggplot2::aes(x = x, y = prob, colour = category, shape = category))),
-                discrete_x_scale(d$levels)
+                discrete_x_scale(d$levels, d$categories)
             )
         } else if (!is.null(d$curves) && nrow(d$curves)) {
             if (single) {
