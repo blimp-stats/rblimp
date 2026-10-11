@@ -117,6 +117,8 @@ draw_distribution <- function(d) {
     # Each bar layer gets its own legend key; palette positions are fixed by both levels.
     # The theme's geom fill (observed) and `blimp.data.color` (imputed) override the palette when set.
     lv <- c("Observed", "Imputed")
+    # Guides are added once, after the list: each guides() keeps a copy of the plot, and
+    # inside the list ggplot2 would keep one more
     ggplot2::ggplot(d$values, ggplot2::aes(x = value)) + list(
         if (d$has_observed) themed(
             theme_color_override(ggplot2::geom_histogram(
@@ -145,20 +147,18 @@ draw_distribution <- function(d) {
             ),
             ggplot2::scale_linetype_manual(NULL, values = c(Combined = "solid"))
         ),
-        if (d$mixed) {
-            ggplot2::guides(
-                fill = ggplot2::guide_legend(order = 1), colour = ggplot2::guide_legend(order = 2),
-                linetype = ggplot2::guide_legend(order = 3, override.aes = list(alpha = 1))
-            )
-        } else {
-            ggplot2::guides(fill = "none", colour = "none", linetype = "none")
-        },
         if (d$discrete) discrete_x_scale(d$levels),
         # Density values are not read off the plot, so the y axis is not drawn
         ggplot2::scale_y_continuous(breaks = NULL),
-        ggplot2::guides(y = "none"),
         ggplot2::labs(title = d$title, x = d$x_label, y = NULL)
-    )
+    ) + if (d$mixed) {
+        ggplot2::guides(
+            fill = ggplot2::guide_legend(order = 1), colour = ggplot2::guide_legend(order = 2),
+            linetype = ggplot2::guide_legend(order = 3, override.aes = list(alpha = 1)), y = "none"
+        )
+    } else {
+        ggplot2::guides(fill = "none", colour = "none", linetype = "none", y = "none")
+    }
 }
 
 #' Normal Q-Q plot of a variable in a [`blimp_obj`]

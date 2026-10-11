@@ -443,22 +443,22 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     # plain `deparse` splits it and ggplot2 draws each fragment separately.
     subtitle <- if (length(subtitle_parts) == 0) deparse1(formula) else paste(subtitle_parts, collapse = '\n')
 
+    draw_simple(list(
+        data = rib_data, subtitle = subtitle, y_label = out, x_label = pre,
+        color_label = color_mod, facet_mods = facet_mods
+    ), ...)
+}
+
+#' Internal function to draw the conditional regressions plot from its plot data `d`
+#' The saved plot keeps this function's environment, so it is given only what it draws.
+#' `...` goes to [`ggplot2::geom_line`].
+#' @noRd
+draw_simple <- function(d, ...) {
+    # Evaluated now: geom_line() can leave arguments unevaluated, and they would keep the
+    # caller's environment
+    list(...)
     # Suppress R CMD check NOTEs about ggplot2 NSE
     focal <- moderator <- h <- outcome <- NULL
-    ## Make Conditional Effects Plot
-    p <- (
-        ggplot2::ggplot(rib_data, ggplot2::aes(focal, color = moderator, fill = moderator))
-        + themed(ggplot2::geom_ribbon(ggplot2::aes(ymin = l, ymax = h), color = NA), alpha = list(ribbon.alpha = 0.2))
-        + ggplot2::geom_line(ggplot2::aes(y = outcome), ...)
-        + ggplot2::labs(
-            title    = 'Plot of Conditional Regressions',
-            subtitle = subtitle,
-            y        = out,
-            x        = pre,
-            color    = color_mod,
-            fill     = color_mod
-        )
-    )
 
     # Auto-facet by any moderators beyond the color one. We always default to
     # `facet_grid` (predictable layout, no automatic wrapping) using the layout:
@@ -467,14 +467,26 @@ simple_plot <- function(formula, model, ci = 0.95, xvals, ...) {
     #   3+     -> mod1    ~ mod2 + ... (rest grouped on columns)
     # Column values are pre-formatted "name @ value", so user overrides like
     # `+ facet_grid(m2 ~ .)` keep the strip text without a custom labeller.
-    if (length(facet_mods) > 0) {
-        terms <- paste0("`", facet_mods, "`")
-        lhs <- if (length(facet_mods) == 1) "." else terms[1]
-        rhs <- if (length(facet_mods) == 1) terms
+    facets <- if (length(d$facet_mods) > 0) {
+        terms <- paste0("`", d$facet_mods, "`")
+        lhs <- if (length(d$facet_mods) == 1) "." else terms[1]
+        rhs <- if (length(d$facet_mods) == 1) terms
                else paste(terms[-1], collapse = " + ")
-        facet_formula <- stats::as.formula(paste(lhs, "~", rhs))
-        p <- p + ggplot2::facet_grid(facet_formula)
+        ggplot2::facet_grid(stats::as.formula(paste(lhs, "~", rhs)))
     }
 
-    p
+    ## Make Conditional Effects Plot
+    ggplot2::ggplot(d$data, ggplot2::aes(focal, color = moderator, fill = moderator)) + list(
+        themed(ggplot2::geom_ribbon(ggplot2::aes(ymin = l, ymax = h), color = NA), alpha = list(ribbon.alpha = 0.2)),
+        ggplot2::geom_line(ggplot2::aes(y = outcome), ...),
+        ggplot2::labs(
+            title    = 'Plot of Conditional Regressions',
+            subtitle = d$subtitle,
+            y        = d$y_label,
+            x        = d$x_label,
+            color    = d$color_label,
+            fill     = d$color_label
+        ),
+        facets
+    )
 }

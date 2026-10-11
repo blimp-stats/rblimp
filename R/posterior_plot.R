@@ -125,8 +125,8 @@ posterior_plot <- function(
     # Set missing selector to NULL
     if (missing(selector)) selector <- NULL
 
-    # Create empty list
-    feature_list <- list()
+    # Titles, and a facet labeller when there is one panel per parameter
+    title <- subtitle <- labeller <- NULL
 
     # Get outcome names
     oname <- attr(model@iterations, "outcome_name")
@@ -135,8 +135,7 @@ posterior_plot <- function(
     # Produce all plots
     if (length(selector) == 0) {
         selector <- NROW(model@estimates) |> seq_len()
-        # Add to feature list
-        feature_list <- list(ggplot2::ggtitle("Posterior Distributions for All Parameters"))
+        title <- "Posterior Distributions for All Parameters"
     }
     # Handle length 1
     if (length(selector) == 1) {
@@ -154,12 +153,8 @@ posterior_plot <- function(
         } else {
             plot_data <- make_plot_data(model, selector)
             quant <- quantile(plot_data$Parameter, probs = c(0.025, 0.500, 0.975))
-            feature_list <- list(
-                ggplot2::ggtitle(
-                    paste0("Posterior Distribution for ", plot_data$param_nam[1]),
-                    sprintf("Estimate = %.3f  95%% CI = [%.3f, %.3f]", quant[2], quant[1], quant[3])
-                )
-            )
+            title <- paste0("Posterior Distribution for ", plot_data$param_nam[1])
+            subtitle <- sprintf("Estimate = %.3f  95%% CI = [%.3f, %.3f]", quant[2], quant[1], quant[3])
         }
     }
     # Otherwise handle multiple
@@ -180,50 +175,43 @@ posterior_plot <- function(
             do.call(rbind, args = _)
 
         # Build function for facet labels
-        make_label <- make_labeller(
+        labeller <- make_labeller(
             rownames(model@estimates),
             model@iterations |>
                 apply(2, quantile, probs = c(0.025, 0.500, 0.975)) |> t()
         )
-        # Create feature list
-        if (length(feature_list) == 0) {
-            feature_list <- list(
-                ggplot2::ggtitle("Posterior Distributions for Selected Parameters"),
-                ggplot2::facet_wrap(
-                    ~ as.factor(param_num), scales = "free", labeller = make_label,
-                    ...
-                )
-            )
-        }
-        # otherwise only add wrap because already has title
-        else {
-            feature_list <- c(
-                feature_list,
-                list(ggplot2::facet_wrap(
-                    ~ as.factor(param_num), scales = "free", labeller = make_label,
-                    ...
-                ))
-            )
-        }
+        # A title for all parameters is kept
+        if (is.null(title)) title <- "Posterior Distributions for Selected Parameters"
     }
 
+    draw_posterior(list(data = plot_data, title = title, subtitle = subtitle, labeller = labeller), ...)
+}
+
+#' Internal function to draw the posterior density plot from its plot data `d`
+#' The saved plot keeps this function's environment, so it is given only what it draws.
+#' `...` goes to [`ggplot2::facet_wrap`].
+#' @noRd
+draw_posterior <- function(d, ...) {
+    # Evaluated now: facet_wrap() can leave arguments unevaluated, and they would keep the
+    # caller's environment
+    list(...)
     # Suppress R CMD check NOTEs about ggplot2 NSE
     Parameter <- `Parameter Type` <- x <- NULL
-    # Return Plot information
-    return(
-        ggplot2::ggplot(plot_data, ggplot2::aes(Parameter))
-        + themed(
+    # Guides are added after the list: inside it, ggplot2 would keep one more copy of the plot
+    ggplot2::ggplot(d$data, ggplot2::aes(Parameter)) + list(
+        themed(
             ggplot2::geom_density(ggplot2::aes(color = `Parameter Type`, fill = `Parameter Type`)),
             alpha = list(area.alpha = 0.25)
-        )
-        + ggplot2::stat_summary(
+        ),
+        ggplot2::stat_summary(
             ggplot2::aes(xintercept = ggplot2::after_stat(x), y = 0), fun = quantile, geom = "vline",
             fun.args = list(probs = c(0.025, 0.500, 0.975)),
             orientation = "y"
-        )
+        ),
         # Density values are not read off the plot, so the y axis is not drawn
-        + ggplot2::scale_y_continuous(breaks = NULL)
-        + ggplot2::guides(y = "none")
-        + ylab(NULL) + feature_list
-    )
+        ggplot2::scale_y_continuous(breaks = NULL),
+        ylab(NULL),
+        if (is.null(d$subtitle)) ggplot2::ggtitle(d$title) else ggplot2::ggtitle(d$title, d$subtitle),
+        if (!is.null(d$labeller)) ggplot2::facet_wrap(~ as.factor(param_num), scales = "free", labeller = d$labeller, ...)
+    ) + ggplot2::guides(y = "none")
 }

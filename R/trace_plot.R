@@ -234,8 +234,8 @@ trace_plot <- function(
     # Set missing selector to NULL
     if (missing(selector)) selector <- NULL
 
-    # Create empty list
-    feature_list <- list()
+    # Titles, and a facet labeller when there is one panel per parameter
+    title <- subtitle <- labeller <- NULL
 
     # Get outcome names
     oname <- attr(model@iterations, "outcome_name")
@@ -244,8 +244,7 @@ trace_plot <- function(
     # Produce all plots
     if (length(selector) == 0) {
         selector <- NROW(model@estimates) |> seq_len()
-        # Add to feature list
-        feature_list <- list(ggplot2::ggtitle("Trace Plots for All Parameters"))
+        title <- "Trace Plots for All Parameters"
     }
     # Handle length 1
     if (length(selector) == 1) {
@@ -262,12 +261,8 @@ trace_plot <- function(
             )
         } else {
             plot_data <- make_traceplot_data(model, selector)
-            feature_list <- list(
-                ggplot2::ggtitle(
-                    paste0("Trace Plot for ", plot_data$param_nam[1]),
-                    sprintf("Rhat = %.3f", attr(plot_data, 'psrf'))
-                )
-            )
+            title <- paste0("Trace Plot for ", plot_data$param_nam[1])
+            subtitle <- sprintf("Rhat = %.3f", attr(plot_data, 'psrf'))
         }
     }
     # Otherwise handle multiple
@@ -291,40 +286,31 @@ trace_plot <- function(
         plot_data <- do.call(rbind, args = plot_data)
 
         # Build function for facet labels
-        make_label <- make_labeller_traceplot(
+        labeller <- make_labeller_traceplot(
             rownames(model@estimates),
             psrf_val,
             selector
         )
-        # Create feature list
-        if (length(feature_list) == 0) {
-            feature_list <- list(
-                ggplot2::ggtitle("Trace Plots for Selected Parameters"),
-                ggplot2::facet_wrap(
-                    ~ as.factor(param_num), scales = "free", labeller = make_label,
-                    ...
-                )
-            )
-        }
-        # otherwise only add wrap because already has title
-        else {
-            feature_list <- c(
-                feature_list,
-                list(ggplot2::facet_wrap(
-                    ~ as.factor(param_num), scales = "free", labeller = make_label,
-                    ...
-                ))
-            )
-        }
+        # A title for all parameters is kept
+        if (is.null(title)) title <- "Trace Plots for Selected Parameters"
     }
 
+    draw_trace(list(data = plot_data, title = title, subtitle = subtitle, labeller = labeller), ...)
+}
+
+#' Internal function to draw the trace plot from its plot data `d`
+#' The saved plot keeps this function's environment, so it is given only what it draws.
+#' `...` goes to [`ggplot2::facet_wrap`].
+#' @noRd
+draw_trace <- function(d, ...) {
+    # Evaluated now: facet_wrap() can leave arguments unevaluated, and they would keep the
+    # caller's environment
+    list(...)
     # Suppress R CMD check NOTEs about ggplot2 NSE
     Iteration <- Parameter <- Chain <- NULL
-
-    # Return Plot information
-    return(
-        ggplot2::ggplot(plot_data, ggplot2::aes(Iteration, Parameter, color = Chain))
-        + ggplot2::geom_line()
-        + feature_list
+    ggplot2::ggplot(d$data, ggplot2::aes(Iteration, Parameter, color = Chain)) + list(
+        ggplot2::geom_line(),
+        if (is.null(d$subtitle)) ggplot2::ggtitle(d$title) else ggplot2::ggtitle(d$title, d$subtitle),
+        if (!is.null(d$labeller)) ggplot2::facet_wrap(~ as.factor(param_num), scales = "free", labeller = d$labeller, ...)
     )
 }

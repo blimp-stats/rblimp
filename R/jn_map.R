@@ -302,28 +302,37 @@ jn_map <- function(formula, model, ci = 0.95, n_grid = 100, ...) {
     )
     subtitle <- paste(subtitle_parts, collapse = "\n")
 
+    p <- draw_jn_map(list(
+        grid = grid, subtitle = subtitle, fill_name = paste0("Slope of\n", out, " on ", pre),
+        x_label = if (m1_is_cent) paste("Centered", mod1) else mod1,
+        y_label = if (m2_is_cent) paste("Centered", mod2) else mod2
+    ))
+    structure(p, grid = grid)
+}
+
+#' Internal function to draw the Johnson-Neyman map from its plot data `d`
+#' The saved plot keeps this function's environment, so it is given only what it draws.
+#' @noRd
+draw_jn_map <- function(d) {
     # Suppress NSE NOTEs
     m1 <- m2 <- median <- sig_num <- NULL
 
-    p <- (
-        ggplot(grid, ggplot2::aes(x = m1, y = m2))
-        + geom_raster(ggplot2::aes(fill = median), interpolate = TRUE)
+    ggplot(d$grid, ggplot2::aes(x = m1, y = m2)) + list(
+        geom_raster(ggplot2::aes(fill = median), interpolate = TRUE),
         # Diverging at 0; the theme's continuous fill palette, or blue-white-red
-        + continuous_scale(
+        continuous_scale(
             "fill", palette = NULL, na.value = "grey50",
             rescaler = \(x, to = c(0, 1), from = range(x, na.rm = TRUE)) scales::rescale_mid(x, to, from, mid = 0),
             fallback.palette = scales::pal_div_gradient("#2c7bb6", "white", "#d7191c"),
-            guide = "colourbar", name = paste0("Slope of\n", out, " on ", pre)
-        )
-        + boundary_layer(geom_contour(ggplot2::aes(z = sig_num), breaks = 0.5), linewidth = 0.6)
-        + labs(
+            guide = "colourbar", name = d$fill_name
+        ),
+        boundary_layer(geom_contour(ggplot2::aes(z = sig_num), breaks = 0.5), linewidth = 0.6),
+        labs(
             title    = "Johnson-Neyman Map of Conditional Slope",
-            subtitle = subtitle,
-            x = if (m1_is_cent) paste("Centered", mod1) else mod1,
-            y = if (m2_is_cent) paste("Centered", mod2) else mod2
-        )
-        + coord_cartesian(expand = FALSE)
+            subtitle = d$subtitle,
+            x = d$x_label,
+            y = d$y_label
+        ),
+        coord_cartesian(expand = FALSE)
     )
-
-    structure(p, grid = grid)
 }

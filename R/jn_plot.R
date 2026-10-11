@@ -145,13 +145,12 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
 
     # Suppress R CMD check NOTEs about ggplot2 NSE
     x <- y <- NULL
-    # Create plot
-    p <- (
-        ggplot()
+    # Create plot, with the boundaries as an attribute
+    structure(ggplot() + list(
         # Set 0 value line
-        + themed(geom_hline(yintercept = 0), colour = list(reference.color = NULL))
+        themed(geom_hline(yintercept = 0), colour = list(reference.color = NULL)),
         # Create Ribbon
-        + themed(
+        themed(
             stat_function(
                 fun = f,
                 aes(
@@ -166,68 +165,47 @@ jn_plot_func <- function(func, xrange, ci = 0.95, ...) {
             ),
             # Ribbon transparency follows the theme
             alpha = list(ribbon.alpha = 0.25)
-        )
+        ),
         # Line for 2.5%
-        + geom_function(
+        geom_function(
             fun = func,
             args = list(quantile, probs = probs[1]),
             linetype = 'dashed'
-        )
+        ),
         # Line for 97.5%
-        + geom_function(
+        geom_function(
             fun = func,
             args = list(quantile, probs = probs[2]),
             linetype = 'dashed'
-        )
+        ),
         # Line for Median
-        + geom_function(
+        geom_function(
             fun = func,
             args = list(median)
-        )
-    )
-
-    if (NROW(bound_y) == 2) {
-        p <- (
-            p
-            # Add boundary lines
-            + boundary_layer(geom_segment(
-                aes(
-                    x = boundaries,
-                    xend = boundaries,
-                    y = bound_y[1,],
-                    yend = bound_y[2,],
-                )
-            ), alpha = 0.5)
-        )
-    }
-
-    # Keep ggplot's default fill scale when both significance levels are drawn
-    # (an intentional design choice). When only one level is present the
-    # default discrete scale collapses to its first colour (red) regardless of
-    # meaning, mislabelling an all-significant band as "0 within the interval".
-    # Declaring both categories via `limits` makes ggplot allocate its *own*
-    # default two-colour palette and map by value. `f` returns the same logical
-    # the ribbon fills on, sampled the way `stat_function(n = 1000)` samples it,
-    # so this counts exactly the levels that get drawn.
-    if (length(unique(f(seq(xrange[1], xrange[2], length.out = 1000)))) == 1) {
-        p <- p + scale_fill_discrete(limits = c("FALSE", "TRUE"))
-    }
-
-    p <- (
-        p
+        ),
+        # Add boundary lines
+        if (NROW(bound_y) == 2) boundary_layer(geom_segment(
+            aes(
+                x = boundaries,
+                xend = boundaries,
+                y = bound_y[1,],
+                yend = bound_y[2,],
+            )
+        ), alpha = 0.5),
+        # Keep ggplot's default fill scale when both significance levels are drawn
+        # (an intentional design choice). When only one level is present the
+        # default discrete scale collapses to its first colour (red) regardless of
+        # meaning, mislabelling an all-significant band as "0 within the interval".
+        # Declaring both categories via `limits` makes ggplot allocate its *own*
+        # default two-colour palette and map by value. `f` returns the same logical
+        # the ribbon fills on, sampled the way `stat_function(n = 1000)` samples it,
+        # so this counts exactly the levels that get drawn.
+        if (length(unique(f(seq(xrange[1], xrange[2], length.out = 1000)))) == 1) {
+            scale_fill_discrete(limits = c("FALSE", "TRUE"))
+        },
         # Set range
-        + xlim(xrange)
-        # Remove guide
-        + guides(fill = "none")
-    )
-
-    # Return plot
-    return(
-        structure(
-            p,
-            boundaries = boundaries
-        )
-    )
+        xlim(xrange)
+    ) + guides(fill = "none"), boundaries = boundaries)   # after the list: inside it, ggplot2 keeps one more copy of the plot
 }
 
 #' Convenience Function for computing conditional effects for [`jn_plot_func`]
@@ -730,37 +708,6 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
         }
     }
 
-    # Suppress NSE NOTEs from the column names referenced inside `aes()` below.
-    m <- lower <- upper <- median <- sig <- grp <- x <- ymin <- ymax <- facet <- NULL
-
-    p <- (
-        ggplot(jn_data, aes(x = m))
-        + themed(geom_hline(yintercept = 0), colour = list(reference.color = NULL))
-        + themed(geom_ribbon(aes(ymin = lower, ymax = upper, fill = sig, group = grp), colour = NA), alpha = list(ribbon.alpha = 0.25))
-        + geom_line(aes(y = median))
-        + geom_line(aes(y = lower), linetype = 'dashed')
-        + geom_line(aes(y = upper), linetype = 'dashed')
-    )
-    if (!is.null(bounds_df) && nrow(bounds_df) > 0) {
-        p <- p + boundary_layer(geom_segment(
-            data = bounds_df,
-            aes(x = x, xend = x, y = ymin, yend = ymax),
-            inherit.aes = FALSE
-        ), alpha = 0.5)
-    }
-    # Always default to facet_grid. Layout:
-    #   1 mod  -> .       ~ mod      (row of panels)
-    #   2 mods -> mod1    ~ mod2     (2D grid)
-    #   3+     -> mod1    ~ mod2 + ... (rest grouped on columns)
-    if (length(facet_mods) > 0) {
-        terms <- paste0("`", facet_mods, "`")
-        lhs <- if (length(facet_mods) == 1) "." else terms[1]
-        rhs <- if (length(facet_mods) == 1) terms
-               else paste(terms[-1], collapse = " + ")
-        facet_formula <- stats::as.formula(paste(lhs, "~", rhs))
-        p <- p + facet_grid(facet_formula)
-    }
-
     # Subtitle: held-constant moderators, plus the boundary values when the
     # plot has no facet strips (the strips already carry bound text for
     # multi-panel plots, since each moderator column is pre-baked).
@@ -783,37 +730,65 @@ jn_plot <- function(formula, model, ci = 0.95, ...) {
         paste0("\n", head_word, paste(sprintf("%.3g", bounds_df$x), collapse = ", "))
     } else ""
 
-    subtitle <- paste0(base_subtitle, held_line, bnd_line)
-
-    # Keep ggplot's default fill scale when both significance levels are drawn
-    # (an intentional design choice -- users override colours via their own
-    # scale). When only one level is present the default discrete scale
-    # collapses to its first colour (red) regardless of meaning, which would
-    # mislabel an all-significant band as "0 within the interval". Declaring
-    # both categories via `limits` makes ggplot allocate its *own* default
-    # two-colour palette and map by value, so the one-level case matches the
-    # two-level one without pinning any specific colour.
-    if (length(unique(jn_data$sig)) == 1) {
-        p <- p + scale_fill_discrete(limits = c("FALSE", "TRUE"))
-    }
-
-    p <- (
-        p
-        + xlim(m_range)
-        + guides(fill = "none")
-        + labs(
-            title = if (is_param) "Johnson-Neyman Plot of Conditional Effect"
-                    else "Johnson-Neyman Plot of Conditional Slope",
-            subtitle = subtitle,
-            y = if (is_param) pre
-                else paste(out, "~", if (pre_is_cent) paste("Centered", pre) else pre),
-            x = if (mod_is_cent) paste("Centered", mod) else mod
-        )
-    )
+    p <- draw_jn(list(
+        data = jn_data, bounds = bounds_df, facet_mods = facet_mods,
+        one_level = length(unique(jn_data$sig)) == 1, xrange = m_range,
+        title = if (is_param) "Johnson-Neyman Plot of Conditional Effect"
+                else "Johnson-Neyman Plot of Conditional Slope",
+        subtitle = paste0(base_subtitle, held_line, bnd_line),
+        y_label = if (is_param) pre
+                  else paste(out, "~", if (pre_is_cent) paste("Centered", pre) else pre),
+        x_label = if (mod_is_cent) paste("Centered", mod) else mod
+    ))
 
     bounds_value <- if (!is.null(bounds_df) && nrow(bounds_df) > 0) bounds_df
                     else data.frame()
     structure(p, bounds = bounds_value)
+}
+
+#' Internal function to draw the Johnson-Neyman plot from its plot data `d`
+#' The saved plot keeps this function's environment, so it is given only what it draws.
+#' @noRd
+draw_jn <- function(d) {
+    # Suppress NSE NOTEs from the column names referenced inside `aes()` below.
+    m <- lower <- upper <- median <- sig <- grp <- x <- ymin <- ymax <- facet <- NULL
+
+    # Always default to facet_grid. Layout:
+    #   1 mod  -> .       ~ mod      (row of panels)
+    #   2 mods -> mod1    ~ mod2     (2D grid)
+    #   3+     -> mod1    ~ mod2 + ... (rest grouped on columns)
+    facets <- if (length(d$facet_mods) > 0) {
+        terms <- paste0("`", d$facet_mods, "`")
+        lhs <- if (length(d$facet_mods) == 1) "." else terms[1]
+        rhs <- if (length(d$facet_mods) == 1) terms
+               else paste(terms[-1], collapse = " + ")
+        facet_grid(stats::as.formula(paste(lhs, "~", rhs)))
+    }
+
+    ggplot(d$data, aes(x = m)) + list(
+        themed(geom_hline(yintercept = 0), colour = list(reference.color = NULL)),
+        themed(geom_ribbon(aes(ymin = lower, ymax = upper, fill = sig, group = grp), colour = NA), alpha = list(ribbon.alpha = 0.25)),
+        geom_line(aes(y = median)),
+        geom_line(aes(y = lower), linetype = 'dashed'),
+        geom_line(aes(y = upper), linetype = 'dashed'),
+        if (!is.null(d$bounds) && nrow(d$bounds) > 0) boundary_layer(geom_segment(
+            data = d$bounds,
+            aes(x = x, xend = x, y = ymin, yend = ymax),
+            inherit.aes = FALSE
+        ), alpha = 0.5),
+        facets,
+        # Keep ggplot's default fill scale when both significance levels are drawn
+        # (an intentional design choice -- users override colours via their own
+        # scale). When only one level is present the default discrete scale
+        # collapses to its first colour (red) regardless of meaning, which would
+        # mislabel an all-significant band as "0 within the interval". Declaring
+        # both categories via `limits` makes ggplot allocate its *own* default
+        # two-colour palette and map by value, so the one-level case matches the
+        # two-level one without pinning any specific colour.
+        if (d$one_level) scale_fill_discrete(limits = c("FALSE", "TRUE")),
+        xlim(d$xrange),
+        labs(title = d$title, subtitle = d$subtitle, y = d$y_label, x = d$x_label)
+    ) + guides(fill = "none")   # after the list: inside it, ggplot2 keeps one more copy of the plot
 }
 
 #' Internal: parse SIMPLE output and group rows by held-constant moderator values.
