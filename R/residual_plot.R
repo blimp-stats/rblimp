@@ -341,21 +341,17 @@ scatter_panels <- function(panels, se, thresholds, title, x_label, y_label, bar_
     levels_order <- vapply(panels, \(p) p$name, "")
     pts$predictor <- factor(pts$predictor, levels = levels_order)
 
-    p <- ggplot2::ggplot(pts, ggplot2::aes(x = x, y = y)) + ref_hline(0)
-    if (length(thresholds)) p <- p + ref_hline(thresholds, dashed = TRUE)
     with_bars <- vapply(panels, \(p) isTRUE(p$bars), TRUE)
     cloud <- pts[pts$predictor %in% levels_order[!with_bars], , drop = FALSE]
-    if (nrow(cloud)) p <- p + status_points(data = cloud, n_imps = M)
-    if (any(with_bars)) {
-        s <- do.call(rbind, lapply(panels[with_bars], \(panel) {
-            df <- do.call(rbind, lapply(panel$xy_list, \(d) data.frame(key = seq_len(nrow(d)), x = d$x, y = d$y, status = d$status)))
-            s <- bar_summary(df[is.finite(df$x) & is.finite(df$y), , drop = FALSE], bar_level)
-            if (nrow(s)) s$predictor <- factor(panel$name, levels = levels_order)
-            s
-        }))
-        if (nrow(s)) p <- p + bar_layers(s)
-    }
+    bars <- if (any(with_bars)) do.call(rbind, lapply(panels[with_bars], \(panel) {
+        df <- do.call(rbind, lapply(panel$xy_list, \(d) data.frame(key = seq_len(nrow(d)), x = d$x, y = d$y, status = d$status)))
+        s <- bar_summary(df[is.finite(df$x) & is.finite(df$y), , drop = FALSE], bar_level)
+        if (nrow(s)) s$predictor <- factor(panel$name, levels = levels_order)
+        s
+    }))
 
+    # Category means for discrete panels, pooled loess curves for continuous ones
+    summaries <- list()
     for (panel in panels) {
         if (panel$discrete) {
             # Means at each value within each imputation, then averaged
@@ -367,23 +363,43 @@ scatter_panels <- function(panels, se, thresholds, title, x_label, y_label, bar_
             if (is.null(per_imp)) next
             md <- stats::aggregate(y ~ x, data = per_imp, FUN = mean)
             md$predictor <- factor(panel$name, levels = levels_order)
-            p <- p + summary_points(
-                ggplot2::geom_point(data = md, ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent)), show.legend = FALSE),
-                shape = 18
-            )
+            summaries[[length(summaries) + 1]] <- list(means = md)
         } else {
             curve <- pooled_loess(panel$xy_list, se = se)
             if (nrow(curve)) curve$predictor <- factor(panel$name, levels = levels_order)
-            p <- p + curve_layers(curve, se)
+            summaries[[length(summaries) + 1]] <- list(curve = curve)
         }
     }
 
-    if (length(panels) > 1) {
-        p <- p + ggplot2::facet_wrap(~predictor, scales = "free_x")
-    } else if (panels[[1]]$discrete) {
-        p <- p + discrete_x_scale(panels[[1]]$levels)
-    }
-    p + ggplot2::labs(title = title, x = x_label, y = y_label)
+    draw_scatter(list(
+        points = pts, cloud = if (nrow(cloud)) cloud, bars = if (length(bars) && nrow(bars)) bars,
+        summaries = summaries, se = se, n_imps = M, thresholds = thresholds,
+        facet = length(panels) > 1,
+        discrete = length(panels) == 1 && panels[[1]]$discrete, levels = panels[[1]]$levels,
+        title = title, x_label = x_label, y_label = y_label
+    ))
+}
+
+#' Internal function to draw the scatter panels from their plot data `d`
+#' The saved plot keeps this function's environment, so it is given only what it draws.
+#' @noRd
+draw_scatter <- function(d) {
+    ggplot2::ggplot(d$points, ggplot2::aes(x = x, y = y)) + list(
+        ref_hline(0),
+        if (length(d$thresholds)) ref_hline(d$thresholds, dashed = TRUE),
+        if (!is.null(d$cloud)) status_points(data = d$cloud, n_imps = d$n_imps),
+        if (!is.null(d$bars)) bar_layers(d$bars),
+        lapply(d$summaries, \(s) if (!is.null(s$means)) {
+            summary_points(
+                ggplot2::geom_point(data = s$means, ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent)), show.legend = FALSE),
+                shape = 18
+            )
+        } else {
+            curve_layers(s$curve, d$se)
+        }),
+        if (d$facet) ggplot2::facet_wrap(~predictor, scales = "free_x") else if (d$discrete) discrete_x_scale(d$levels),
+        ggplot2::labs(title = d$title, x = d$x_label, y = d$y_label)
+    )
 }
 
 # Index plots =================================================================
@@ -431,25 +447,32 @@ resid_index <- function(model, imp_list, outcome, index_thresholds, max_labels, 
     if (is.null(df$label)) df$label <- df$case
     df$status <- factor(df$status, levels = c("Observed", "Imputed"))
 
-    p <- ggplot2::ggplot(df, ggplot2::aes(x = case, y = z)) + ref_hline(0)
-    if (length(index_thresholds)) p <- p + ref_hline(index_thresholds, dashed = TRUE)
-    p <- p + if (is.null(bar_level)) {
-        status_points(n_imps = length(imp_list))
-    } else {
-        # One point per case at its mean, with a bar over the middle `bar_level` of its imputations
+    # One point per case at its mean, with a bar over the middle `bar_level` of its imputations
+    bars <- if (!is.null(bar_level)) {
         s <- bar_summary(data.frame(key = df$case, x = df$case, y = df$z, status = df$status), bar_level)
         names(s)[names(s) == "y"] <- "z"
-        bar_layers(s, y = "z")
+        s
     }
+    draw_index(list(
+        points = df, bars = bars, n_imps = length(imp_list), thresholds = index_thresholds,
+        # Cases whose mean standardized residual exceeds the largest threshold are labeled
+        case_means = if (length(index_thresholds)) stats::aggregate(z ~ case + label, data = df, FUN = mean),
+        max_labels = max_labels, title = title, x_label = x_label, y_label = y_label
+    ))
+}
 
-    # Label cases whose mean standardized residual exceeds the largest threshold
-    if (length(index_thresholds)) {
-        cm <- stats::aggregate(z ~ case + label, data = df, FUN = mean)
-        p <- p + outlier_labels(cm, "z", max(abs(index_thresholds)), max_labels, two_sided = TRUE)
-    }
-    p +
-        ggplot2::scale_y_continuous(breaks = \(l) sort(unique(c(seq(floor(l[1]), ceiling(l[2])), index_thresholds)))) +
-        ggplot2::labs(title = title, x = x_label, y = y_label)
+#' Internal function to draw the index plot from its plot data `d`
+#' The saved plot keeps this function's environment, so it is given only what it draws.
+#' @noRd
+draw_index <- function(d) {
+    ggplot2::ggplot(d$points, ggplot2::aes(x = case, y = z)) + list(
+        ref_hline(0),
+        if (length(d$thresholds)) ref_hline(d$thresholds, dashed = TRUE),
+        if (is.null(d$bars)) status_points(n_imps = d$n_imps) else bar_layers(d$bars, y = "z"),
+        if (length(d$thresholds)) outlier_labels(d$case_means, "z", max(abs(d$thresholds)), d$max_labels, two_sided = TRUE),
+        ggplot2::scale_y_continuous(breaks = \(l) sort(unique(c(seq(floor(l[1]), ceiling(l[2])), d$thresholds)))),
+        ggplot2::labs(title = d$title, x = d$x_label, y = d$y_label)
+    )
 }
 
 #' Internal function for the pooled Pearson standard deviation of a count outcome
@@ -529,14 +552,20 @@ resid_by_cluster <- function(imp_list, outcome, status) {
     ord <- names(sort(spread[is.finite(spread)]))
     df$rank <- match(as.character(df$cluster), ord)
     df <- df[!is.na(df$rank), , drop = FALSE]
+    draw_cluster(list(points = df, n_imps = length(imp_list), title = sprintf("Within-Cluster Residual Spread: %s", outcome$name)))
+}
 
-    ggplot2::ggplot(df, ggplot2::aes(x = rank, y = z)) +
+#' Internal function to draw the within-cluster spread plot from its plot data `d`
+#' The saved plot keeps this function's environment, so it is given only what it draws.
+#' @noRd
+draw_cluster <- function(d) {
+    ggplot2::ggplot(d$points, ggplot2::aes(x = rank, y = z)) +
         ref_hline(0) +
         ref_hline(c(-3, -2, -1, 1, 2, 3), dashed = TRUE, guide = TRUE) +
-        status_points(n_imps = length(imp_list)) +
+        status_points(n_imps = d$n_imps) +
         ggplot2::scale_y_continuous(breaks = \(l) seq(floor(l[1]), ceiling(l[2]))) +
         ggplot2::labs(
-            title = sprintf("Within-Cluster Residual Spread: %s", outcome$name),
+            title = d$title,
             x = "Cluster (ordered by residual SD)",
             y = "Standardized Level-1 Residual"
         )
@@ -598,26 +627,34 @@ binned_plot <- function(imp_list, outcome, x, discrete = logical(0), levels = li
     }
     if (!length(rows)) throw_error("Too few cases to bin residuals for {.val {parent}}.")
     bins <- do.call(rbind, rows)
-    curve <- if (length(curves)) do.call(rbind, curves) else data.frame()
-
-    p <- ggplot2::ggplot(bins, ggplot2::aes(x = x, y = y)) +
-        ref_hline(0) +
-        geom_point_mi()
-    if (nrow(curve)) p <- p + curve_layers(curve)
-    n_k <- length(unique(bins$category))
     n_x <- length(unique(bins$predictor))
-    if (n_k > 1 && n_x > 1) {
-        p <- p + ggplot2::facet_grid(category ~ predictor, scales = "free_x")
-    } else if (n_k > 1) {
-        p <- p + ggplot2::facet_wrap(~category)
-    } else if (n_x > 1) {
-        p <- p + ggplot2::facet_wrap(~predictor, scales = "free_x")
-    }
     by_pred <- identical(x, "#predicted")
-    if (n_x == 1 && length(x) == 1 && isTRUE(discrete[x])) p <- p + discrete_x_scale(levels[[x]])
-    p + ggplot2::labs(
+    discrete_x <- n_x == 1 && length(x) == 1 && isTRUE(discrete[x])
+    draw_binned(list(
+        bins = bins, curve = if (length(curves)) do.call(rbind, curves) else data.frame(),
+        n_k = length(unique(bins$category)), n_x = n_x,
+        discrete = discrete_x, levels = if (discrete_x) levels[[x]],
         title = sprintf(if (by_pred) "Binned Residual vs. Predicted: %s" else "Binned Residual vs. Predictor: %s", outcome$name),
-        x = if (n_x == 1) bins$predictor[1] else NULL,
-        y = "Mean Residual"
+        x_label = if (n_x == 1) bins$predictor[1] else NULL
+    ))
+}
+
+#' Internal function to draw the binned residual plot from its plot data `d`
+#' The saved plot keeps this function's environment, so it is given only what it draws.
+#' @noRd
+draw_binned <- function(d) {
+    ggplot2::ggplot(d$bins, ggplot2::aes(x = x, y = y)) + list(
+        ref_hline(0),
+        geom_point_mi(),
+        if (nrow(d$curve)) curve_layers(d$curve),
+        if (d$n_k > 1 && d$n_x > 1) {
+            ggplot2::facet_grid(category ~ predictor, scales = "free_x")
+        } else if (d$n_k > 1) {
+            ggplot2::facet_wrap(~category)
+        } else if (d$n_x > 1) {
+            ggplot2::facet_wrap(~predictor, scales = "free_x")
+        },
+        if (d$discrete) discrete_x_scale(d$levels),
+        ggplot2::labs(title = d$title, x = d$x_label, y = "Mean Residual")
     )
 }

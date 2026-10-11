@@ -95,60 +95,70 @@ distribution_plot <- function(model, variable, bins = 30, discrete_max_unique = 
         type = factor(rep(c("Observed", "Imputed"), c(length(vals$observed), length(vals$imputed))),
                       levels = c("Observed", "Imputed"))
     )
-    # Each bar layer gets its own legend key; palette positions are fixed by both levels.
-    # The theme's geom fill (observed) and `blimp.data.color` (imputed) override the palette when set.
-    lv <- c("Observed", "Imputed")
-    p <- ggplot2::ggplot(df, ggplot2::aes(x = value))
-    if (length(vals$observed)) p <- p + themed(
-        theme_color_override(ggplot2::geom_histogram(
-            data = df[df$type == "Observed", , drop = FALSE],
-            ggplot2::aes(y = ggplot2::after_stat(density), fill = type),
-            colour = NA, binwidth = binwidth, boundary = boundary
-        ), "fill", \(theme) ggplot2::calc_element("geom", theme)$fill, level = 1),
-        alpha = list(area.alpha = 0.3)
-    )
-    if (length(vals$imputed)) p <- p + theme_color_override(ggplot2::geom_histogram(
-        data = df[df$type == "Imputed", , drop = FALSE],
-        ggplot2::aes(y = ggplot2::after_stat(density), colour = type),
-        fill = NA, binwidth = binwidth, boundary = boundary
-    ), "colour", \(theme) blimp_setting(theme, "data.color"), level = 2)
-    p <- p +
-        ggplot2::scale_fill_discrete(NULL, limits = lv, breaks = "Observed") +
-        ggplot2::scale_colour_discrete(NULL, limits = lv, breaks = "Imputed")
-
     # One density curve per completed dataset (observed values plus that imputation's
     # values). The bandwidth is the bin width, so the curves and the bars show the same
     # level of detail at any M
     completed <- Filter(\(x) length(x) >= 2, vals$completed)
-    if (!force_integer && length(completed)) {
-        dens <- do.call(rbind, lapply(seq_along(completed), \(i) data.frame(imp = i, value = completed[[i]])))
-        p <- p +
+    dens <- if (!force_integer && length(completed)) {
+        do.call(rbind, lapply(seq_along(completed), \(i) data.frame(imp = i, value = completed[[i]])))
+    }
+    draw_distribution(list(
+        values = df, has_observed = length(vals$observed) > 0, has_imputed = length(vals$imputed) > 0,
+        binwidth = binwidth, boundary = boundary, density = dens, n_curves = length(completed),
+        mixed = vals$kind == "mixed", discrete = force_integer,
+        levels = if (force_integer) column_levels(model, variable), title = title, x_label = title_var
+    ))
+}
+
+#' Internal function to draw the distribution plot from its plot data `d`
+#' The saved plot keeps this function's environment, so it is given only what it draws.
+#' @noRd
+draw_distribution <- function(d) {
+    # Each bar layer gets its own legend key; palette positions are fixed by both levels.
+    # The theme's geom fill (observed) and `blimp.data.color` (imputed) override the palette when set.
+    lv <- c("Observed", "Imputed")
+    ggplot2::ggplot(d$values, ggplot2::aes(x = value)) + list(
+        if (d$has_observed) themed(
+            theme_color_override(ggplot2::geom_histogram(
+                data = d$values[d$values$type == "Observed", , drop = FALSE],
+                ggplot2::aes(y = ggplot2::after_stat(density), fill = type),
+                colour = NA, binwidth = d$binwidth, boundary = d$boundary
+            ), "fill", \(theme) ggplot2::calc_element("geom", theme)$fill, level = 1),
+            alpha = list(area.alpha = 0.3)
+        ),
+        if (d$has_imputed) theme_color_override(ggplot2::geom_histogram(
+            data = d$values[d$values$type == "Imputed", , drop = FALSE],
+            ggplot2::aes(y = ggplot2::after_stat(density), colour = type),
+            fill = NA, binwidth = d$binwidth, boundary = d$boundary
+        ), "colour", \(theme) blimp_setting(theme, "data.color"), level = 2),
+        ggplot2::scale_fill_discrete(NULL, limits = lv, breaks = "Observed"),
+        ggplot2::scale_colour_discrete(NULL, limits = lv, breaks = "Imputed"),
+        if (!is.null(d$density)) list(
             themed(
                 ggplot2::geom_line(
-                    data = dens, stat = "density",
+                    data = d$density, stat = "density",
                     ggplot2::aes(x = value, group = imp, colour = ggplot2::from_theme(accent), linetype = "Combined"),
-                    bw = binwidth, inherit.aes = FALSE,
+                    bw = d$binwidth, inherit.aes = FALSE,
                     show.legend = c(linetype = TRUE, colour = FALSE)
                 ),
-                alpha = list(curve.alpha = 1 / length(completed)^(1 / 3))
-            ) +
+                alpha = list(curve.alpha = 1 / d$n_curves^(1 / 3))
+            ),
             ggplot2::scale_linetype_manual(NULL, values = c(Combined = "solid"))
-    }
-
-    p <- p + if (vals$kind == "mixed") {
-        ggplot2::guides(
-            fill = ggplot2::guide_legend(order = 1), colour = ggplot2::guide_legend(order = 2),
-            linetype = ggplot2::guide_legend(order = 3, override.aes = list(alpha = 1))
-        )
-    } else {
-        ggplot2::guides(fill = "none", colour = "none", linetype = "none")
-    }
-    if (force_integer) p <- p + discrete_x_scale(column_levels(model, variable))
-    # Density values are not read off the plot, so the y axis is not drawn
-    p +
-        ggplot2::scale_y_continuous(breaks = NULL) +
-        ggplot2::guides(y = "none") +
-        ggplot2::labs(title = title, x = title_var, y = NULL)
+        ),
+        if (d$mixed) {
+            ggplot2::guides(
+                fill = ggplot2::guide_legend(order = 1), colour = ggplot2::guide_legend(order = 2),
+                linetype = ggplot2::guide_legend(order = 3, override.aes = list(alpha = 1))
+            )
+        } else {
+            ggplot2::guides(fill = "none", colour = "none", linetype = "none")
+        },
+        if (d$discrete) discrete_x_scale(d$levels),
+        # Density values are not read off the plot, so the y axis is not drawn
+        ggplot2::scale_y_continuous(breaks = NULL),
+        ggplot2::guides(y = "none"),
+        ggplot2::labs(title = d$title, x = d$x_label, y = NULL)
+    )
 }
 
 #' Normal Q-Q plot of a variable in a [`blimp_obj`]
@@ -216,9 +226,17 @@ qq_plot <- function(model, variable, discrete_max_unique = 5L) {
         qq <- stats::qqnorm((x - center) / scale, plot.it = FALSE)
         data.frame(theoretical = qq$x, sample = qq$y)
     }))
-    lim <- max(abs(c(df$theoretical, df$sample)))
+    draw_qq(list(
+        points = df, lim = max(abs(c(df$theoretical, df$sample))), n_imps = length(completed),
+        title = sprintf("Normal Q-Q: %s", var_label(variable)), y_label = paste("Standardized", var_label(variable))
+    ))
+}
 
-    ggplot2::ggplot(df, ggplot2::aes(x = theoretical, y = sample)) +
+#' Internal function to draw the normal Q-Q plot from its plot data `d`
+#' The saved plot keeps this function's environment, so it is given only what it draws.
+#' @noRd
+draw_qq <- function(d) {
+    ggplot2::ggplot(d$points, ggplot2::aes(x = theoretical, y = sample)) +
         themed(
             ggplot2::geom_abline(
                 data = data.frame(slope = 1, intercept = 0),
@@ -227,13 +245,9 @@ qq_plot <- function(model, variable, discrete_max_unique = 5L) {
             ),
             colour = list(reference.color = "grey50")
         ) +
-        geom_point_mi(n_imps = length(completed)) +
-        ggplot2::coord_fixed(ratio = 1, xlim = c(-lim, lim), ylim = c(-lim, lim)) +
-        ggplot2::labs(
-            title = sprintf("Normal Q-Q: %s", var_label(variable)),
-            x = "Standard Normal Quantiles",
-            y = paste("Standardized", var_label(variable))
-        )
+        geom_point_mi(n_imps = d$n_imps) +
+        ggplot2::coord_fixed(ratio = 1, xlim = c(-d$lim, d$lim), ylim = c(-d$lim, d$lim)) +
+        ggplot2::labs(title = d$title, x = "Standard Normal Quantiles", y = d$y_label)
 }
 
 #' Internal function giving why a Q-Q plot is not drawn (NULL when it is)

@@ -88,13 +88,7 @@ probability_plot <- function(model, variable, x, discrete_max_unique = 10L) {
     }))))
     M <- length(imp_list)
 
-    p <- ggplot2::ggplot()
-    p <- if (single) {
-        p + geom_point_mi(data = long_df, ggplot2::aes(x = x, y = prob), n_imps = M)
-    } else {
-        p + geom_point_mi(data = long_df, ggplot2::aes(x = x, y = prob, colour = category, shape = category), n_imps = M)
-    }
-
+    cell <- curves <- NULL
     if (discrete) {
         # Category means at each level, within each imputation then averaged
         cm <- do.call(rbind, lapply(imp_list, \(d) do.call(rbind, lapply(seq_len(K), \(i) {
@@ -103,16 +97,6 @@ probability_plot <- function(model, variable, x, discrete_max_unique = 10L) {
             if (nrow(z)) stats::aggregate(prob ~ x + category, data = z, FUN = mean)
         }))))
         cell <- stats::aggregate(prob ~ x + category, data = cm, FUN = mean)
-        p <- if (single) {
-            p + ggplot2::geom_line(data = cell, ggplot2::aes(x = x, y = prob, colour = ggplot2::from_theme(accent),
-                    linewidth = ggplot2::from_theme(linewidth * curve_line_ratio))) +
-                summary_points(ggplot2::geom_point(data = cell, ggplot2::aes(x = x, y = prob, colour = ggplot2::from_theme(accent))))
-        } else {
-            p + ggplot2::geom_line(data = cell, ggplot2::aes(x = x, y = prob, colour = category, linetype = category,
-                    linewidth = ggplot2::from_theme(linewidth * curve_line_ratio))) +
-                summary_points(ggplot2::geom_point(data = cell, ggplot2::aes(x = x, y = prob, colour = category, shape = category)))
-        }
-        p <- p + discrete_x_scale(column_levels(model, col))
     } else {
         # Fit-then-pool loess for each category
         curves <- do.call(rbind, lapply(seq_len(K), \(i) {
@@ -120,33 +104,59 @@ probability_plot <- function(model, variable, x, discrete_max_unique = 10L) {
             if (nrow(cv)) cv$category <- factor(cats[i], levels = cats)
             cv
         }))
-        if (!is.null(curves) && nrow(curves)) {
-            p <- if (single) {
-                p + ggplot2::geom_line(data = curves, ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent),
-                        linewidth = ggplot2::from_theme(linewidth * curve_line_ratio)))
-            } else {
-                p + ggplot2::geom_line(data = curves, ggplot2::aes(x = x, y = y, colour = category, linetype = category,
-                        linewidth = ggplot2::from_theme(linewidth * curve_line_ratio)))
-            }
-        }
     }
+    draw_probability(list(
+        points = long_df, n_imps = M, single = single, discrete = discrete, cell = cell, curves = curves,
+        levels = if (discrete) column_levels(model, col),
+        title = sprintf("Predicted Probability vs. Predictor: %s ~ %s", variable, x), x_label = var_label(col),
+        legend_title = paste(variable, "Category")
+    ))
+}
 
-    p <- p + ggplot2::labs(
-        title = sprintf("Predicted Probability vs. Predictor: %s ~ %s", variable, x),
-        x = var_label(col), y = "Predicted Probability"
-    )
+#' Internal function to draw the predicted probability plot from its plot data `d`
+#' The saved plot keeps this function's environment, so it is given only what it draws.
+#' @noRd
+draw_probability <- function(d) {
+    single <- d$single
     # Marked so that scale_imputed() on a diagnostic_plots() list leaves it unchanged
-    p <- as_diagnostic_plot(p)
-    if (single) return(p)
-    legend_title <- paste(variable, "Category")
-    # Shapes and line types: the theme's discrete palettes, or a fixed set of seven
-    p +
-        ggplot2::discrete_scale(
-            "shape", palette = NULL, fallback.palette = \(n) c(16, 17, 15, 18, 4, 8, 3)[seq_len(n)]
-        ) +
-        ggplot2::discrete_scale(
-            "linetype", palette = NULL,
-            fallback.palette = \(n) c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash", "1F")[seq_len(n)]
-        ) +
-        ggplot2::labs(colour = legend_title, shape = legend_title, linetype = legend_title)
+    as_diagnostic_plot(ggplot2::ggplot() + list(
+        if (single) {
+            geom_point_mi(data = d$points, ggplot2::aes(x = x, y = prob), n_imps = d$n_imps)
+        } else {
+            geom_point_mi(data = d$points, ggplot2::aes(x = x, y = prob, colour = category, shape = category), n_imps = d$n_imps)
+        },
+        if (d$discrete) {
+            if (single) list(
+                ggplot2::geom_line(data = d$cell, ggplot2::aes(x = x, y = prob, colour = ggplot2::from_theme(accent),
+                    linewidth = ggplot2::from_theme(linewidth * curve_line_ratio))),
+                summary_points(ggplot2::geom_point(data = d$cell, ggplot2::aes(x = x, y = prob, colour = ggplot2::from_theme(accent)))),
+                discrete_x_scale(d$levels)
+            ) else list(
+                ggplot2::geom_line(data = d$cell, ggplot2::aes(x = x, y = prob, colour = category, linetype = category,
+                    linewidth = ggplot2::from_theme(linewidth * curve_line_ratio))),
+                summary_points(ggplot2::geom_point(data = d$cell, ggplot2::aes(x = x, y = prob, colour = category, shape = category))),
+                discrete_x_scale(d$levels)
+            )
+        } else if (!is.null(d$curves) && nrow(d$curves)) {
+            if (single) {
+                ggplot2::geom_line(data = d$curves, ggplot2::aes(x = x, y = y, colour = ggplot2::from_theme(accent),
+                    linewidth = ggplot2::from_theme(linewidth * curve_line_ratio)))
+            } else {
+                ggplot2::geom_line(data = d$curves, ggplot2::aes(x = x, y = y, colour = category, linetype = category,
+                    linewidth = ggplot2::from_theme(linewidth * curve_line_ratio)))
+            }
+        },
+        ggplot2::labs(title = d$title, x = d$x_label, y = "Predicted Probability"),
+        # Shapes and line types: the theme's discrete palettes, or a fixed set of seven
+        if (!single) list(
+            ggplot2::discrete_scale(
+                "shape", palette = NULL, fallback.palette = \(n) c(16, 17, 15, 18, 4, 8, 3)[seq_len(n)]
+            ),
+            ggplot2::discrete_scale(
+                "linetype", palette = NULL,
+                fallback.palette = \(n) c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash", "1F")[seq_len(n)]
+            ),
+            ggplot2::labs(colour = d$legend_title, shape = d$legend_title, linetype = d$legend_title)
+        )
+    ))
 }

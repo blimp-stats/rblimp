@@ -110,28 +110,33 @@ influence_plot <- function(
     refs <- refs[refs$measure %in% labels[measure], , drop = FALSE]
     refs$measure <- factor(refs$measure, levels = labels[measure])
 
-    plt <- ggplot2::ggplot(df, ggplot2::aes(x = case, y = value)) +
-        ref_hline(refs, dashed = TRUE) +
+    title <- if (length(measure) > 1) "Influence" else if (measure == "leverage") "Leverage" else "Cook's Distance"
+    draw_influence(list(
+        points = df, refs = refs, measures = labels[measure], max_labels = max_labels,
+        # The most extreme cases in each panel are labeled
+        cuts = c(Leverage = 3 * p / n, "Cook's D" = 4 / n),
+        title = sprintf("%s: %s", title, variable), y_label = if (length(measure) == 1) labels[[measure]] else NULL
+    ))
+}
+
+#' Internal function to draw the influence plot from its plot data `d`
+#' The saved plot keeps this function's environment, so it is given only what it draws.
+#' @noRd
+draw_influence <- function(d) {
+    as_diagnostic_plot(ggplot2::ggplot(d$points, ggplot2::aes(x = case, y = value)) + list(
+        ref_hline(d$refs, dashed = TRUE),
         themed(
             ggplot2::geom_text(
-                data = refs, ggplot2::aes(x = -Inf, y = yintercept, label = label),
+                data = d$refs, ggplot2::aes(x = -Inf, y = yintercept, label = label),
                 hjust = -0.1, vjust = -0.3, inherit.aes = FALSE
             ),
             colour = list(label.color = "black")
-        )
-    plt <- plt + status_points()
-
-    # Label the most extreme cases in each panel
-    cuts <- c(Leverage = 3 * p / n, "Cook's D" = 4 / n)
-    for (m in labels[measure]) {
-        plt <- plt + outlier_labels(df[df$measure == m, , drop = FALSE], "value", cuts[[m]], max_labels)
-    }
-
-    if (length(measure) > 1) plt <- plt + ggplot2::facet_wrap(~measure, ncol = 1, scales = "free_y")
-    title <- if (length(measure) > 1) "Influence" else if (measure == "leverage") "Leverage" else "Cook's Distance"
-    as_diagnostic_plot(plt) + ggplot2::labs(
-        title = sprintf("%s: %s", title, variable),
-        x = "Record Number",
-        y = if (length(measure) == 1) labels[[measure]] else NULL
-    )
+        ),
+        status_points(),
+        unname(lapply(d$measures, \(m) {
+            outlier_labels(d$points[d$points$measure == m, , drop = FALSE], "value", d$cuts[[m]], d$max_labels)
+        })),
+        if (length(d$measures) > 1) ggplot2::facet_wrap(~measure, ncol = 1, scales = "free_y"),
+        ggplot2::labs(title = d$title, x = "Record Number", y = d$y_label)
+    ))
 }
