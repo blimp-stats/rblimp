@@ -25,7 +25,7 @@
 #' @param discrete_max_unique an integer. A predictor with this many or fewer distinct values
 #'   in a completed dataset gets category means instead of a loess curve, even if it was not
 #'   declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical
-#'   columns always do, unless they are group-mean centered.
+#'   columns always do.
 #' @param bars `TRUE`, `FALSE`, or a number in (0, 1\]. With bars, each case is one point at
 #'   its mean residual across imputations, with a vertical bar covering the middle share of its
 #'   imputations: 95% for `TRUE`, that share for a number (`0.8` is the middle 80%), and the
@@ -64,7 +64,9 @@
 #'   saved at. There is no residual-vs-predicted plot.
 #' - **Level-2 residuals**: one value per cluster, against level-2 predictors or as an
 #'   index plot. In a clustered model, level-1 plots use within-cluster predictors only, and
-#'   predictors centered at their latent group mean are shown as within-cluster deviations.
+#'   continuous predictors centered at their latent group mean are shown as within-cluster
+#'   deviations. Group-mean centered ordinal and nominal predictors are shown on their own
+#'   values, because Blimp saves their group mean on the latent scale.
 #'
 #' With `se = TRUE`, each imputation's loess is evaluated with its standard error and the
 #' curves are pooled with Rubin's rules: \eqn{T = W + B + B/M}, and the band is
@@ -254,7 +256,10 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
         # Level-1 predictors are labeled by their model name; level-2 columns describe themselves
         x_label <- if (outcome$level == 1L) name else var_label(col)
         center_col <- paste0(name, ".mean[", outcome$cluster, "]")
-        centered <- outcome$level == 1L && name %in% groupmean && center_col %in% names(imp_list[[1]])
+        # Blimp saves an ordinal or nominal predictor's group mean on the latent scale, not
+        # the scale it centers with, so only continuous predictors are centered here
+        centered <- outcome$level == 1L && !is_declared && name %in% groupmean &&
+            center_col %in% names(imp_list[[1]])
         if (centered) {
             xfun <- \(d) d[[col]] - d[[center_col]]
             x_label <- paste0(name, " (group-mean centered)")
@@ -275,7 +280,7 @@ resid_vs_predictors <- function(model, imp_list, outcome, x, se, index_threshold
         list(
             name = x_label, xy_list = xy_list,
             # A group-mean centered predictor is judged by its centered (continuous) values
-            discrete = is_discrete(xfun(imp_list[[1]]), is_declared && !centered, max_unique),
+            discrete = is_discrete(xfun(imp_list[[1]]), is_declared, max_unique),
             levels = if (identical(x_label, name)) column_levels(model, col),
             bars = bars
         )

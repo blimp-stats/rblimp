@@ -45,7 +45,7 @@ residuals. Cases beyond the largest absolute value are labeled on the index plot
 \item{discrete_max_unique}{an integer. A predictor with this many or fewer distinct values
 in a completed dataset gets category means instead of a loess curve, even if it was not
 declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical
-columns always do, unless they are group-mean centered.}
+columns always do.}
 
 \item{bars}{\code{TRUE}, \code{FALSE}, or a number in (0, 1]. With bars, each case is one point at
 its mean residual across imputations, with a vertical bar covering the middle share of its
@@ -95,7 +95,9 @@ parameter. Each imputation uses the dispersion value from the MCMC iteration it 
 saved at. There is no residual-vs-predicted plot.
 \item \strong{Level-2 residuals}: one value per cluster, against level-2 predictors or as an
 index plot. In a clustered model, level-1 plots use within-cluster predictors only, and
-predictors centered at their latent group mean are shown as within-cluster deviations.
+continuous predictors centered at their latent group mean are shown as within-cluster
+deviations. Group-mean centered ordinal and nominal predictors are shown on their own
+values, because Blimp saves their group mean on the latent scale.
 }
 
 With \code{se = TRUE}, each imputation's loess is evaluated with its standard error and the
