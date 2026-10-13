@@ -63,7 +63,10 @@ Plots an outcome's residuals against its predicted values, a predictor, the case
 Every quantity is computed within each imputed data set and then pooled; nothing is
 computed on an average of the imputations, because averaging an imputed predictor and
 the residual together induces a spurious association between them. The loess curve is
-fit within each imputation and the curves averaged.
+fit within each imputation over that imputation's full range of x, and the curves are
+averaged point by point, so every imputation counts along the whole curve. The subtitle
+gives the number of imputations averaged; an imputation whose loess cannot be fit is left
+out.
 
 With \code{bars} (the default), the index plot and plots against a predictor show one point
 per case at its mean residual, with a vertical bar showing how much the residual changes

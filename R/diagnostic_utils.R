@@ -59,11 +59,10 @@ curve_line_ratio <- 2
 observed_ink_mix <- 0.35
 # Share of the imputations covered by a case's bar when `bars = TRUE`
 bar_level_default <- 0.95
-# Loess curves are fit with this span and evaluated at this many points, spread between
-# the `loess_grid_trim` and 1 - `loess_grid_trim` quantiles of x
+# Loess curves are fit with this span and evaluated at this many evenly spaced points
+# across each imputation's range of x
 loess_span <- 0.75
 loess_grid_size <- 200
-loess_grid_trim <- 0.01
 # An imputation gets a loess curve only with at least this many cases and distinct x values
 loess_min_cases <- 10
 loess_min_x_values <- 4
@@ -507,39 +506,53 @@ summary_points <- function(layer, shape = NULL) {
 }
 
 #' Internal function for a fit-then-pool loess curve
-#' Fits a loess within each imputation, evaluates every fit on one common grid
-#' (trimmed to the 1-99% quantiles), and averages the curves. With `se = TRUE`,
-#' adds 95% pointwise bands pooled with Rubin's rules.
+#' Fits a loess within each imputation and evaluates it at evenly spaced points across
+#' that imputation's range of x. The curves are averaged point by point (the k-th point
+#' of every curve together), so every imputation counts along the whole curve even when
+#' x shifts between imputations. With `se = TRUE`, adds 95% pointwise bands pooled with
+#' Rubin's rules. The `n_imps` attribute is the number of imputations averaged.
 #' @noRd
 pooled_loess <- function(xy_list, se = FALSE) {
-    allx <- unlist(lapply(xy_list, \(d) d$x), use.names = FALSE)
-    allx <- allx[is.finite(allx)]
-    if (length(allx) < 2) return(data.frame(x = numeric(0), y = numeric(0), lower = numeric(0), upper = numeric(0)))
-    rng <- stats::quantile(allx, c(loess_grid_trim, 1 - loess_grid_trim))
-    grid <- seq(rng[1], rng[2], length.out = loess_grid_size)
     fits <- lapply(xy_list, \(d) {
         d <- d[is.finite(d$x) & is.finite(d$y), ]
         if (nrow(d) < loess_min_cases || length(unique(d$x)) < loess_min_x_values) return(NULL)
-        fit <- tryCatch(suppressWarnings(stats::loess(y ~ x, d, span = loess_span)), error = \(e) NULL)
-        if (is.null(fit)) return(NULL)
-        suppressWarnings(stats::predict(fit, newdata = data.frame(x = grid), se = se))
+        grid <- seq(min(d$x), max(d$x), length.out = loess_grid_size)
+        # An imputation whose loess fails to fit or to evaluate is skipped
+        p <- tryCatch(suppressWarnings(stats::predict(
+            stats::loess(y ~ x, d, span = loess_span), newdata = data.frame(x = grid), se = se
+        )), error = \(e) NULL)
+        if (is.null(p)) return(NULL)
+        if (se) list(x = grid, fit = p$fit, se = p$se.fit) else list(x = grid, fit = p)
     })
     fits <- Filter(Negate(is.null), fits)
-    if (!length(fits)) return(data.frame(x = numeric(0), y = numeric(0), lower = numeric(0), upper = numeric(0)))
-    f <- vapply(fits, \(p) if (se) p$fit else p, numeric(loess_grid_size))
-    f <- matrix(f, nrow = loess_grid_size)
-    # Only where every imputation's curve is defined (loess does not extrapolate),
-    # so the average never jumps as imputations drop out near the edges
-    out <- data.frame(x = grid, y = rowMeans(f), lower = NA_real_, upper = NA_real_)
+    if (!length(fits)) {
+        return(structure(data.frame(x = numeric(0), y = numeric(0), lower = numeric(0), upper = numeric(0)), n_imps = 0L))
+    }
+    by_point <- \(part) vapply(fits, \(p) p[[part]], numeric(loess_grid_size))
+    f <- by_point("fit")
+    out <- data.frame(x = rowMeans(by_point("x")), y = rowMeans(f), lower = NA_real_, upper = NA_real_)
     if (se) {
         M <- ncol(f)
-        W <- rowMeans(matrix(vapply(fits, \(p) p$se.fit^2, numeric(loess_grid_size)), nrow = loess_grid_size))
+        W <- rowMeans(by_point("se")^2)
         B <- if (M > 1) apply(f, 1, stats::var) else 0
         total <- W + B + B / M
         out$lower <- out$y - 1.96 * sqrt(total)
         out$upper <- out$y + 1.96 * sqrt(total)
     }
-    out[is.finite(out$y), , drop = FALSE]
+    # Drops any point where a fit returned NaN
+    structure(out[is.finite(out$y), , drop = FALSE], n_imps = length(fits))
+}
+
+#' Internal function for the subtitle of a plot with pooled loess curves
+#' `curves` is a list of `pooled_loess()` results (NULL entries are ignored). Returns
+#' "Averaged over M imputations", with M the number the drawn curves average (a range if
+#' they differ), or NULL when no curve is drawn.
+#' @noRd
+curve_subtitle <- function(curves) {
+    n <- unlist(lapply(curves, \(cv) if (NROW(cv)) attr(cv, "n_imps")))
+    if (!length(n)) return(NULL)
+    count <- if (min(n) == max(n)) min(n) else paste(min(n), "to", max(n))
+    paste("Averaged over", count, if (max(n) == 1) "imputation" else "imputations")
 }
 
 # Plot pieces =================================================================

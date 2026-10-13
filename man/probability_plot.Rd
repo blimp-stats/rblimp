@@ -30,6 +30,7 @@ non-reference categories for a nominal outcome. Points stack all imputations. Fo
 continuous predictor, each category gets a loess curve fit within each imputation and
 averaged; for a discrete predictor (see \code{discrete_max_unique}), each category gets its mean
 probability at each level. Factor and character predictors are labeled by category name.
+With curves, the subtitle gives the number of imputations averaged, as in \code{\link{residual_plot}}.
 
 Categories are distinguished by colour, point shape, and line type, so the plot also reads
 in greyscale. These come from the theme's discrete palettes (\code{palette.colour.discrete},

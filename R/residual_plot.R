@@ -35,7 +35,10 @@
 #' Every quantity is computed within each imputed data set and then pooled; nothing is
 #' computed on an average of the imputations, because averaging an imputed predictor and
 #' the residual together induces a spurious association between them. The loess curve is
-#' fit within each imputation and the curves averaged.
+#' fit within each imputation over that imputation's full range of x, and the curves are
+#' averaged point by point, so every imputation counts along the whole curve. The subtitle
+#' gives the number of imputations averaged; an imputation whose loess cannot be fit is left
+#' out.
 #'
 #' With `bars` (the default), the index plot and plots against a predictor show one point
 #' per case at its mean residual, with a vertical bar showing how much the residual changes
@@ -379,6 +382,7 @@ scatter_panels <- function(panels, se, thresholds, title, x_label, y_label, bar_
     draw_scatter(list(
         points = pts, cloud = if (nrow(cloud)) cloud, bars = if (length(bars) && nrow(bars)) bars,
         summaries = summaries, se = se, n_imps = M, thresholds = thresholds,
+        subtitle = curve_subtitle(lapply(summaries, \(s) s$curve)),
         facet = length(panels) > 1,
         discrete = length(panels) == 1 && panels[[1]]$discrete, levels = panels[[1]]$levels,
         categories = if (length(panels) == 1 && panels[[1]]$discrete) category_values(lapply(panels[[1]]$xy_list, \(d) d$x)),
@@ -404,7 +408,8 @@ draw_scatter <- function(d) {
             curve_layers(s$curve, d$se)
         }),
         if (d$facet) ggplot2::facet_wrap(~predictor, scales = "free_x") else if (d$discrete) discrete_x_scale(d$levels, d$categories),
-        ggplot2::labs(title = d$title, x = d$x_label, y = d$y_label)
+        ggplot2::labs(title = d$title, x = d$x_label, y = d$y_label),
+        if (!is.null(d$subtitle)) ggplot2::labs(subtitle = d$subtitle)
     )
 }
 
@@ -642,6 +647,7 @@ binned_plot <- function(imp_list, outcome, x, discrete = logical(0), levels = li
         discrete = discrete_x, levels = if (discrete_x) levels[[x]],
         categories = if (discrete_x) category_values(lapply(imp_list, \(d) d[[x]])),
         title = sprintf(if (by_pred) "Binned Residual vs. Predicted: %s" else "Binned Residual vs. Predictor: %s", outcome$name),
+        subtitle = curve_subtitle(curves),
         x_label = if (n_x == 1) bins$predictor[1] else NULL
     ))
 }
@@ -662,6 +668,7 @@ draw_binned <- function(d) {
             ggplot2::facet_wrap(~predictor, scales = "free_x")
         },
         if (d$discrete) discrete_x_scale(d$levels, d$categories),
-        ggplot2::labs(title = d$title, x = d$x_label, y = "Mean Residual")
+        ggplot2::labs(title = d$title, x = d$x_label, y = "Mean Residual"),
+        if (!is.null(d$subtitle)) ggplot2::labs(subtitle = d$subtitle)
     )
 }

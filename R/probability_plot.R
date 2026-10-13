@@ -17,6 +17,7 @@
 #' continuous predictor, each category gets a loess curve fit within each imputation and
 #' averaged; for a discrete predictor (see `discrete_max_unique`), each category gets its mean
 #' probability at each level. Factor and character predictors are labeled by category name.
+#' With curves, the subtitle gives the number of imputations averaged, as in [`residual_plot`].
 #'
 #' Categories are distinguished by colour, point shape, and line type, so the plot also reads
 #' in greyscale. These come from the theme's discrete palettes (`palette.colour.discrete`,
@@ -88,7 +89,7 @@ probability_plot <- function(model, variable, x, discrete_max_unique = 10L) {
     }))))
     M <- length(imp_list)
 
-    cell <- curves <- NULL
+    cell <- curves <- subtitle <- NULL
     if (discrete) {
         # Category means at each level, within each imputation then averaged
         cm <- do.call(rbind, lapply(imp_list, \(d) do.call(rbind, lapply(seq_len(K), \(i) {
@@ -99,17 +100,20 @@ probability_plot <- function(model, variable, x, discrete_max_unique = 10L) {
         cell <- stats::aggregate(prob ~ x + category, data = cm, FUN = mean)
     } else {
         # Fit-then-pool loess for each category
-        curves <- do.call(rbind, lapply(seq_len(K), \(i) {
+        cvs <- lapply(seq_len(K), \(i) {
             cv <- pooled_loess(lapply(imp_list, \(d) data.frame(x = d[[col]], y = d[[prob_cols[i]]])))
             if (nrow(cv)) cv$category <- factor(cats[i], levels = cats)
             cv
-        }))
+        })
+        curves <- do.call(rbind, cvs)
+        subtitle <- curve_subtitle(cvs)
     }
     draw_probability(list(
         points = long_df, n_imps = M, single = single, discrete = discrete, cell = cell, curves = curves,
         levels = if (discrete) column_levels(model, col),
         categories = if (discrete) category_values(lapply(imp_list, \(d) d[[col]])),
-        title = sprintf("Predicted Probability vs. Predictor: %s ~ %s", variable, x), x_label = var_label(col),
+        title = sprintf("Predicted Probability vs. Predictor: %s ~ %s", variable, x), subtitle = subtitle,
+        x_label = var_label(col),
         legend_title = paste(variable, "Category")
     ))
 }
@@ -148,6 +152,7 @@ draw_probability <- function(d) {
             }
         },
         ggplot2::labs(title = d$title, x = d$x_label, y = "Predicted Probability"),
+        if (!is.null(d$subtitle)) ggplot2::labs(subtitle = d$subtitle),
         # Shapes and line types: the theme's discrete palettes, or a fixed set of seven
         if (!single) list(
             ggplot2::discrete_scale(
