@@ -59,8 +59,8 @@ curve_line_ratio <- 2
 observed_ink_mix <- 0.35
 # Share of the imputations covered by a case's bar when `bars = TRUE`
 bar_level_default <- 0.95
-# Loess curves are fit with this span and evaluated at this many evenly spaced points
-# across each imputation's range of x
+# Loess curves are fit with this span and evaluated at this many of each imputation's own
+# x values, evenly spaced in rank from its smallest to its largest
 loess_span <- 0.75
 loess_grid_size <- 200
 # An imputation gets a loess curve only with at least this many cases and distinct x values
@@ -506,17 +506,18 @@ summary_points <- function(layer, shape = NULL) {
 }
 
 #' Internal function for a fit-then-pool loess curve
-#' Fits a loess within each imputation and evaluates it at evenly spaced points across
-#' that imputation's range of x. The curves are averaged point by point (the k-th point
-#' of every curve together), so every imputation counts along the whole curve even when
-#' x shifts between imputations. With `se = TRUE`, adds 95% pointwise bands pooled with
-#' Rubin's rules. The `n_imps` attribute is the number of imputations averaged.
+#' Fits a loess within each imputation and evaluates it at that imputation's own x values,
+#' evenly spaced in rank, so no curve is evaluated in a gap where its imputation has no
+#' data. The curves are averaged point by point (the k-th point of every curve together),
+#' so every imputation counts along the whole curve even when x shifts between imputations.
+#' With `se = TRUE`, adds 95% pointwise bands pooled with Rubin's rules. The `n_imps`
+#' attribute is the number of imputations averaged.
 #' @noRd
 pooled_loess <- function(xy_list, se = FALSE) {
     fits <- lapply(xy_list, \(d) {
         d <- d[is.finite(d$x) & is.finite(d$y), ]
         if (nrow(d) < loess_min_cases || length(unique(d$x)) < loess_min_x_values) return(NULL)
-        grid <- seq(min(d$x), max(d$x), length.out = loess_grid_size)
+        grid <- sort(d$x)[round(seq(1, nrow(d), length.out = loess_grid_size))]
         # An imputation whose loess fails to fit or to evaluate is skipped
         p <- tryCatch(suppressWarnings(stats::predict(
             stats::loess(y ~ x, d, span = loess_span), newdata = data.frame(x = grid), se = se
