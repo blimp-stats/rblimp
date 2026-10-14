@@ -82,7 +82,7 @@
 #' - [`standardized`] - Extract standardized parameters only
 #' - [`compare`] - Compare models
 #'
-#' **Visualization:**
+#' **Visualization** (see [`rblimp_plots`] for an overview):
 #'
 #' - [`trace_plot`] - MCMC trace plots
 #' - [`posterior_plot`] - Posterior density plots

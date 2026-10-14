@@ -91,7 +91,7 @@ For system installs, this launches the Blimp Updater application.
 \item \code{\link{compare}} - Compare models
 }
 
-\strong{Visualization:}
+\strong{Visualization} (see \code{\link{rblimp_plots}} for an overview):
 \itemize{
 \item \code{\link{trace_plot}} - MCMC trace plots
 \item \code{\link{posterior_plot}} - Posterior density plots
