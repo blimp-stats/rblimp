@@ -14,7 +14,8 @@ R interface to Blimp for Bayesian latent variable modeling, missing data analysi
 - **Flexible Model Specification**: Use R formula syntax or raw Blimp syntax
 - **Multiple Imputation**: Built-in support for Fully Conditional Specification (FCS)
 - **Convergence Diagnostics**: PSR values, trace plots, and posterior distributions
-- **Visualization Tools**: Residual plots, simple slopes, Johnson-Neyman regions
+- **Model Diagnostics**: Distributions of observed and imputed values, residual, influence (leverage and Cook's distance), and predicted-probability plots, built from every imputation
+- **Visualization Tools**: Simple slopes, Johnson-Neyman regions and maps, all styled with any ggplot2 theme
 - **Integration**: Convert results to `mitml` format for pooling analyses
 - **Data Simulation**: Generate simulated datasets for power analysis and methods research
 - **Special Variable Types**: Support for binary, ordinal, nominal, and count outcomes
@@ -117,7 +118,8 @@ model <- rblimp(
   ),
   mydata,
   seed = 3927,
-  latent = ~ f
+  latent = ~ f,
+  nimps = 20    # save imputations for the diagnostic plots
 )
 
 # View results
@@ -125,7 +127,13 @@ summary(model)
 
 # Check convergence
 trace_plot(model)
+
+# Check the imputations and the model
+distribution_plots(model)
+diagnostic_plots(model)
 ```
+
+See `?rblimp_plots` for styling and saving plots.
 
 ## Resources
 

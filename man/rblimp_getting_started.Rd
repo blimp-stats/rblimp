@@ -89,9 +89,10 @@ For system installs, this launches the Blimp Updater application.
 \item \code{\link{output}} - Raw Blimp output
 \item \code{\link{standardized}} - Extract standardized parameters only
 \item \code{\link{compare}} - Compare models
+\item \code{\link{simple_effects}} - Conditional effects from the \code{SIMPLE} command
 }
 
-\strong{Visualization} (see \code{\link{rblimp_plots}} for an overview):
+\strong{Visualization} (see \code{\link{rblimp_plots}} for styling and saving plots):
 \itemize{
 \item \code{\link{trace_plot}} - MCMC trace plots
 \item \code{\link{posterior_plot}} - Posterior density plots
@@ -104,7 +105,10 @@ For system installs, this launches the Blimp Updater application.
 \item \code{\link{distribution_plots}} - Every applicable distribution plot
 \item \code{\link{theme_blimp}} - A ready-made theme for rblimp plots
 \item \code{\link{blimp_style}} - Theme settings for rblimp plots
+\item \code{\link{scale_imputed}} - Mark imputed values in diagnostic plots
 \item \code{\link{jn_plot}} - Johnson-Neyman plots
+\item \code{\link{jn_plot_func}} - Johnson-Neyman plots for a function of the parameters
+\item \code{\link{jn_map}} - Johnson-Neyman map for a three-way interaction
 \item \code{\link{simple_plot}} - Simple slopes plots
 \item \code{\link{model_table}} - Publication tables
 }

@@ -81,8 +81,9 @@
 #' - [`output`] - Raw Blimp output
 #' - [`standardized`] - Extract standardized parameters only
 #' - [`compare`] - Compare models
+#' - [`simple_effects`] - Conditional effects from the `SIMPLE` command
 #'
-#' **Visualization** (see [`rblimp_plots`] for an overview):
+#' **Visualization** (see [`rblimp_plots`] for styling and saving plots):
 #'
 #' - [`trace_plot`] - MCMC trace plots
 #' - [`posterior_plot`] - Posterior density plots
@@ -95,7 +96,10 @@
 #' - [`distribution_plots`] - Every applicable distribution plot
 #' - [`theme_blimp`] - A ready-made theme for rblimp plots
 #' - [`blimp_style`] - Theme settings for rblimp plots
+#' - [`scale_imputed`] - Mark imputed values in diagnostic plots
 #' - [`jn_plot`] - Johnson-Neyman plots
+#' - [`jn_plot_func`] - Johnson-Neyman plots for a function of the parameters
+#' - [`jn_map`] - Johnson-Neyman map for a three-way interaction
 #' - [`simple_plot`] - Simple slopes plots
 #' - [`model_table`] - Publication tables
 #'
