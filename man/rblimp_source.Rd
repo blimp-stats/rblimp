@@ -4,13 +4,7 @@
 \alias{rblimp_source}
 \title{Runs an 'imp' file with Blimp}
 \usage{
-rblimp_source(
-  file,
-  plots = FALSE,
-  output = TRUE,
-  nopowershell = FALSE,
-  influence = FALSE
-)
+rblimp_source(file, plots = FALSE, output = TRUE, nopowershell = FALSE)
 }
 \arguments{
 \item{file}{a character string to the 'imp' file's location}
@@ -22,10 +16,6 @@ rblimp_source(
 suppresses all output to console, and \code{'all'} prints all output to console.}
 
 \item{nopowershell}{Windows only. Uses cmd.exe with some limited functions (instead of powershell).}
-
-\item{influence}{a logical value. Setting to \code{TRUE} will have Blimp write \code{influence.csv}
-(leverage, Cook's distance, and residual variance) into the folder containing \code{file}.
-Requires a version of Blimp that supports influence output.}
 }
 \value{
 a \code{blimp_out} object
@@ -34,6 +24,9 @@ a \code{blimp_out} object
 This function runs 'imp' file with Blimp and captures the output only.
 }
 \details{
+If the installed version of Blimp supports it, Blimp also writes \code{influence.csv} (leverage,
+Cook's distance, and residual variance) into the folder containing \code{file}.
+
 Running \code{rblimp_source} will also run a check to see if Blimp is up to date.
 If Blimp is not up to date, it will prompt the user if it would like to update or not.
 This check will only be performed on the first run in a session and then every ten hours.

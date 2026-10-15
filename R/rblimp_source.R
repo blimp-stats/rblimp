@@ -7,11 +7,11 @@
 #' `'iteration'` or logical `TRUE` is only iteration history, `'none'` or logical `FALSE`
 #' suppresses all output to console, and `'all'` prints all output to console.
 #' @param nopowershell Windows only. Uses cmd.exe with some limited functions (instead of powershell).
-#' @param influence a logical value. Setting to `TRUE` will have Blimp write `influence.csv`
-#' (leverage, Cook's distance, and residual variance) into the folder containing `file`.
-#' Requires a version of Blimp that supports influence output.
 #' @returns a `blimp_out` object
 #' @details
+#' If the installed version of Blimp supports it, Blimp also writes `influence.csv` (leverage,
+#' Cook's distance, and residual variance) into the folder containing `file`.
+#'
 #' Running `rblimp_source` will also run a check to see if Blimp is up to date.
 #' If Blimp is not up to date, it will prompt the user if it would like to update or not.
 #' This check will only be performed on the first run in a session and then every ten hours.
@@ -26,8 +26,7 @@ rblimp_source <- function(
         file,
         plots = FALSE,
         output = TRUE,
-        nopowershell = FALSE,
-        influence = FALSE) {
+        nopowershell = FALSE) {
 
     # Check blimp update (gated by option AND env var)
     if (update_check_enabled()) {
@@ -40,8 +39,8 @@ rblimp_source <- function(
     # Establish blimp exec
     blimp_path <- detect_blimp()
 
-    # Check Blimp supports influence output
-    if (influence) check_influence_support()
+    # Write influence values when Blimp supports them
+    influence <- influence_supported()
 
     # Preprocess path for non-unix (assumes windows)
     if (.Platform$OS.type != "unix") {

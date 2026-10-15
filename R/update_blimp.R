@@ -83,20 +83,13 @@ blimp_version <- function() {
 #' @noRd
 influence_min_version <- "4.1.0"
 
-#' Internal: error if the installed Blimp is too old for `--influence`
-#' Skips the check if either version is unknown.
+#' Internal: TRUE unless the installed Blimp is known to be too old for `--influence`
 #' @noRd
-check_influence_support <- function() {
-    if (is.na(influence_min_version)) return(invisible(TRUE))
+influence_supported <- function() {
+    if (is.na(influence_min_version)) return(TRUE)
     cur <- blimp_version()
-    if (anyNA(cur)) return(invisible(TRUE))
-    if (version_less(cur, parse_version_string(influence_min_version))) {
-        throw_error(c(
-            "{.arg influence} requires Blimp {influence_min_version} or later.",
-            "i" = "Installed version: {paste(cur, collapse = '.')}. Update with {.code update_blimp()}."
-        ))
-    }
-    invisible(TRUE)
+    if (anyNA(cur)) return(TRUE)
+    !version_less(cur, parse_version_string(influence_min_version))
 }
 
 #' Internal: latest Blimp version from the manifest

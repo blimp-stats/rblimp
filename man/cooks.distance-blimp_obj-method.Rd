@@ -7,7 +7,7 @@
 \S4method{cooks.distance}{blimp_obj}(model, ...)
 }
 \arguments{
-\item{model}{A \code{blimp_obj} object fit with \code{influence = TRUE}}
+\item{model}{A \code{blimp_obj} object}
 
 \item{...}{Additional arguments (unused)}
 }

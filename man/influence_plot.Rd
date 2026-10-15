@@ -12,7 +12,7 @@ influence_plot(
 )
 }
 \arguments{
-\item{model}{a \code{\link{blimp_obj}} fit with \code{influence = TRUE}.}
+\item{model}{a \code{\link{blimp_obj}}.}
 
 \item{variable}{a character string naming one outcome.}
 
@@ -26,7 +26,7 @@ a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
 }
 \description{
 Index plots of the leverage and Cook's distance values Blimp computes for an outcome.
-The model must be fit with \code{influence = TRUE} (see \code{\link{rblimp}}).
+Requires a version of Blimp that supports influence output.
 }
 \details{
 Blimp computes leverage and Cook's distance at every post burn-in iteration, from the
@@ -69,8 +69,7 @@ m1 <- rblimp(
     nimps = 10,
     seed = 10972,
     burn = 1000,
-    iter = 1000,
-    influence = TRUE
+    iter = 1000
 )
 
 # Leverage and Cook's distance

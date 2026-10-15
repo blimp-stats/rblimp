@@ -69,8 +69,8 @@ The plots for each outcome depend on its type:\tabular{ll}{
 }
 
 
-Leverage and Cook's distance require fitting the model with \code{influence = TRUE}; without
-them, every other plot is drawn and a warning says how to add them.
+Leverage and Cook's distance require Blimp 4.1.0 or later; without them, every other plot
+is drawn and a warning says so.
 
 Element names are for browsing. To build a specific figure, call the single-plot
 function directly, e.g. \code{residual_plot(model, "y", x = "x1")}.

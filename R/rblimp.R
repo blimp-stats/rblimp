@@ -44,10 +44,6 @@
 #' `'iteration'` or logical `TRUE` is only iteration history, `'none'` or logical `FALSE`
 #' suppresses all output to console, and `'all'` prints all output to console.
 #' @param nopowershell Windows only. Uses cmd.exe with some limited functions (instead of powershell).
-#' @param influence a logical value. If `TRUE`, Blimp computes leverage, Cook's distance, and the residual
-#' variance for each eligible outcome (single-level continuous and ordinal probit outcomes), averaged over
-#' every post burn-in iteration. The values are stored as the `"influence"` attribute of the `average_imp` slot,
-#' e.g., `attr(model@average_imp, "influence")`. Requires a version of Blimp that supports influence output.
 #' @details
 #' The above functions require knowledge of specifying Blimp commands. Blimp's syntax commands are
 #' documented in the \href{https://docs.blimpstats.com}{Blimp User Manual}
@@ -139,13 +135,9 @@ rblimp <- function(model,
                    tmpfolder,
                    add_save = TRUE,
                    print_output = TRUE,
-                   nopowershell = FALSE,
-                   influence = FALSE) {
+                   nopowershell = FALSE) {
 
     # Check inputs
-    if (!is.logical(influence) || length(influence) != 1 || is.na(influence)) throw_error(
-        "{.arg influence} must be a single logical value"
-    )
     if (length(burn) != 1 || !is.numeric(burn) || burn < 0) throw_error(
         "{.arg burn} must be a positive numeric value"
     )
@@ -264,6 +256,7 @@ rblimp <- function(model,
         }
     }
     # Ensure variables names always saved
+    if (missing(options)) options <- NULL
     options <- c(options, "saveVariableNames")
 
     # Write input file
@@ -314,8 +307,7 @@ rblimp <- function(model,
         file.path(tmpfolder, "input.imp"),
         plots = TRUE,
         print_output,
-        nopowershell,
-        influence = influence
+        nopowershell
     )
     exitcode <- attr(result, "exitcode")
 
@@ -705,6 +697,7 @@ rblimp <- function(model,
     }
 
     # Get influence values (per case, averaged over the same iterations as average_imp)
+    # Written whenever the installed Blimp supports it
     influence_values <- read_influence(file.path(tmpfolder, "influence.csv"))
     if (NROW(influence_values) > 0) attr(output$average_imp, "influence") <- influence_values
 

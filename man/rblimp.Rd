@@ -36,8 +36,7 @@ rblimp(
   tmpfolder,
   add_save = TRUE,
   print_output = TRUE,
-  nopowershell = FALSE,
-  influence = FALSE
+  nopowershell = FALSE
 )
 
 rblimp_fcs(
@@ -161,11 +160,6 @@ Missing elements will be defaulted to \code{TRUE}.}
 suppresses all output to console, and \code{'all'} prints all output to console.}
 
 \item{nopowershell}{Windows only. Uses cmd.exe with some limited functions (instead of powershell).}
-
-\item{influence}{a logical value. If \code{TRUE}, Blimp computes leverage, Cook's distance, and the residual
-variance for each eligible outcome (single-level continuous and ordinal probit outcomes), averaged over
-every post burn-in iteration. The values are stored as the \code{"influence"} attribute of the \code{average_imp} slot,
-e.g., \code{attr(model@average_imp, "influence")}. Requires a version of Blimp that supports influence output.}
 
 \item{variables}{list of variables to be included in FCS procedure}
 

@@ -36,8 +36,8 @@
 #' | Count | `<dv>.index`, `<dv>.<predictor>` (Pearson residuals) |
 #' | Level-2 residual or latent | `<name>.index`, `<name>.<level-2 predictor>` |
 #'
-#' Leverage and Cook's distance require fitting the model with `influence = TRUE`; without
-#' them, every other plot is drawn and a warning says how to add them.
+#' Leverage and Cook's distance require Blimp 4.1.0 or later; without them, every other plot
+#' is drawn and a warning says so.
 #'
 #' Element names are for browsing. To build a specific figure, call the single-plot
 #' function directly, e.g. `residual_plot(model, "y", x = "x1")`.
@@ -162,7 +162,7 @@ diagnostic_plots <- function(model, selector, discrete_max_unique = 10L, bars = 
     single_level <- Filter(\(o) o$level == 1L && o$type %in% c("continuous", "ordinal") && is.na(o$cluster), outcomes)
     if (is.null(inf) && length(single_level)) cli::cli_warn(c(
         "Leverage and Cook's distance plots are not included.",
-        "i" = "Refit with {.code influence = TRUE} to add them."
+        "i" = "They require Blimp {influence_min_version} or later."
     ))
     if (length(skipped)) cli::cli_inform(c("Not plotted:", stats::setNames(skipped, rep("*", length(skipped)))))
 

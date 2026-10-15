@@ -13,7 +13,7 @@
 #       - point clouds stack all M imputations (alpha scaled by M^(-1/3));
 #       - smoothers and binned summaries are fit within each imputation and the
 #         M results are averaged;
-#       - leverage and Cook's D come from Blimp (`influence = TRUE`), averaged
+#       - leverage and Cook's D come from Blimp (`--influence`), averaged
 #         over every post burn-in iteration.
 #   * One pooled residual scale per outcome: sqrt of the average of the
 #     per-imputation residual variances, or the per-case model-implied SD when a

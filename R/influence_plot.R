@@ -3,8 +3,8 @@
 #' Leverage and Cook's distance plots for an outcome in a [`blimp_obj`]
 #' @description
 #' Index plots of the leverage and Cook's distance values Blimp computes for an outcome.
-#' The model must be fit with `influence = TRUE` (see [`rblimp`]).
-#' @param model a [`blimp_obj`] fit with `influence = TRUE`.
+#' Requires a version of Blimp that supports influence output.
+#' @param model a [`blimp_obj`].
 #' @param variable a character string naming one outcome.
 #' @param measure which values to plot: `"leverage"`, `"cooks"`, or both (the default), which
 #'   are drawn as two panels.
@@ -51,8 +51,7 @@
 #'     nimps = 10,
 #'     seed = 10972,
 #'     burn = 1000,
-#'     iter = 1000,
-#'     influence = TRUE
+#'     iter = 1000
 #' )
 #'
 #' # Leverage and Cook's distance
