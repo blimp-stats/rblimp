@@ -69,6 +69,8 @@ The plots for each outcome depend on its type:\tabular{ll}{
 }
 
 
+The missingness indicators a DROPOUT command creates are binary ordinal outcomes.
+
 Leverage and Cook's distance require Blimp 4.1.0 or later; without them, every other plot
 is drawn and a warning says so.
 

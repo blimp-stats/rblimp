@@ -24,7 +24,7 @@
 #' @param max_labels an integer. The maximum number of cases labeled on an index plot.
 #' @param discrete_max_unique an integer. A predictor with this many or fewer distinct values
 #'   in a completed dataset gets category means instead of a loess curve, even if it was not
-#'   declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical
+#'   declared ORDINAL, NOMINAL, or COUNT. Declared predictors, the TIMEID variable, and factor, character, and logical
 #'   columns always do.
 #' @param bars `TRUE`, `FALSE`, or a number in (0, 1\]. With bars, each case is one point at
 #'   its mean residual across imputations, with a vertical bar covering the middle share of its

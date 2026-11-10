@@ -102,11 +102,18 @@ check_variable_arg <- function(variable, plural) {
 # Syntax information ==========================================================
 
 #' Internal function to obtain declared ORDINAL, NOMINAL, or COUNT variables
-#' Expands ranges such as `dep1:dep7`.
+#' Expands ranges such as `dep1:dep7`. The binary indicators a DROPOUT command creates
+#' (the names left of `=`, as in `m = y (missing)`) count as ordinal. The TIMEID variable
+#' counts as discrete: its occasions are categories, however many there are.
 #' @noRd
-diag_discrete_vars <- function(model, types = c("ordinal", "nominal", "count")) {
+diag_discrete_vars <- function(model, types = c("ordinal", "nominal", "count", "timeid")) {
     sx <- model@syntax
     pieces <- unlist(lapply(types, \(t) if (t %in% names(sx)) as.character(sx[[t]])), use.names = FALSE)
+    if ("ordinal" %in% types && "dropout" %in% names(sx)) {
+        cmds <- unlist(strsplit(paste(as.character(sx$dropout), collapse = ";"), "[;\n]"), use.names = FALSE)
+        cmds <- cmds[grepl("=", cmds, fixed = TRUE)]
+        pieces <- c(pieces, sub("=.*$", "", cmds))
+    }
     pieces <- pieces[!is.na(pieces)]
     if (!length(pieces)) return(character(0))
     toks <- unlist(strsplit(gsub("[;,]", " ", paste(pieces, collapse = " ")), "\\s+"), use.names = FALSE)

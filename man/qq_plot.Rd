@@ -15,7 +15,7 @@ a model-implied quantity (e.g., \code{"y.residual"}, \code{"f.latent"}, \code{"y
 
 \item{discrete_max_unique}{an integer. A variable with this many or fewer distinct values
 in a completed dataset is treated as discrete (no density curves or Q-Q plot, integer
-axis ticks) even if it was not declared ORDINAL, NOMINAL, or COUNT. Declared variables
+axis ticks) even if it was not declared ORDINAL, NOMINAL, or COUNT. Declared variables, the TIMEID variable,
 and factor, character, and logical columns always are; categories are labeled by name.}
 }
 \value{
