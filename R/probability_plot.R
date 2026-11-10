@@ -3,15 +3,17 @@
 #' Predicted probabilities across a predictor for an outcome in a [`blimp_obj`]
 #' @description
 #' Plots the predicted probability of each category of an ordinal or nominal outcome against
-#' a predictor, using every saved imputation, optionally with one line per group and with the
-#' observed proportions for comparison.
+#' a predictor, using every saved imputation, optionally with one line per group. The observed
+#' proportions can be added for comparison (`observed = TRUE`) or plotted alone
+#' (`observed = "only"`).
 #' @param formula an object of class [`formula`] of the form `outcome ~ x` or
 #'   `outcome ~ x | group`. `outcome` is an ordinal or nominal outcome, `x` is one of its
 #'   predictors, and `group` is a discrete variable that splits the lines, as the moderator does
 #'   in [`simple_plot`].
 #' @param model a [`blimp_obj`] with saved imputations.
-#' @param observed logical. If `TRUE`, adds the observed proportion of each category, so the
-#'   model's predictions can be compared with the data. See Details.
+#' @param observed `FALSE` (the default) plots the predicted probabilities; `TRUE` adds the
+#'   observed proportion of each category as markers; `"only"` plots the observed proportions
+#'   alone. See Details.
 #' @param discrete_max_unique an integer. A predictor with this many or fewer distinct values
 #'   in a completed dataset gets category means instead of loess curves, even if it was not
 #'   declared ORDINAL, NOMINAL, or COUNT. Declared predictors, the TIMEID variable, and factor, character, and logical columns always do.
@@ -21,29 +23,40 @@
 #' Every saved category probability is plotted: all categories for an ordinal outcome and the
 #' non-reference categories for a nominal outcome. An outcome with two categories, including
 #' the missingness indicator a DROPOUT command creates, shows only the probability of its higher
-#' category. Points stack all imputations. For a continuous predictor, each category gets a
+#' category. Points stack all imputations; they are drawn only when the lines are not split by
+#' a group and `observed = FALSE`. For a continuous predictor, each category gets a
 #' loess curve fit within each imputation and averaged; for a discrete predictor (see
-#' `discrete_max_unique`), each category gets its mean probability at each level. Factor and
-#' character predictors are labeled by category name. With curves, the subtitle gives the
+#' `discrete_max_unique`), each category gets a line through its mean probability at each
+#' level. Factor and character predictors are labeled by category name. With curves, the subtitle gives the
 #' number of imputations averaged, as in [`residual_plot`].
 #'
 #' With `group`, the lines are split by the group's values, and the group takes over the colour,
 #' point shape, and line type. If the outcome also has more than one category plotted, each
 #' category gets its own panel.
 #'
-#' With `observed = TRUE`, the plot compares the model with the data. Markers show the
-#' observed proportion of each category: at each level of a discrete predictor, or in bins of
-#' a continuous predictor (about the square root of the number of cases, with equal counts, as
-#' in the binned residuals of [`residual_plot`]). The predicted probabilities are drawn as lines
-#' only, and the individual points are left out. Only cases whose outcome was observed are used,
-#' for both the markers and the lines, so the two describe the same cases.
+#' With `observed = TRUE`, the plot compares the model with the data: markers show the
+#' observed proportion of each category and the predicted probabilities are drawn as lines.
+#' With `observed = "only"`, the observed proportions are drawn alone, as lines.
+#' Proportions are taken at each level of a discrete predictor, or in bins of a continuous
+#' predictor (about the square root of the number of cases, with equal counts, as in the binned
+#' residuals of [`residual_plot`]). Only cases whose outcome was observed are used, for the
+#' predictions as well when both are drawn, so the two describe the same cases. A fitted model
+#' is still needed, but the observed proportions do not depend on it.
+#'
+#' The predicted probabilities at each level are averages of every case's predicted
+#' probability, so they are on the same footing as the observed proportions. The observed
+#' proportions are free of the model only when the outcome, `x`, and `group` are complete; when
+#' `x` or `group` has missing values, cases fall into levels by their imputed values and the
+#' proportions are averaged over imputations. For an incomplete outcome, the observed cases need
+#' not resemble the missing ones (under MAR or MNAR), so a gap between the observed proportions
+#' and the predictions is not by itself evidence of misfit. A missingness indicator from a
+#' DROPOUT command is never missing, so this does not arise for it.
 #'
 #' Categories (or groups) are distinguished by colour, point shape, and line type, so the plot
 #' also reads in greyscale. These come from the theme's discrete palettes
 #' (`palette.colour.discrete`, `palette.shape.discrete`, and `palette.linetype.discrete`);
 #' without shape or line type palettes, a fixed set of seven of each is used. Point
-#' transparency and the category-mean and observed-proportion markers are set with
-#' [`blimp_style`].
+#' transparency and the observed-proportion markers are set with [`blimp_style`].
 #' @seealso [`residual_plot`], [`diagnostic_plots`], [`blimp_style`], [`simple_plot`]
 #' @examplesIf has_blimp()
 #' # Generate Data
@@ -65,6 +78,9 @@
 #'
 #' # Compared with the observed proportions
 #' probability_plot(y ~ x, m1, observed = TRUE)
+#'
+#' # Observed proportions alone
+#' probability_plot(y ~ x, m1, observed = "only")
 #' @import ggplot2
 #' @export
 probability_plot <- function(formula, model, observed = FALSE, discrete_max_unique = 10L) {
@@ -108,7 +124,11 @@ build_probability <- function(model, variable, x, group = NULL, observed = FALSE
     check_diagnostic_model(model)
     check_variable_arg(variable, "diagnostic_plots")
     check_max_unique(discrete_max_unique)
-    if (!isTRUE(observed) && !isFALSE(observed)) throw_error("{.arg observed} must be TRUE or FALSE.")
+    if (!isTRUE(observed) && !isFALSE(observed) && !identical(observed, "only")) throw_error(
+        "{.arg observed} must be {.code FALSE}, {.code TRUE}, or {.code \"only\"}."
+    )
+    show_predicted <- !identical(observed, "only")
+    show_observed <- !isFALSE(observed)
     outcome <- diag_outcome(model, variable)
     if (!is.null(outcome$category_of)) {
         variable <- outcome$category_of
@@ -160,7 +180,7 @@ build_probability <- function(model, variable, x, group = NULL, observed = FALSE
 
     # Rows: with observed proportions, only cases whose outcome was observed
     n <- nrow(imp_list[[1]])
-    keep <- if (observed) outcome_status(model, outcome, n) == "Observed" else rep(TRUE, n)
+    keep <- if (show_observed) outcome_status(model, outcome, n) == "Observed" else rep(TRUE, n)
     if (!any(keep)) throw_error("{.val {variable}} has no observed values.")
 
     # One long data frame per imputation: x, group, category, predicted and observed
@@ -187,70 +207,78 @@ build_probability <- function(model, variable, x, group = NULL, observed = FALSE
         df
     }
 
-    cell <- curves <- obs <- subtitle <- NULL
-    if (discrete) {
-        # Means at each level, within each imputation then averaged
-        cell_means <- \(value) {
-            long <- do.call(rbind, long_list)
-            per_imp <- stats::aggregate(long[value], by = long[c("imp", "x", "g", "k")], FUN = mean)
-            out <- stats::aggregate(per_imp[value], by = per_imp[c("x", "g", "k")], FUN = mean)
-            names(out)[names(out) == value] <- "y"
-            label(out)
+    # Means of `value` (prob or obs): at each level within each imputation then averaged,
+    # or for a continuous x, a fit-then-pool loess (predictions) or pooled bins (observed)
+    combos <- unique(do.call(rbind, lapply(long_list, \(z) z[c("k", "g")])))
+    pick <- \(r, value) lapply(long_list, \(z) {
+        s <- z[z$k == combos$k[r] & z$g == combos$g[r], , drop = FALSE]
+        data.frame(x = s$x, y = s[[value]])
+    })
+    tag <- \(df, r) {
+        if (NROW(df)) {
+            df$k <- combos$k[r]
+            df$g <- combos$g[r]
         }
-        cell <- cell_means("prob")
-        if (observed) obs <- cell_means("obs")
-    } else {
-        # Fit-then-pool loess of the predictions and pooled bins of the observed proportions
-        combos <- unique(do.call(rbind, lapply(long_list, \(z) z[c("k", "g")])))
-        pick <- \(kk, gg, value) lapply(long_list, \(z) {
-            s <- z[z$k == kk & z$g == gg, , drop = FALSE]
-            data.frame(x = s$x, y = s[[value]])
-        })
-        cvs <- lapply(seq_len(nrow(combos)), \(r) {
-            cv <- pooled_loess(pick(combos$k[r], combos$g[r], "prob"))
-            if (nrow(cv)) {
-                cv$k <- combos$k[r]
-                cv$g <- combos$g[r]
-            }
-            cv
-        })
-        curves <- label(do.call(rbind, lapply(cvs, \(cv) if (nrow(cv)) cv[c("x", "y", "k", "g")])) %||%
-            data.frame(x = numeric(0), y = numeric(0)))
-        subtitle <- curve_subtitle(cvs)
-        if (observed) {
-            obs <- do.call(rbind, lapply(seq_len(nrow(combos)), \(r) {
-                bs <- pooled_bins(pick(combos$k[r], combos$g[r], "obs"))
-                if (!is.null(bs)) {
-                    bs$k <- combos$k[r]
-                    bs$g <- combos$g[r]
-                }
-                bs
-            }))
-            obs <- if (is.null(obs)) NULL else label(obs)
+        df
+    }
+    level_means <- \(value) {
+        long <- do.call(rbind, long_list)
+        per_imp <- stats::aggregate(long[value], by = long[c("imp", "x", "g", "k")], FUN = mean)
+        out <- stats::aggregate(per_imp[value], by = per_imp[c("x", "g", "k")], FUN = mean)
+        names(out)[names(out) == value] <- "y"
+        label(out)
+    }
+    subtitle <- NULL
+    predicted <- observed_df <- NULL
+    if (show_predicted) {
+        if (discrete) {
+            predicted <- level_means("prob")
+        } else {
+            cvs <- lapply(seq_len(nrow(combos)), \(r) tag(pooled_loess(pick(r, "prob")), r))
+            predicted <- label(do.call(rbind, lapply(cvs, \(cv) if (nrow(cv)) cv[c("x", "y", "k", "g")])) %||%
+                data.frame(x = numeric(0), y = numeric(0)))
+            subtitle <- curve_subtitle(cvs)
         }
     }
-    if (observed) {
+    if (show_observed) {
+        if (discrete) {
+            observed_df <- level_means("obs")
+        } else {
+            observed_df <- do.call(rbind, lapply(seq_len(nrow(combos)), \(r) tag(pooled_bins(pick(r, "obs")), r)))
+            if (is.null(observed_df)) throw_error("Too few cases to bin {.val {x}}.")
+            observed_df <- label(observed_df)
+        }
+        # The title already names observed proportions when they are drawn alone
         note <- paste0(
-            "Markers show observed proportions",
-            if (!all(keep)) sprintf(" (%d cases with observed %s)", sum(keep), variable)
+            if (show_predicted) "Markers show observed proportions",
+            if (!discrete) paste(if (show_predicted) " in" else "In", "bins of", x),
+            if (!all(keep)) sprintf(
+                if (show_predicted || !discrete) " (%d cases with observed %s)" else "%d cases with observed %s",
+                sum(keep), variable
+            )
         )
-        subtitle <- paste(c(subtitle, note), collapse = "\n")
+        if (length(note) && nzchar(note)) subtitle <- c(subtitle, note)
     }
 
+    # Lines: the predictions, or else the observed proportions. Markers only for the observed
+    # proportions drawn over the predictions, to tell the two apart
+    lines <- predicted %||% observed_df
+    markers <- if (show_observed && show_predicted) observed_df
     draw_probability(list(
-        points = if (!observed) label(do.call(rbind, long_list)[c("x", "prob", "k", "g")]),
+        # Points only for a predicted plot without groups; with groups they hide the lines
+        points = if (isFALSE(observed) && is.null(gcol)) label(do.call(rbind, long_list)[c("x", "prob", "k", "g")]),
         n_imps = M, single = is.null(gcol) && K == 1L, facet = !is.null(gcol) && K > 1L,
-        discrete = discrete, observed = observed, cell = cell, curves = curves, obs = obs,
+        discrete = discrete, lines = lines, markers = markers,
         levels = if (discrete) column_levels(model, col),
         categories = if (discrete) category_values(lapply(imp_list, \(d) d[[col]])),
         title = sprintf(
             "%s vs. Predictor: %s ~ %s%s",
-            if (observed) "Observed and Predicted Probability" else "Predicted Probability",
+            if (!show_observed) "Predicted Probability" else if (show_predicted) "Observed and Predicted Probability" else "Observed Proportion",
             variable, x, if (is.null(group)) "" else paste(" |", group)
         ),
-        subtitle = subtitle,
+        subtitle = if (length(subtitle)) paste(subtitle, collapse = "\n"),
         x_label = var_label(col),
-        y_label = if (observed) "Probability" else "Predicted Probability",
+        y_label = if (!show_observed) "Predicted Probability" else if (show_predicted) "Probability" else "Observed Proportion",
         legend_title = if (is.null(group)) paste(variable, "Category") else group
     ))
 }
@@ -260,9 +288,9 @@ build_probability <- function(model, variable, x, group = NULL, observed = FALSE
 #' @noRd
 draw_probability <- function(d) {
     single <- d$single
-    lines <- if (d$discrete) d$cell else d$curves
-    # Markers: the observed proportions, or else the predicted means at each level
-    markers <- if (d$observed) d$obs else if (d$discrete) d$cell
+    lines <- d$lines
+    markers <- d$markers
+    has_shape <- !is.null(d$points) || NROW(markers) > 0
     # Marked so that scale_imputed() on a diagnostic_plots() list leaves it unchanged
     as_diagnostic_plot(ggplot2::ggplot() + list(
         if (!is.null(d$points)) {
@@ -293,15 +321,17 @@ draw_probability <- function(d) {
         ggplot2::labs(title = d$title, x = d$x_label, y = d$y_label),
         if (!is.null(d$subtitle)) ggplot2::labs(subtitle = d$subtitle),
         # Shapes and line types: the theme's discrete palettes, or a fixed set of seven
+        # (shape only when points or markers are drawn)
         if (!single) list(
-            ggplot2::discrete_scale(
+            if (has_shape) ggplot2::discrete_scale(
                 "shape", palette = NULL, fallback.palette = \(n) c(16, 17, 15, 18, 4, 8, 3)[seq_len(n)]
             ),
             ggplot2::discrete_scale(
                 "linetype", palette = NULL,
                 fallback.palette = \(n) c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash", "1F")[seq_len(n)]
             ),
-            ggplot2::labs(colour = d$legend_title, shape = d$legend_title, linetype = d$legend_title)
+            ggplot2::labs(colour = d$legend_title, linetype = d$legend_title),
+            if (has_shape) ggplot2::labs(shape = d$legend_title)
         )
     ))
 }

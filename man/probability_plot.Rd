@@ -14,8 +14,9 @@ in \code{\link{simple_plot}}.}
 
 \item{model}{a \code{\link{blimp_obj}} with saved imputations.}
 
-\item{observed}{logical. If \code{TRUE}, adds the observed proportion of each category, so the
-model's predictions can be compared with the data. See Details.}
+\item{observed}{\code{FALSE} (the default) plots the predicted probabilities; \code{TRUE} adds the
+observed proportion of each category as markers; \code{"only"} plots the observed proportions
+alone. See Details.}
 
 \item{discrete_max_unique}{an integer. A predictor with this many or fewer distinct values
 in a completed dataset gets category means instead of loess curves, even if it was not
@@ -27,36 +28,48 @@ a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
 }
 \description{
 Plots the predicted probability of each category of an ordinal or nominal outcome against
-a predictor, using every saved imputation, optionally with one line per group and with the
-observed proportions for comparison.
+a predictor, using every saved imputation, optionally with one line per group. The observed
+proportions can be added for comparison (\code{observed = TRUE}) or plotted alone
+(\code{observed = "only"}).
 }
 \details{
 Every saved category probability is plotted: all categories for an ordinal outcome and the
 non-reference categories for a nominal outcome. An outcome with two categories, including
 the missingness indicator a DROPOUT command creates, shows only the probability of its higher
-category. Points stack all imputations. For a continuous predictor, each category gets a
+category. Points stack all imputations; they are drawn only when the lines are not split by
+a group and \code{observed = FALSE}. For a continuous predictor, each category gets a
 loess curve fit within each imputation and averaged; for a discrete predictor (see
-\code{discrete_max_unique}), each category gets its mean probability at each level. Factor and
-character predictors are labeled by category name. With curves, the subtitle gives the
+\code{discrete_max_unique}), each category gets a line through its mean probability at each
+level. Factor and character predictors are labeled by category name. With curves, the subtitle gives the
 number of imputations averaged, as in \code{\link{residual_plot}}.
 
 With \code{group}, the lines are split by the group's values, and the group takes over the colour,
 point shape, and line type. If the outcome also has more than one category plotted, each
 category gets its own panel.
 
-With \code{observed = TRUE}, the plot compares the model with the data. Markers show the
-observed proportion of each category: at each level of a discrete predictor, or in bins of
-a continuous predictor (about the square root of the number of cases, with equal counts, as
-in the binned residuals of \code{\link{residual_plot}}). The predicted probabilities are drawn as lines
-only, and the individual points are left out. Only cases whose outcome was observed are used,
-for both the markers and the lines, so the two describe the same cases.
+With \code{observed = TRUE}, the plot compares the model with the data: markers show the
+observed proportion of each category and the predicted probabilities are drawn as lines.
+With \code{observed = "only"}, the observed proportions are drawn alone, as lines.
+Proportions are taken at each level of a discrete predictor, or in bins of a continuous
+predictor (about the square root of the number of cases, with equal counts, as in the binned
+residuals of \code{\link{residual_plot}}). Only cases whose outcome was observed are used, for the
+predictions as well when both are drawn, so the two describe the same cases. A fitted model
+is still needed, but the observed proportions do not depend on it.
+
+The predicted probabilities at each level are averages of every case's predicted
+probability, so they are on the same footing as the observed proportions. The observed
+proportions are free of the model only when the outcome, \code{x}, and \code{group} are complete; when
+\code{x} or \code{group} has missing values, cases fall into levels by their imputed values and the
+proportions are averaged over imputations. For an incomplete outcome, the observed cases need
+not resemble the missing ones (under MAR or MNAR), so a gap between the observed proportions
+and the predictions is not by itself evidence of misfit. A missingness indicator from a
+DROPOUT command is never missing, so this does not arise for it.
 
 Categories (or groups) are distinguished by colour, point shape, and line type, so the plot
 also reads in greyscale. These come from the theme's discrete palettes
 (\code{palette.colour.discrete}, \code{palette.shape.discrete}, and \code{palette.linetype.discrete});
 without shape or line type palettes, a fixed set of seven of each is used. Point
-transparency and the category-mean and observed-proportion markers are set with
-\code{\link{blimp_style}}.
+transparency and the observed-proportion markers are set with \code{\link{blimp_style}}.
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
@@ -79,6 +92,9 @@ probability_plot(y ~ x, m1)
 
 # Compared with the observed proportions
 probability_plot(y ~ x, m1, observed = TRUE)
+
+# Observed proportions alone
+probability_plot(y ~ x, m1, observed = "only")
 \dontshow{\}) # examplesIf}
 }
 \seealso{
