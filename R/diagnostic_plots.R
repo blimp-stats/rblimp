@@ -132,7 +132,7 @@ diagnostic_plots <- function(model, selector, discrete_max_unique = 10L, bars = 
             }
             if (o$type == "ordinal") {
                 for (p in unique(c(names(preds$level1), names(preds$level2)))) {
-                    add(paste0(dv, ".", p, ".probability"), probability_plot(model, dv, p, discrete_max_unique))
+                    add(paste0(dv, ".", p, ".probability"), build_probability(model, dv, p, discrete_max_unique = discrete_max_unique))
                 }
             }
             if (!is.null(inf) && paste0(dv, ".leverage") %in% names(inf)) {
@@ -150,7 +150,7 @@ diagnostic_plots <- function(model, selector, discrete_max_unique = 10L, bars = 
             }
             parent <- if (is.null(o$category_of)) dv else o$category_of
             for (p in unique(c(names(preds$level1), names(preds$level2)))) {
-                add(paste0(parent, ".", p, ".probability"), probability_plot(model, parent, p, discrete_max_unique))
+                add(paste0(parent, ".", p, ".probability"), build_probability(model, parent, p, discrete_max_unique = discrete_max_unique))
             }
         } else if (o$type == "count") {
             add(paste0(dv, ".index"), rp(dv, x = "#case"))

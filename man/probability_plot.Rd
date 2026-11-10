@@ -4,39 +4,59 @@
 \alias{probability_plot}
 \title{Predicted probabilities across a predictor for an outcome in a \code{\link{blimp_obj}}}
 \usage{
-probability_plot(model, variable, x, discrete_max_unique = 10L)
+probability_plot(formula, model, observed = FALSE, discrete_max_unique = 10L)
 }
 \arguments{
+\item{formula}{an object of class \code{\link{formula}} of the form \code{outcome ~ x} or
+\code{outcome ~ x | group}. \code{outcome} is an ordinal or nominal outcome, \code{x} is one of its
+predictors, and \code{group} is a discrete variable that splits the lines, as the moderator does
+in \code{\link{simple_plot}}.}
+
 \item{model}{a \code{\link{blimp_obj}} with saved imputations.}
 
-\item{variable}{a character string naming an ordinal or nominal outcome.}
-
-\item{x}{a character string naming one predictor of \code{variable}.}
+\item{observed}{logical. If \code{TRUE}, adds the observed proportion of each category, so the
+model's predictions can be compared with the data. See Details.}
 
 \item{discrete_max_unique}{an integer. A predictor with this many or fewer distinct values
 in a completed dataset gets category means instead of loess curves, even if it was not
-declared ORDINAL, NOMINAL, or COUNT. Declared predictors and factor, character, and logical columns always do.}
+declared ORDINAL, NOMINAL, or COUNT. Declared predictors, the TIMEID variable, and factor, character, and logical columns always do.
+The same rule decides whether \code{group} is discrete.}
 }
 \value{
 a \code{\link[ggplot2:ggplot]{ggplot2::ggplot}} plot
 }
 \description{
 Plots the predicted probability of each category of an ordinal or nominal outcome against
-a predictor, using every saved imputation.
+a predictor, using every saved imputation, optionally with one line per group and with the
+observed proportions for comparison.
 }
 \details{
 Every saved category probability is plotted: all categories for an ordinal outcome and the
-non-reference categories for a nominal outcome. Points stack all imputations. For a
-continuous predictor, each category gets a loess curve fit within each imputation and
-averaged; for a discrete predictor (see \code{discrete_max_unique}), each category gets its mean
-probability at each level. Factor and character predictors are labeled by category name.
-With curves, the subtitle gives the number of imputations averaged, as in \code{\link{residual_plot}}.
+non-reference categories for a nominal outcome. An outcome with two categories, including
+the missingness indicator a DROPOUT command creates, shows only the probability of its higher
+category. Points stack all imputations. For a continuous predictor, each category gets a
+loess curve fit within each imputation and averaged; for a discrete predictor (see
+\code{discrete_max_unique}), each category gets its mean probability at each level. Factor and
+character predictors are labeled by category name. With curves, the subtitle gives the
+number of imputations averaged, as in \code{\link{residual_plot}}.
 
-Categories are distinguished by colour, point shape, and line type, so the plot also reads
-in greyscale. These come from the theme's discrete palettes (\code{palette.colour.discrete},
-\code{palette.shape.discrete}, and \code{palette.linetype.discrete}); without shape or line type
-palettes, a fixed set of seven of each is used. Point transparency and the category-mean
-markers are set with \code{\link{blimp_style}}.
+With \code{group}, the lines are split by the group's values, and the group takes over the colour,
+point shape, and line type. If the outcome also has more than one category plotted, each
+category gets its own panel.
+
+With \code{observed = TRUE}, the plot compares the model with the data. Markers show the
+observed proportion of each category: at each level of a discrete predictor, or in bins of
+a continuous predictor (about the square root of the number of cases, with equal counts, as
+in the binned residuals of \code{\link{residual_plot}}). The predicted probabilities are drawn as lines
+only, and the individual points are left out. Only cases whose outcome was observed are used,
+for both the markers and the lines, so the two describe the same cases.
+
+Categories (or groups) are distinguished by colour, point shape, and line type, so the plot
+also reads in greyscale. These come from the theme's discrete palettes
+(\code{palette.colour.discrete}, \code{palette.shape.discrete}, and \code{palette.linetype.discrete});
+without shape or line type palettes, a fixed set of seven of each is used. Point
+transparency and the category-mean and observed-proportion markers are set with
+\code{\link{blimp_style}}.
 }
 \examples{
 \dontshow{if (has_blimp()) withAutoprint(\{ # examplesIf}
@@ -55,9 +75,12 @@ mydata$y <- cut(mydata$ystar, c(-Inf, -0.5, 0.5, Inf), labels = FALSE)
 m1 <- rblimp('y ~ x', mydata, ordinal = 'y', nimps = 10, seed = 10972, burn = 1000, iter = 1000)
 
 # Predicted probability across x
-probability_plot(m1, 'y', 'x')
+probability_plot(y ~ x, m1)
+
+# Compared with the observed proportions
+probability_plot(y ~ x, m1, observed = TRUE)
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link{residual_plot}}, \code{\link{diagnostic_plots}}, \code{\link{blimp_style}}
+\code{\link{residual_plot}}, \code{\link{diagnostic_plots}}, \code{\link{blimp_style}}, \code{\link{simple_plot}}
 }

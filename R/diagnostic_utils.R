@@ -39,7 +39,7 @@ utils::globalVariables(c(
     "lower", "upper", "theoretical", "sample", "prob", "category", "predictor",
     "x_mean", "resid_mean", "pred_mean", "measure", "label",
     "accent", "density", "fontsize", "pointsize", "linewidth", "family", "slope", "intercept",
-    "yintercept", "ymin", "ymax", "status", "imp"
+    "yintercept", "ymin", "ymax", "status", "imp", "series", "panel"
 ))
 
 # Fixed design constants ======================================================
@@ -549,6 +549,26 @@ pooled_loess <- function(xy_list, se = FALSE) {
     }
     # Drops any point where a fit returned NaN
     structure(out[is.finite(out$y), , drop = FALSE], n_imps = length(fits))
+}
+
+#' Internal function for pooled bin means of a continuous x
+#' About sqrt(n) bins with equal-count edges fixed from the pooled x values; within each
+#' imputation the bin means of x and y are taken, then averaged across imputations.
+#' Returns a data frame with `x` and `y`, or NULL when there are too few cases or
+#' distinct values to bin.
+#' @noRd
+pooled_bins <- function(xy_list) {
+    n_keep <- nrow(xy_list[[1]])
+    if (n_keep < binned_min_cases) return(NULL)
+    allx <- unlist(lapply(xy_list, \(d) d$x), use.names = FALSE)
+    edges <- unique(stats::quantile(allx, probs = seq(0, 1, length.out = max(1L, floor(sqrt(n_keep))) + 1)))
+    if (length(edges) < 3) return(NULL)
+    per_imp <- lapply(xy_list, \(d) {
+        b <- cut(d$x, breaks = edges, include.lowest = TRUE, labels = FALSE)
+        data.frame(bin = sort(unique(b)), x = as.numeric(tapply(d$x, b, mean)), y = as.numeric(tapply(d$y, b, mean)))
+    })
+    all_b <- do.call(rbind, per_imp)
+    stats::aggregate(cbind(x, y) ~ bin, data = all_b, FUN = mean)[, c("x", "y")]
 }
 
 #' Internal function for the subtitle of a plot with pooled loess curves

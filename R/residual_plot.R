@@ -615,15 +615,8 @@ binned_plot <- function(imp_list, outcome, x, discrete = logical(0), levels = li
                 all_lv <- do.call(rbind, per_imp)
                 bs <- stats::aggregate(y ~ x, data = all_lv, FUN = mean)
             } else {
-                allx <- unlist(lapply(xy_list, \(d) d$x), use.names = FALSE)
-                edges <- unique(stats::quantile(allx, probs = seq(0, 1, length.out = max(1L, floor(sqrt(n_keep))) + 1)))
-                if (length(edges) < 3) next
-                per_imp <- lapply(xy_list, \(d) {
-                    b <- cut(d$x, breaks = edges, include.lowest = TRUE, labels = FALSE)
-                    data.frame(bin = sort(unique(b)), x = as.numeric(tapply(d$x, b, mean)), y = as.numeric(tapply(d$y, b, mean)))
-                })
-                all_b <- do.call(rbind, per_imp)
-                bs <- stats::aggregate(cbind(x, y) ~ bin, data = all_b, FUN = mean)[, c("x", "y")]
+                bs <- pooled_bins(xy_list)
+                if (is.null(bs)) next
                 cv <- pooled_loess(xy_list)
                 if (nrow(cv)) {
                     cv$category <- panel_k
