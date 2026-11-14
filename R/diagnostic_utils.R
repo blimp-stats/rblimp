@@ -354,10 +354,13 @@ diag_outcome <- function(model, variable) {
 
 #' Internal function to obtain an outcome's predictors split by level
 #' Returns the level-1 (within-cluster) and level-2 (cluster-constant) predictor columns.
+#' Level-2 latent random effects are left out unless `latents = TRUE` (residual plots
+#' leave them out; predicted probabilities can be plotted against them).
 #' @noRd
-diag_outcome_predictors <- function(model, outcome) {
+diag_outcome_predictors <- function(model, outcome, latents = FALSE) {
     d <- model@imputations[[1]]
-    preds <- diag_plot_predictors(model, outcome$terms, d, exclude = names(diag_level2_latents(model)))
+    exclude <- if (latents) character() else names(diag_level2_latents(model))
+    preds <- diag_plot_predictors(model, outcome$terms, d, exclude = exclude)
     missing_cols <- names(preds)[is.na(preds)]
     if (length(missing_cols)) cli::cli_inform(c(
         "!" = "No saved column for {.val {missing_cols}}; not plotted for {.val {outcome$name}}."

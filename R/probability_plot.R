@@ -137,7 +137,7 @@ build_probability <- function(model, variable, x, group = NULL, observed = FALSE
     if (outcome$level != 1L || !outcome$type %in% c("ordinal", "nominal")) throw_error(
         "Predicted probabilities are plotted only for ordinal and nominal outcomes."
     )
-    preds <- diag_outcome_predictors(model, outcome)
+    preds <- diag_outcome_predictors(model, outcome, latents = TRUE)
     allowed <- c(preds$level1, preds$level2)
     if (missing(x) || !is.character(x) || length(x) != 1) throw_error(c(
         "{.arg x} must be a single predictor name.",
