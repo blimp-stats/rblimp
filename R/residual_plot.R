@@ -328,6 +328,8 @@ resolve_predictor <- function(p, allowed) {
     if (p %in% allowed) return(p)
     stripped <- sub("\\[.+\\]$", "", allowed)
     if (p %in% stripped) return(allowed[[match(p, stripped)]])
+    # Blimp saves a lag written `y.lag` as `y.lag1`
+    if (endsWith(p, ".lag")) return(resolve_predictor(paste0(p, "1"), allowed))
     NA_character_
 }
 
